@@ -1,0 +1,37 @@
+<!--
+	user should only edit its password!
+-->
+[% IF params.submit %]
+	<ul class="error">
+	[% FOREACH error IN errors %]
+		<li>[% error %]</li>
+	[% END %]
+	</ul>
+	<ul class="messages">
+	[% FOREACH message IN messages %]
+		<li>[% message %]</li>
+	[% END %]
+	</ul>
+[% END %]
+<h1>Account</h1>
+[% IF user %]
+	<input type="button" value="edit" onclick="window.location.href='/account/edit'"/>
+	<table id="form-user-delete-detail">
+		<tr>
+			<th>login:</th>
+			<td>[% user.login %]</td>
+		</tr>
+		<tr>
+			<th>name:</th>
+			<td>[% user.name %]</td>
+		</tr>
+		<tr>
+			<th>roles:</th>
+			<td>[% user.roles %]</td>
+		</tr>
+		<tr>
+			<th>password:</th>
+            <td>*****</td>
+		</tr>		
+	</table>
+[% END %]

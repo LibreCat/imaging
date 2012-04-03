@@ -1,0 +1,12 @@
+<table class="access-denied">
+	<tr>
+		<td>
+			<b>[% session.user.login %]</b> cannot perform action '[% params.action %]' on '[% params.operation %]'
+		</td>
+	</tr>
+	<tr>
+        <td>
+			<a href="[% params.referrer %]">back</a>
+        </td>
+    </tr>
+</table>

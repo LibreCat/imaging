@@ -1,0 +1,41 @@
+[% IF params.submit %]
+	<ul class="error">
+	[% FOREACH error IN errors %]
+		<li>[% error %]</li>
+	[% END %]
+	</ul>
+	<ul class="messages">
+	[% FOREACH message IN messages %]
+		<li>[% message %]</li>
+	[% END %]
+	</ul>
+[% END %]
+<h1>New project</h1>
+<form method="post" accept-charset="UTF-8">
+	<table id="form-project-add">
+		<tr>
+			<th>code:</th>
+			<td>
+				<input type="text" name="code" id="code" value="[% params.item("code") %]" />
+			</td>
+		</tr>
+		<tr>
+            <th>name:</th>
+            <td>
+                <input type="text" name="name" id="name" value="[% params.item("name") %]" />
+            </td>
+        </tr>
+		<tr>
+            <th>description:</th>
+            <td>
+                <textarea name="description" id="description" rows="15" cols="50">[% params.item("description") %]</textarea>
+            </td>
+        </tr>
+		<!--list stakeholders?-->
+		<tr>
+			<td colspan="2">
+				<input type="submit" value="add" name="submit" id="submit" />
+			</td>
+		</tr>
+	</table>
+</form>

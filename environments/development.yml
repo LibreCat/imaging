@@ -1,5 +1,8 @@
 # configuration file for development environment
-
+behind_proxy: 1
+session: "PSGI"
+ 
+#myparser: !!perl/hash:Rft_id::Common {}
 # the logger engine to use
 # console: log messages to STDOUT (your console where you started the
 #          application server)
@@ -9,14 +12,15 @@ logger: "console"
 # the log level for this environement
 # core is the lowest, it shows Dancer's core log messages as well as yours
 # (debug, warning and error)
-log: "core"
+log: "debug"
 
 # should Dancer consider warnings as critical errors?
-warnings: 1
+warnings: 0
 
 # should Dancer show a stacktrace when an error is caught?
 show_errors: 1
-
+route_cache: 1
+startup_info: 0
 # auto_reload is a development and experimental feature
 # you should enable it by yourself if you want it
 # Module::Refresh is needed 
@@ -25,3 +29,50 @@ show_errors: 1
 # DO NOT EVER USE THAT FEATURE IN PRODUCTION 
 # OR TINY KITTENS SHALL DIE WITH LOTS OF SUFFERING
 auto_reload: 0
+plugins:
+ Database:
+  driver: mysql
+  database: imaging
+  host: localhost
+  port: 3306
+  username: imaging
+  password: imaging
+  dbi_params:
+   RaiseError: 1
+   AutoCommit: 1
+  on_connect_do:
+   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
+   - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
+ Auth::RBAC:
+  credentials:
+   class: MySQL
+  permissions:
+   class: Config
+   options:
+    control:
+     admin:
+      permissions:
+       manage_accounts:
+        operations: ["edit"]
+     user:
+      permissions:
+       projects:
+        operations: ["edit"]
+cache:
+ session:
+  package: "Cache::FastMmap"
+  options:
+   share_file: "/tmp/session.data"
+   empty_on_exit: 1
+   init_file: 1
+   expire_time: '20m'
+   cache_size: '30m'
+store:
+ core:
+  package: "Catmandu::Store::DBI"
+  options:
+   data_source: "dbi:mysql:database=imaging"
+   username: imaging
+   password: imaging
+app: {}
+all: {}

@@ -1,0 +1,34 @@
+<!--
+	admin should only edit roles, never a password!
+-->
+[% IF params.submit %]
+	<ul class="error">
+	[% FOREACH error IN errors %]
+		<li>[% error %]</li>
+	[% END %]
+	</ul>
+	<ul class="messages">
+	[% FOREACH message IN messages %]
+		<li>[% message %]</li>
+	[% END %]
+	</ul>
+[% END %]
+<h1>Edit user '[% user.login %]'</h1>
+[% IF user %]
+	<form method="post">
+		<input type="submit" name="submit" id="submit" value="update" />
+	<table id="form-user-delete-detail">
+		<tr>
+			<th>roles</th>
+			<td>
+				<select name="roles" id="roles" multiple="multiple">
+				[% SET myroles = user.roles.split(', ') %]
+				[% FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
+                    <option value="[% role %]" [% IF myroles.grep(role).size > 0 %]CHECKED[% END %]>[% role %]</option>
+                [% END %]
+				</select>
+			</td>
+		</tr>
+	</table>
+	</form>
+[% END %]

@@ -1,0 +1,32 @@
+[% IF params.submit %]
+	<ul class="error">
+	[% FOREACH error IN errors %]
+		<li>[% error %]</li>
+	[% END %]
+	</ul>
+	<ul class="messages">
+	[% FOREACH message IN messages %]
+		<li>[% message %]</li>
+	[% END %]
+	</ul>
+[% END %]
+<h1>Delete user</h1>
+[% IF user %]
+	<form method="post">
+		<input type="submit" name="submit" id="submit" value="delete" />
+	</form>
+	<table id="form-user-delete-detail">
+		<tr>
+			<th>login:</th>
+			<td>[% user.login %]</td>
+		</tr>
+		<tr>
+			<th>name:</th>
+			<td>[% user.name %]</td>
+		</tr>
+		<tr>
+			<th>roles:</th>
+			<td>[% user.roles %]</td>
+		</tr>
+	</table>
+[% END %]

@@ -1,0 +1,33 @@
+<h1>List of users</h1>
+<p>
+	<a href="/users/add">add user</a>
+</p>
+[% IF users && users.size > 0 %]
+	<table id="table-users">
+		<tr>
+			<th>name</th>
+			<th>login</th>
+			<th>roles</th>
+			<th></th>
+		</tr>
+	[% FOREACH user IN users %]
+		<tr>
+			<td>[% user.name %]</td>
+			<td>[% user.login %]</td>
+			<td>[% user.roles %]</td>
+			<td>
+				[% IF user.id != "1" %]
+				<a href="/user/[% user.id %]/delete">delete</a>&nbsp;|&nbsp;
+				<a href="/user/[% user.id %]/edit">edit</a>
+				[% END %]
+			</td>
+		</tr>
+	[% END %]
+	</table>
+[% ELSE %]
+	<table id="table-users"> 
+		<tr>
+            <th>no users added yet to the list</th>
+        </tr>
+	</table>
+[% END %]

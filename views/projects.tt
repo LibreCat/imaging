@@ -1,0 +1,56 @@
+<div class="paging">
+[% IF projects && project.size > 0 %]
+
+    [% IF page_info.first_page && page_info.first_page < page_info.current_page %]
+    <a href="/projects?page=[% page_info.first_page %]&amp;num=[% params.num %]">first</a>
+    [% END %]
+
+    [% IF page_info.previous_page %]
+    <a href="/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >previous</a>
+    [% END %]
+
+    [% FOREACH page IN page_info.pages_in_set %]
+        [% IF page == page_info.current_page %]
+        <span class="current">[% page %]</span>
+        [% ELSE %]
+        <a href="/projects?page=[% page %]&amp;num=[% params.num %]">[% page %]</a>
+        [% END %]
+    [% END %]
+
+    [% IF page_info.next_page %]
+    <a href="/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]" >next</a>
+    [% END %]
+
+    [% IF page_info.last_page && page_info.last_page > page_info.current_page %]
+    <a href="/projects?page=[% page_info.last_page %]&amp;num=[% params.num %]">last</a>
+    [% END %]
+
+[% END %]
+</div>
+<h1>List of projects</h1>
+<p>
+	<a href="/projects/add">add project</a>
+</p>
+[% IF projects && projects.size > 0 %]
+	<table id="table-projects">
+		<tr>
+			<th>code</th>
+			<th>name</th>
+		</tr>
+	[% FOREACH project IN projects %]
+		<tr>
+			<td>[% project.item("_id") %]</td>
+			<td>[% project.item("name") %]</td>
+			<td>
+				<a href="/project/[% project.item("_id") %]/delete">delete</a>
+			</td>
+		</tr>
+	[% END %]
+	</table>
+[% ELSE %]
+	<table id="table-projects"> 
+		<tr>
+            <th>no projects added yet to the list</th>
+        </tr>
+	</table>
+[% END %]

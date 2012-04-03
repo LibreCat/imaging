@@ -1,0 +1,56 @@
+[% IF params.submit %]
+	<ul class="error">
+	[% FOREACH error IN errors %]
+		<li>[% error %]</li>
+	[% END %]
+	</ul>
+	<ul class="messages">
+	[% FOREACH message IN messages %]
+		<li>[% message %]</li>
+	[% END %]
+	</ul>
+[% END %]
+<h1>New user</h1>
+<form method="post" accept-charset="UTF-8">
+	<table id="form-user-add">
+		<tr>
+			<th>login:</th>
+			<td>
+				<input type="text" name="login" id="login" value="[% params.item("login") %]" />
+			</td>
+		</tr>
+		<tr>
+            <th>name:</th>
+            <td>
+                <input type="text" name="name" id="name" value="[% params.item("name") %]" />
+            </td>
+        </tr>
+		<tr>
+            <th>password:</th>
+            <td>
+				<input type="password" name="password1" id="password1" value="" />
+            </td>
+        </tr>
+		<tr>
+            <th>retype password:</th>
+            <td>
+                <input type="password" name="password2" id="password2" value="" />
+            </td>
+        </tr>
+		<tr>
+			<th>roles</th>
+            <td>
+                <select name="roles" id="roles" multiple="multiple">
+				[% FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
+					<option value="[% role %]">[% role %]</option>
+				[% END %]
+				</select>
+            </td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<input type="submit" value="add" name="submit" id="submit" />
+			</td>
+		</tr>
+	</table>
+</form>

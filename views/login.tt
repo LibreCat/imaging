@@ -1,0 +1,27 @@
+<ul class="error">
+[% FOREACH error IN errors %]
+	<li>[% error %]</li>
+[% END %]
+</ul>
+<form method="post" accept-charset="UTF-8">
+	<table id="form-login">
+		<tr>
+			<th>username:</th>
+			<td>
+				<input type="text" name="user" id="user" value="[% params.user %]" />
+			</td>
+		</tr>
+		<tr>
+            <th>password:</th>
+            <td>
+				<input type="password" name="password" id="password" />
+			</td>
+        </tr>
+		<tr>
+			<td colspan="2">
+				<input type="submit" value="login" name="submit" id="submit" />
+				<input type="hidden" value="[% params.service | html %]" name="service" id="service" />
+			</td>
+		</tr>
+	</table>
+</form>

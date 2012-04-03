@@ -1,0 +1,7 @@
+<table class="notfound">
+	<tr>
+		<td>
+			&quot;<b>[% requested_path %]</b>&quot; could not be found
+		</td>
+	</tr>
+</table>

@@ -1,0 +1,30 @@
+html, body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	font-family: 'Lucida Sans', 'Lucida Sans Unicode', 'Verdana', serif;
+	font-size: 11pt;
+}
+div#main {
+	position:relative;
+	width:1000px;
+	overflow:hidden;	
+	margin:0px auto 0px auto;
+	padding:10px;
+	border:1px dotted gray;
+}
+ul.error {
+	background-color: #DBD3D3;
+}
+ul.error li {
+	border:none;
+	color: #B0252E;
+	font-size:11pt;	
+	padding:10px;
+	margin:0px;
+}
+th {
+	vertical-align:top;
+	text-align:right;
+}
