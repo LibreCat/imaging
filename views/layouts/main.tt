@@ -6,6 +6,21 @@
 		<title>Imaging</title>
 	</head>
 	<body>
-		<div id="main">[% content %]</div>
+		<div id="main">
+			<div id="top">
+				<ul id="menu">
+					<li>
+						<a href="/projects">projects</a>
+					</li>
+					<li>
+						<a href="/users">users</a>
+					</li>
+					<li>
+						<a href="/account">account</a>
+					</li>
+				</ul>
+			</div>
+			[% content %]
+		</div>
 	</body>
 </html>

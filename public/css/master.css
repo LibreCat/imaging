@@ -11,7 +11,7 @@ div#main {
 	width:1000px;
 	overflow:hidden;	
 	margin:0px auto 0px auto;
-	padding:10px;
+	padding:15px;
 	border:1px dotted gray;
 }
 ul.error {
@@ -27,4 +27,20 @@ ul.error li {
 th {
 	vertical-align:top;
 	text-align:right;
+}
+div#top {
+	position:relative;
+	width:100%;
+	height: 36px;
+	margin:0px 0px 10px 0px;
+}
+ul#menu {
+	list-style:none;
+	width:100%;
+	vertical-align:middle;
+}
+ul#menu li {
+    float:left;
+	margin: 0px 5px 5px 0px;
+	padding: 0px;
 }
