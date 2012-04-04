@@ -27,22 +27,42 @@
 
 [% END %]
 </div>
+[% USE date %]
 <h1>List of projects</h1>
 <p>
 	<a href="/projects/add">add project</a>
 </p>
 [% IF projects && projects.size > 0 %]
-	<table id="table-projects">
+	<table id="table-projects" class="left">
 		<tr>
-			<th>code</th>
 			<th>name</th>
+			<th>subproject</th>
+			<th>total</th>
+			<th>done</th>
+			<th>last modified</th>
+			<th>start</th>
+			<th>owner</th>
+			<th>actions</th>
 		</tr>
 	[% FOREACH project IN projects %]
 		<tr>
-			<td>[% project.item("_id") %]</td>
 			<td>[% project.item("name") %]</td>
+			<td>[% project.item("name_subproject") %]</td>
+			<td>[% project.item("list").size || 0 %]</td>
 			<td>
-				<a href="/project/[% project.item("_id") %]/delete">delete</a>
+				[% done = 0 %]
+				[% FOREACH item IN project.item("list") %]
+					[% done = done + 1 IF item.done %]
+				[% END %]
+				[% done %]
+			</td>
+			<td>[% date.format(project.datetime_last_modified,format => '%d-%m-%Y') %]</td>
+			<td>[% project.date_start %]</td>
+			<td>[% project.item("owner") %]</td>
+			<td>
+				<a href="/project/[% project.item("_id") %]/view">view</a>
+				<a href="/project/[% project.item("_id") %]/edit">edit</a>
+				<a href="/project/[% project.item("_id") %]/delete">delete</a>&nbsp;
 			</td>
 		</tr>
 	[% END %]

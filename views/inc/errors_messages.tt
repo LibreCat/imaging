@@ -1,0 +1,12 @@
+[% IF params.submit %]
+    <ul class="error">
+    [% FOREACH error IN errors %]
+        <li>[% error.replace("_"," ") %]</li>
+    [% END %]
+    </ul>
+    <ul class="messages">
+    [% FOREACH message IN messages %]
+        <li>[% message %]</li>
+    [% END %]
+    </ul>
+[% END %]

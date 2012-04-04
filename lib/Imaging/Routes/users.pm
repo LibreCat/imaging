@@ -117,7 +117,6 @@ any('/user/:id/edit',sub{
     }
     if($params->{submit}){
 		my $roles = $params->{roles};
-		print to_dumper($params);
 		if(is_string($roles)){
 			$roles = [$roles];
 		}elsif(!is_array_ref($roles)){

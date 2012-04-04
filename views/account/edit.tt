@@ -1,24 +1,13 @@
-<!--
-	user should only edit its password!
--->
-[% IF params.submit %]
-	<ul class="error">
-	[% FOREACH error IN errors %]
-		<li>[% error %]</li>
-	[% END %]
-	</ul>
-	<ul class="messages">
-	[% FOREACH message IN messages %]
-		<li>[% message %]</li>
-	[% END %]
-	</ul>
-[% END %]
+[% PROCESS inc/errors_messages.tt %]
 <h1>Edit Account</h1>
 [% IF user %]
 	<form method="post">
 	<table id="form-user-delete-detail">
 		<tr>
-            <td colspan="2"><input type="submit" name="submit" id="submit" value="update" /></td>
+            <td colspan="2">
+				<input type="button" onclick="window.location.href=document.referrer" value="back" />
+				<input type="submit" name="submit" id="submit" value="update" />
+			</td>
         </tr>
 		<tr>
 			<th>old password:</th>

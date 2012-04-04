@@ -1,0 +1,58 @@
+[% PROCESS inc/errors_messages.tt %]
+[% PROCESS inc/datepicker.tt %]
+<script type="text/javascript">
+    $(document).ready(function(){
+        $("input.date").datepicker({
+            dateFormat:'dd-mm-yy',
+            appendText: '&nbsp;e.g. 01-01-2012',
+            defaultDate:new Date(),
+            minDate:new Date()
+        });
+    });
+</script>
+<h1>Edit project</h1>
+<form method="post" accept-charset="UTF-8">
+	<table id="form-project-add" class="right">
+		<tr>
+            <th>name project:</th>
+            <td>
+                <input type="text" name="name" id="name" value="[% project.item("name") %]" />
+            </td>
+        </tr>
+		<tr>
+            <th>name subproject:</th>
+            <td>
+                <input type="text" name="name_subproject" id="name_subproject" value="[% project.item("name_subproject") %]" />
+            </td>
+        </tr>
+		<tr>
+            <th>description:</th>
+            <td>
+                <textarea name="description" id="description" rows="15" cols="50">[% project.item("description") %]</textarea>
+            </td>
+        </tr>
+		<tr>
+			<th>owner:</th>
+			<td>
+				<input name="owner" id="owner" value="[% project.item("owner") %]" />
+			</td>
+		</tr>
+		<tr>
+            <th>start project (day-month-year):</th>
+            <td>
+                <input class="date" name="date_start" id="date_start" value="[% project.item("date_start") %]" />
+            </td>
+        </tr>
+		<tr>
+            <th>query:</th>
+            <td>
+                <textarea name="query" id="query" rows="15" cols="50">[% project.item("query") %]</textarea>
+            </td>
+        </tr>
+		<tr>
+			<td colspan="2">
+				<input type="submit" value="update" name="submit" id="submit" />
+			</td>
+		</tr>
+	</table>
+</form>

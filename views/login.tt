@@ -1,8 +1,4 @@
-<ul class="error">
-[% FOREACH error IN errors %]
-	<li>[% error %]</li>
-[% END %]
-</ul>
+[% PROCESS inc/errors_messages.tt %]
 <form method="post" accept-charset="UTF-8">
 	<table id="form-login">
 		<tr>

@@ -1,38 +1,18 @@
-[% IF params.submit %]
-	<ul class="error">
-	[% FOREACH error IN errors %]
-		<li>[% error %]</li>
-	[% END %]
-	</ul>
-	<ul class="messages">
-	[% FOREACH message IN messages %]
-		<li>[% message %]</li>
-	[% END %]
-	</ul>
-[% END %]
+[% PROCESS inc/errors_messages.tt %]
 <h1>Delete project</h1>
 [% IF project %]
 	<form method="post">
+		<input type="button" onclick="window.location.href=document.referrer" value="back" />
 		<input type="submit" name="submit" id="submit" value="delete" />
 	</form>
 	<table id="form-project-delete-detail">
 		<tr>
-			<th>code:</th>
-			<td>
-				<input type="text" name="code" id="code" value="[% project.item("_id") %]" />
-			</td>
-		</tr>
-		<tr>
 			<th>name:</th>
-			<td>
-				<input type="text" name="name" id="name" value="[% project.item("name") %]" />
-			</td>
+			<td>[% project.item("name") %]</td>
 		</tr>
 		<tr>
-			<th>description:</th>
-			<td>
-				<textarea name="description" id="description" rows="15" cols="50">[% project.item("description") %]</textarea>
-			</td>
+			<th>subproject:</th>
+			<td>[% project.item("name_subproject") %]</td>
 		</tr>
 	</table>
 [% END %]

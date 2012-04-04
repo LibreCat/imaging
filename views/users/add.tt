@@ -1,15 +1,4 @@
-[% IF params.submit %]
-	<ul class="error">
-	[% FOREACH error IN errors %]
-		<li>[% error %]</li>
-	[% END %]
-	</ul>
-	<ul class="messages">
-	[% FOREACH message IN messages %]
-		<li>[% message %]</li>
-	[% END %]
-	</ul>
-[% END %]
+[% PROCESS inc/errors_messages.tt %]
 <h1>New user</h1>
 <form method="post" accept-charset="UTF-8">
 	<table id="form-user-add">

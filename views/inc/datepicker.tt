@@ -1,0 +1,2 @@
+<link rel="stylesheet" href="[% request.base_uri %]/css/datepicker/jquery-ui-1.8.17.custom.css" type="text/css" media="screen" />
+<script type="text/javascript" src="[% request.base_uri %]/js/jquery-ui-1.8.17.custom.min.js"></script>

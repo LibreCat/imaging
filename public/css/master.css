@@ -24,9 +24,27 @@ ul.error li {
 	padding:10px;
 	margin:0px;
 }
+table {
+	border-collapse:collapse;
+}
+td, th {
+	padding: 5px;
+	border:1px solid #AAAAAA;
+}
+th {
+	padding-right:10px;
+}
 th {
 	vertical-align:top;
+}
+table.right th{
 	text-align:right;
+}
+table.center th {
+	text-align:center;
+}
+table.left th{
+    text-align:left;
 }
 div#top {
 	position:relative;

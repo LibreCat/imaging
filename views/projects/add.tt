@@ -1,28 +1,28 @@
-[% IF params.submit %]
-	<ul class="error">
-	[% FOREACH error IN errors %]
-		<li>[% error %]</li>
-	[% END %]
-	</ul>
-	<ul class="messages">
-	[% FOREACH message IN messages %]
-		<li>[% message %]</li>
-	[% END %]
-	</ul>
-[% END %]
+[% PROCESS inc/errors_messages.tt %]
+[% PROCESS inc/datepicker.tt %]
+<script type="text/javascript">
+	$(document).ready(function(){
+		$("input.date").datepicker({
+			dateFormat:'dd-mm-yy',
+			appendText: '&nbsp;e.g. 01-01-2012',
+			defaultDate:new Date(),
+			minDate:new Date()
+		});
+	});
+</script>
 <h1>New project</h1>
 <form method="post" accept-charset="UTF-8">
-	<table id="form-project-add">
+	<table id="form-project-add" class="right">
 		<tr>
-			<th>code:</th>
-			<td>
-				<input type="text" name="code" id="code" value="[% params.item("code") %]" />
-			</td>
-		</tr>
-		<tr>
-            <th>name:</th>
+            <th>name project:</th>
             <td>
                 <input type="text" name="name" id="name" value="[% params.item("name") %]" />
+            </td>
+        </tr>
+		<tr>
+            <th>name subproject:</th>
+            <td>
+                <input type="text" name="name_subproject" id="name_subproject" value="[% params.item("name_subproject") %]" />
             </td>
         </tr>
 		<tr>
@@ -31,7 +31,24 @@
                 <textarea name="description" id="description" rows="15" cols="50">[% params.item("description") %]</textarea>
             </td>
         </tr>
-		<!--list stakeholders?-->
+		<tr>
+			<th>owner:</th>
+			<td>
+				<input name="owner" id="owner" value="[% params.item("owner") %]" />
+			</td>
+		</tr>
+		<tr>
+            <th>start project (day-month-year):</th>
+            <td>
+                <input class="date" name="date_start" id="date_start" value="[% params.item("date_start") %]" />
+            </td>
+        </tr>
+		<tr>
+            <th>query:</th>
+            <td>
+                <textarea name="query" id="query" rows="15" cols="50">[% params.item("query") %]</textarea>
+            </td>
+        </tr>
 		<tr>
 			<td colspan="2">
 				<input type="submit" value="add" name="submit" id="submit" />

@@ -1,18 +1,4 @@
-<!--
-	admin should only edit roles, never a password!
--->
-[% IF params.submit %]
-	<ul class="error">
-	[% FOREACH error IN errors %]
-		<li>[% error %]</li>
-	[% END %]
-	</ul>
-	<ul class="messages">
-	[% FOREACH message IN messages %]
-		<li>[% message %]</li>
-	[% END %]
-	</ul>
-[% END %]
+[% PROCESS inc/errors_messages.tt %]
 <h1>Edit user '[% user.login %]'</h1>
 [% IF user %]
 	<form method="post">
