@@ -54,7 +54,7 @@ plugins:
       permissions:
        manage_accounts:
         operations: ["edit"]
-     user:
+     collection_manager:
       permissions:
        projects:
         operations: ["edit"]

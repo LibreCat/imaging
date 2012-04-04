@@ -17,13 +17,14 @@ sub projects {
 	state $projects = core()->bag("projects");
 }
 hook before => sub {
-    if(request->path =~ /^\/project/o){
+    if(request->path =~ /^\/project(.*)$/o){
 		my $auth = auth;
 		my $authd = authd;
+		my $subpath = $1;
 		if(!$authd){
 			my $service = uri_escape(uri_for(request->path));
 			return redirect(uri_for("/login")."?service=$service");
-		}elsif(!$auth->can('projects','edit')){
+		}elsif($subpath =~ /(?:add|edit|delete)/o && !$auth->can('projects','edit')){
 			request->path_info('/access_denied');
             my $params = params;
             $params->{operation} = "projects";

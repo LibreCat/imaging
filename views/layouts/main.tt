@@ -8,6 +8,7 @@
 	</head>
 	<body>
 		<div id="main">
+			[% PROCESS inc/user.tt %]
 			<div id="top">
 				<ul id="menu">
 					<li>
@@ -19,6 +20,11 @@
 					<li>
 						<a href="/account">account</a>
 					</li>
+					[% IF session.user.id %]
+					<li>
+                        <a href="/logout">logout</a>
+                    </li>
+					[% END %]
 				</ul>
 			</div>
 			[% content %]

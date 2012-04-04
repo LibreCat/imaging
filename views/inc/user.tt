@@ -1,0 +1,6 @@
+[% IF session.user.id %]
+	<div id="logo_login">
+		[% session.user.login %]
+		<img src="/images/user.png" />
+	</div>
+[% END %]

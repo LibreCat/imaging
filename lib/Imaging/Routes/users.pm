@@ -45,6 +45,13 @@ any('/users/add',sub{
 	if($params->{submit}){
 		my($success,$errs)=check_params_new_user();
 		push @errors,@$errs;
+		if(!(
+     		is_string($params->{password1}) && is_string($params->{password2}) &&
+            $params->{password1} eq $params->{password2}
+			)
+		){
+			push @errors,"passwords are not equal";
+		}
 		if(scalar(@errors)==0){
 			my $user = dbi_handle->quick_select('users',{ login => $params->{login} });
 			if($user){
@@ -67,16 +74,46 @@ any('/users/add',sub{
     });
 
 });
+any('/user/:id/edit',sub{
+
+    my $params = params;
+    my $user = dbi_handle()->quick_select('users',{ id => $params->{id} });
+	$user or return redirect(uri_for('/notfound',{ requested_path => request->path }));
+
+	if($user->{id} == 1){
+        return forward("/access_denied",{
+            operation => "users",
+            action => "edit first user",
+            referrer => request->referer
+        });
+    }
+
+    my(@errors,@messages);
+
+    if($params->{submit}){
+		my($success,$errs)=check_params_new_user();
+        push @errors,@$errs;
+        if(scalar(@errors)==0){
+			my $new = {
+				roles => join(', ',@{ $params->{roles} }),
+				login => $params->{login},
+				name => $params->{name}
+			};
+			$user = { %$user,%$new };
+            dbi_handle->quick_update('users',{ id => $params->{id} },$user);
+            push @messages,"profile was updated successfully";
+        }
+    }
+    template('user/edit',{ user => $user,errors => \@errors,messages => \@messages });
+});
 any('/user/:id/delete',sub{
 
     my $params = params;
-    my(@errors,@messages);
 	my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
-	if(!$user){
-		return forward('/not_found',{
-			requested_path => request->path
-		});
-	}	
+	$user or return redirect(uri_for('/notfound',{ requested_path => request->path }));
+
+    my(@errors,@messages);
+
 	if($user->{id} == 1){
 		return forward("/access_denied",{
             operation => "users",
@@ -95,50 +132,6 @@ any('/user/:id/delete',sub{
         errors => \@errors,
         messages => \@messages,
 		user => $user
-    });
-
-});
-any('/user/:id/edit',sub{
-
-    my $params = params;
-    my(@errors,@messages);
-    my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
-    if(!$user){
-        return forward('/not_found',{
-            requested_path => request->path
-        });
-    }
-    if($user->{id} == 1){
-        return forward("/access_denied",{
-            operation => "users",
-            action => "edit first user",
-            referrer => request->referer
-        });
-    }
-    if($params->{submit}){
-		my $roles = $params->{roles};
-		if(is_string($roles)){
-			$roles = [$roles];
-		}elsif(!is_array_ref($roles)){
-			$roles = [];
-		}
-		if(scalar(@$roles) == 0){
-			push @errors,"one or more roles need to be supplied";
-		}
-		if(scalar(@errors)==0){
-			dbi_handle->quick_update('users',{
-				id => $params->{id}
-			},{
-				roles => join(', ',@$roles)
-			});
-			redirect(uri_for("/users"));
-		}
-    }
-
-    template('user/edit',{
-        errors => \@errors,
-        messages => \@messages,
-        user => $user
     });
 
 });
@@ -161,13 +154,6 @@ sub check_params_new_user {
         if(!(scalar(@{ $params->{$key} }) > 0)){
             push @errors,"$key must be supplied"
         }
-    }
-    if(!(
-            is_string($params->{password1}) && is_string($params->{password2}) &&
-            $params->{password1} eq $params->{password2}
-        )
-    ){
-        push @errors,"passwords are not equal";
     }
 	return scalar(@errors)==0,\@errors;
 }

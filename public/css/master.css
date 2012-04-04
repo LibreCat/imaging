@@ -62,3 +62,9 @@ ul#menu li {
 	margin: 0px 5px 5px 0px;
 	padding: 0px;
 }
+#logo_login {
+	position:absolute;
+	right:0px;
+	top:0px;
+	padding: 10px;
+}	
