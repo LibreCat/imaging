@@ -58,6 +58,10 @@ plugins:
       permissions:
        projects:
         operations: ["edit"]
+     it_manager:
+      permissions:
+       directories:
+        operations: ["edit"]
 cache:
  session:
   package: "Cache::FastMmap"
@@ -76,3 +80,5 @@ store:
    password: imaging
 app: {}
 all: {}
+mounts:
+ directories: "/data/imaging/directories"
