@@ -1,7 +1,9 @@
+[% USE date %]
+<h1>List of projects</h1>
 <div class="paging">
-[% IF projects && project.size > 0 %]
+[% IF projects && projects.size > 0 && page_info.pages_in_set.size > 1 %]
 
-    [% IF page_info.first_page && page_info.first_page < page_info.current_page %]
+    [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
     <a href="/projects?page=[% page_info.first_page %]&amp;num=[% params.num %]">first</a>
     [% END %]
 
@@ -21,14 +23,12 @@
     <a href="/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]" >next</a>
     [% END %]
 
-    [% IF page_info.last_page && page_info.last_page > page_info.current_page %]
+    [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
     <a href="/projects?page=[% page_info.last_page %]&amp;num=[% params.num %]">last</a>
     [% END %]
 
 [% END %]
 </div>
-[% USE date %]
-<h1>List of projects</h1>
 <p>
 	<a href="/projects/add">add project</a>
 </p>
