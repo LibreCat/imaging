@@ -20,6 +20,9 @@
 					<li>
 						<a href="/account">account</a>
 					</li>
+					<li>
+                        <a href="/directories">directories per user</a>
+                    </li>
 					[% IF session.user.id %]
 					<li>
                         <a href="/logout">logout</a>

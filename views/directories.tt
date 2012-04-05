@@ -1,0 +1,79 @@
+<h1>List of directories per user</h1>
+<div class="paging">
+[% IF users && users.size > 0 && page_info.pages_in_set.size > 1 %]
+
+    [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
+    <a href="/directories?page=[% page_info.first_page %]&amp;num=[% params.num %]">first</a>
+    [% END %]
+
+    [% IF page_info.previous_page %]
+    <a href="/directories?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >previous</a>
+    [% END %]
+
+    [% FOREACH page IN page_info.pages_in_set %]
+        [% IF page == page_info.current_page %]
+        <span class="current">[% page %]</span>
+        [% ELSE %]
+        <a href="/directories?page=[% page %]&amp;num=[% params.num %]">[% page %]</a>
+        [% END %]
+    [% END %]
+
+    [% IF page_info.next_page %]
+    <a href="/directories?page=[% page_info.next_page %]&amp;num=[% params.num %]" >next</a>
+    [% END %]
+
+    [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
+    <a href="/directories?page=[% page_info.last_page %]&amp;num=[% params.num %]">last</a>
+    [% END %]
+
+[% END %]
+</div>
+[% IF users && users.size > 0 %]
+	<table id="table-users" class="left">
+		<tr>
+			<th>login</th>
+			<th>directory ready</th>
+			<th>directory reprocessing</th>
+			<th>actions</th>
+		</tr>
+	[% FOREACH user IN users %]
+		[% roles = [ user.roles ] %]
+		<tr>
+			<td>[% user.item("login") %]</td>
+			<td>
+				[% user.item("ready") || "-" %]
+				[% IF roles.grep('scanner').size > 0 %]
+					[% TRY %]
+                        [% USE File(user.item("ready")) %]
+                    [% CATCH File %]
+                        error!
+                    [% END %]					
+				[% END %]
+			</td>
+			<td>
+				[% user.item("reprocessing") || "-" %]
+				[% IF roles.grep('scanner').size > 0 %]
+                    [% TRY %]
+                        [% USE File(user.item("reprocessing")) %]
+                    [% CATCH File %]
+                        error!
+                    [% END %]
+                [% END %]
+			</td>
+			<td>
+				[% IF roles.grep('scanner').size > 0 %]
+					<a href="/directories/[% user.item("id") %]/edit">edit</a>
+				[% ELSE %]
+					-
+				[% END %]
+			</td>
+		</tr>
+	[% END %]
+	</table>
+[% ELSE %]
+	<table id="table-directories"> 
+		<tr>
+            <th>no users to show</th>
+        </tr>
+	</table>
+[% END %]

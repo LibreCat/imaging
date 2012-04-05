@@ -7,9 +7,8 @@ use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use URI::Escape qw(uri_escape);
 use Digest::MD5 qw(md5_hex);
-
-#handled by admin (first user)
-#user edits its own profile!!
+use File::Path qw(mkpath rmtree);
+use Try::Tiny;
 
 sub dbi_handle {
     state $dbi_handle = database;
@@ -57,11 +56,27 @@ any('/users/add',sub{
 			if($user){
 				push @errors,"user with login $params->{login} already exists";
 			}else{
+				my($ready,$reprocessing);
+				my $roles = join('',@{ $params->{roles} });
+				if($roles =~ /scanner/o){
+					my $mount = mount();
+					my $subdirectories = subdirectories();
+					foreach(qw(ready reprocessing)){
+						try{
+							my $path = "$mount/".$subdirectories->{$_}."/".$params->{login};
+							mkpath($path);
+						};
+					}
+					$ready = "$mount/".$subdirectories->{ready}."/".$params->{login};
+					$reprocessing = "$mount/".$subdirectories->{reprocessing}."/".$params->{login};					
+				}
 				dbi_handle->quick_insert('users',{
 					login => $params->{login},
 					name => $params->{name},
 					roles => join(', ',@{ $params->{roles} }),
-					password => md5_hex($params->{password1})
+					password => md5_hex($params->{password1}),
+					ready => $ready,
+					reprocessing => $reprocessing
 				});
 				redirect(uri_for("/users"));
 			}
@@ -78,7 +93,7 @@ any('/user/:id/edit',sub{
 
     my $params = params;
     my $user = dbi_handle()->quick_select('users',{ id => $params->{id} });
-	$user or return redirect(uri_for('/notfound',{ requested_path => request->path }));
+	$user or return not_found();
 
 	if($user->{id} == 1){
         return forward("/access_denied",{
@@ -92,12 +107,18 @@ any('/user/:id/edit',sub{
 
     if($params->{submit}){
 		my($success,$errs)=check_params_new_user();
-        push @errors,@$errs;
+        push @errors,@$errs;		
         if(scalar(@errors)==0){
+			my $roles = join(', ',@{ $params->{roles} });
+			my %notscanner = ();
+			if($roles !~ /scanner/o){
+				%notscanner = ( ready => undef,reprocessing => undef );
+			}
 			my $new = {
-				roles => join(', ',@{ $params->{roles} }),
+				roles => $roles,
 				login => $params->{login},
-				name => $params->{name}
+				name => $params->{name},
+				%notscanner
 			};
 			$user = { %$user,%$new };
             dbi_handle->quick_update('users',{ id => $params->{id} },$user);
@@ -110,7 +131,7 @@ any('/user/:id/delete',sub{
 
     my $params = params;
 	my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
-	$user or return redirect(uri_for('/notfound',{ requested_path => request->path }));
+	$user or return not_found();
 
     my(@errors,@messages);
 

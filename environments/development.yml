@@ -54,14 +54,16 @@ plugins:
       permissions:
        manage_accounts:
         operations: ["edit"]
+       directories:
+        operations: ["edit"]
      collection_manager:
       permissions:
        projects:
         operations: ["edit"]
-     it_manager:
+     scanner:
       permissions:
-       directories:
-        operations: ["edit"]
+       directories: 
+        operations: ["view"]
 cache:
  session:
   package: "Cache::FastMmap"
@@ -81,4 +83,9 @@ store:
 app: {}
 all: {}
 mounts:
- directories: "/data/imaging/directories"
+ directories:
+  path: "/data/imaging/directories"
+  subdirectories:
+   ready: "01_ready"
+   processed: "02_processed"
+   reprocessing: "03_reprocessing"
