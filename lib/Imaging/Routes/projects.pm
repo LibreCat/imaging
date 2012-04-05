@@ -56,7 +56,8 @@ any('/projects',sub {
     });
 	template('projects',{
 		page_info => $page_info,
-		projects => $projects
+		projects => $projects,
+		auth => auth()
 	});	
 });
 any('/projects/add',sub{
@@ -125,7 +126,8 @@ any('/projects/add',sub{
 	template('projects/add',{
 		errors => \@errors,
 		messages => \@messages,
-		success => $success
+		success => $success,
+		auth => auth()
 	});
 });
 any('/project/:_id/edit',sub{
@@ -203,7 +205,8 @@ any('/project/:_id/edit',sub{
         errors => \@errors,
         messages => \@messages,
         success => $success,
-		project => $project
+		project => $project,
+		auth => auth()
     });
 });
 any('/project/:_id/delete',sub{
@@ -230,7 +233,8 @@ any('/project/:_id/delete',sub{
     template('project/delete',{
         errors => \@errors,
         messages => \@messages,
-		project => $project
+		project => $project,
+		auth => auth()
     });
 });
 

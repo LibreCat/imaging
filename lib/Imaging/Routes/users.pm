@@ -33,7 +33,8 @@ any('/users',sub{
 
 	my @users = dbi_handle->quick_select('users',{},{ order_by => 'id' });
 	template('users',{
-		users => \@users
+		users => \@users,
+		auth => auth()
 	});
 
 });
@@ -85,7 +86,8 @@ any('/users/add',sub{
 	
     template('users/add',{
         errors => \@errors,
-		messages => \@messages
+		messages => \@messages,
+		auth => auth()
     });
 
 });
@@ -125,7 +127,7 @@ any('/user/:id/edit',sub{
             push @messages,"profile was updated successfully";
         }
     }
-    template('user/edit',{ user => $user,errors => \@errors,messages => \@messages });
+    template('user/edit',{ user => $user,errors => \@errors,messages => \@messages, auth => auth() });
 });
 any('/user/:id/delete',sub{
 
@@ -152,7 +154,8 @@ any('/user/:id/delete',sub{
     template('user/delete',{
         errors => \@errors,
         messages => \@messages,
-		user => $user
+		user => $user,
+		auth => auth()
     });
 
 });

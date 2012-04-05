@@ -11,18 +11,21 @@
 			[% PROCESS inc/user.tt %]
 			<div id="top">
 				<ul id="menu">
+					[% IF auth.can('projects','edit') %]
 					<li>
 						<a href="/projects">projects</a>
 					</li>
+					[% END %]
+					[% IF auth.can('manage_accounts','edit') %]
 					<li>
 						<a href="/users">users</a>
 					</li>
-					<li>
-						<a href="/account">account</a>
-					</li>
+					[% END %]
+					[% IF auth.can('directories','edit') %]
 					<li>
                         <a href="/directories">directories per user</a>
                     </li>
+					[% END %]
 					[% IF session.user.id %]
 					<li>
                         <a href="/logout">logout</a>

@@ -20,7 +20,7 @@ post('/login',sub{
 });
 get('/login',sub{
 	return redirect( uri_for("/projects") ) if authd;
-	template('login',{ errors => params->{errors} || [] });
+	template('login',{ errors => params->{errors} || [], auth => auth() });
 });
 any('/logout',sub{
 	if(authd){

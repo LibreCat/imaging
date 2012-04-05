@@ -29,9 +29,11 @@
 
 [% END %]
 </div>
+[% IF auth.can('projects','edit') %]
 <p>
 	<a href="/projects/add">add project</a>
 </p>
+[% END %]
 [% IF projects && projects.size > 0 %]
 	<table id="table-projects" class="left">
 		<tr>
@@ -61,8 +63,10 @@
 			<td>[% project.item("owner") %]</td>
 			<td>
 				<a href="/project/[% project.item("_id") %]/view">view</a>
+				[% IF auth.can('projects','edit') %]
 				<a href="/project/[% project.item("_id") %]/edit">edit</a>
 				<a href="/project/[% project.item("_id") %]/delete">delete</a>&nbsp;
+				[% END %]
 			</td>
 		</tr>
 	[% END %]

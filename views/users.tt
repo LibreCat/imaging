@@ -3,12 +3,12 @@
 	<a href="/users/add">add user</a>
 </p>
 [% IF users && users.size > 0 %]
-	<table id="table-users">
+	<table id="table-users" class="right">
 		<tr>
 			<th>name</th>
 			<th>login</th>
 			<th>roles</th>
-			<th></th>
+			<th>actions</th>
 		</tr>
 	[% FOREACH user IN users %]
 		<tr>

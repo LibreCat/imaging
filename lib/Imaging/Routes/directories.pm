@@ -60,7 +60,8 @@ any('/directories',sub {
     template('directories',{
         users => \@users,
 		errors => \@errors,
-		page_info => $page_info
+		page_info => $page_info,
+		auth => auth()
     });
 });
 any('/directories/:id/edit',sub {
@@ -122,7 +123,8 @@ any('/directories/:id/edit',sub {
 	template('directories/edit',{
 		errors => \@errors,
 		messages => \@messages,
-		user => $user
+		user => $user,
+		auth => auth()
 	});
 });
 

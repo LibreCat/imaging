@@ -23,7 +23,7 @@ hook before => sub {
 };	
 any('/account',sub{
 	my $user = dbi_handle()->quick_select('users',{ id => session('user')->{id} });
-	template('account',{ user => $user });
+	template('account',{ user => $user, auth => auth() });
 });
 
 true;
