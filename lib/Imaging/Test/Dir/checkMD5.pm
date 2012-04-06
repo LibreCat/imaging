@@ -1,4 +1,4 @@
-package Grim::Test::Dir::checkMD5;
+package Imaging::Test::Dir::checkMD5;
 use Moo;
 use Digest::MD5 qw(md5_hex);
 
@@ -62,6 +62,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

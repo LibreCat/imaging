@@ -1,4 +1,4 @@
-package Grim::Test::Dir::scan;
+package Imaging::Test::Dir::scan;
 use Moo;
 use ClamAV::Client;
 
@@ -28,6 +28,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

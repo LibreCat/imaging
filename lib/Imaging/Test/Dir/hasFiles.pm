@@ -1,4 +1,4 @@
-package Grim::Test::Dir::hasFiles;
+package Imaging::Test::Dir::hasFiles;
 use Moo;
 
 has patterns => (
@@ -36,6 +36,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

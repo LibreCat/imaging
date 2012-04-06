@@ -9,15 +9,16 @@ use Catmandu::Util qw(:is);
 use Data::Pageset;
 use Try::Tiny;
 use Data::Pageset;
+use File::Basename;
 
 sub core {
     state $core = store("core");
 }
-sub directories_ready {
-    state $directories_ready = core()->bag("directories_ready");
+sub directory_ready {
+    state $directory_ready = core()->bag("directory_ready");
 }
-sub directories_reprocessing {
-    state $directories_reprocessing = core()->bag("directories_reprocessing");
+sub directory_reprocessing {
+    state $directory_reprocessing = core()->bag("directory_reprocessing");
 }
 sub dbi_handle {
     state $dbi_handle = database;
@@ -42,10 +43,10 @@ hook before => sub {
 any('/ready',sub {
 	my $config = config;
 	my $params = params;
-	my $directory_ready = directories_ready->get( session('user')->{id} );
+	my $directory = directory_ready->get( session('user')->{id} );
 	my $user = dbi_handle->quick_select('users',{ id => session('user')->{id} });
 	template('/ready',{
-		directory_ready => $directory_ready,
+		directory => $directory,
 		auth => auth(),
 		user => $user,
 		mount_conf => mount_conf()
@@ -54,14 +55,34 @@ any('/ready',sub {
 any('/reprocessing',sub {
     my $config = config;
     my $params = params;
-	my $directory_reprocessing = directories_reprocessing->get( session('user')->{id} );
+	my $directory = directory_reprocessing->get( session('user')->{id} );
 	my $user = dbi_handle->quick_select('users',{ id => session('user')->{id} });
     template('/reprocessing',{
-        directory_reprocessing => $directory_reprocessing,
+        directory => $directory,
 		auth => auth(),
         user => $user,
 		mount_conf => mount_conf()
     });
+});
+any('/ready/:directory/status',sub{
+	my $config = config;
+    my $params = params;
+	my $directory_ready = directory_ready->get( session('user')->{id} );
+	my $directory;
+	foreach my $dir(@{ $directory_ready->{directories} || [] }){
+		if(basename($dir->{base}) eq $params->{directory}){
+			$directory = $dir->{base};
+			last;
+		}
+	}
+	$directory or return not_found();
+	my $user = dbi_handle->quick_select('users',{ id => session('user')->{id} });
+	template('/status',{
+		directory => $directory,
+		auth => auth(),
+        user => $user,
+        mount_conf => mount_conf()
+	});
 });
 
 true;

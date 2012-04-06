@@ -1,5 +1,5 @@
 [% PROCESS inc/errors_messages.tt %]
-<h1>List of directories per user</h1>
+<h1>List of directories per scanner</h1>
 <div class="paging">
 [% IF users && users.size > 0 && page_info.pages_in_set.size > 1 %]
 
@@ -42,20 +42,20 @@
 		<tr>
 			<td>[% user.item("login") %]</td>
 			<td>
-				[% user.item("ready") || "-" %]
+				[% user.item("directory_ready") || "-" %]
 				[% IF roles.grep('scanner').size > 0 %]
 					[% TRY %]
-                        [% USE File(user.item("ready")) %]
+                        [% USE File(user.item("directory_ready")) %]
                     [% CATCH File %]
                     	<span style="color:red">error!</span>
                     [% END %]					
 				[% END %]
 			</td>
 			<td>
-				[% user.item("reprocessing") || "-" %]
+				[% user.item("directory_reprocessing") || "-" %]
 				[% IF roles.grep('scanner').size > 0 %]
                     [% TRY %]
-                        [% USE File(user.item("reprocessing")) %]
+                        [% USE File(user.item("directory_reprocessing")) %]
                     [% CATCH File %]
                         <span style="color:red">error!</span>
                     [% END %]

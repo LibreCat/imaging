@@ -1,4 +1,4 @@
-package Grim::Test::Dir::checkJPEG;
+package Imaging::Test::Dir::checkJPEG;
 use Moo;
 use Image::ExifTool;
 
@@ -23,6 +23,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

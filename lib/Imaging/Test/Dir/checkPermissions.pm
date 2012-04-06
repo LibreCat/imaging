@@ -1,4 +1,4 @@
-package Grim::Test::Dir::checkPermissions;
+package Imaging::Test::Dir::checkPermissions;
 use Moo;
 
 sub test {
@@ -14,6 +14,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

@@ -1,4 +1,16 @@
+installeer Module::Build:
+	perl -MCPAN -e 'install Module::Build'
+clone Catmandu:
+	git clone git://github.com/LibreCat/Catmandu.git
+	cd Catmandu
+	perl Build.PL 
+	./Build installdeps (doe GEEN 'install'!)
+clone Imaging:
+	git clone git@github.com:LibreCat/Imaging.git
+	cd Imaging
+	perl Build.PL
+    ./Build installdeps (doe GEEN 'install'!)
 mysql:
  create database imaging;
- create user 'imaging'@'localhost';
+ create user 'imaging'@'localhost' identified by 'imaging';
  grant all privileges on imaging.* to 'imaging'@'localhost';

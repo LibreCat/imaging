@@ -1,4 +1,4 @@
-package Grim::Test::Dir::hasNoFiles;
+package Imaging::Test::Dir::hasNoFiles;
 use Moo;
 use Data::Util qw(:check :validate);
 
@@ -37,6 +37,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

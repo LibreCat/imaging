@@ -1,4 +1,4 @@
-package Grim::Test::Dir::checkPDF;
+package Imaging::Test::Dir::checkPDF;
 use Moo;
 use CAM::PDF;
 use Try::Tiny;
@@ -22,6 +22,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

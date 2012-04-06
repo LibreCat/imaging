@@ -1,0 +1,37 @@
+---
+abstract: 'LibreCat compliant web application for UGENT Library Scanning Workflow'
+author:
+  - nicolas.franck@ugent.be
+build_requires: {}
+dynamic_config: 0
+generated_by: 'Module::Build version 0.38, CPAN::Meta::Converter version 2.112150'
+license: unknown
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Imaging
+recommends:
+  DBD::mysql: 0
+  Starman: 0
+requires:
+  Cache::FastMmap: 0
+  DBD::SQLite: 0
+  Dancer: 0
+  Dancer::Plugin::Auth::RBAC: 0
+  Dancer::Session::PSGI: 0
+  Data::Pageset: 0
+  Data::Util: 0
+  DateTime: 0
+  DateTime::Format::Strptime: 0
+  Digest::MD5: 0
+  Hash::Merge::Simple: 0
+  List::MoreUtils: 0
+  Moo: 0
+  Moose: 0
+  POSIX: 0
+  Plack: 0
+  Scalar::Util: 0
+  Try::Tiny: 0
+  URI::Escape: 0
+  perl: 0
+version: 0.01

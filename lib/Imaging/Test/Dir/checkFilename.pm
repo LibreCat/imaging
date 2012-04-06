@@ -1,4 +1,4 @@
-package Grim::Test::Dir::checkFilename;
+package Imaging::Test::Dir::checkFilename;
 use Moo;
 
 has _re_filename => (
@@ -77,6 +77,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

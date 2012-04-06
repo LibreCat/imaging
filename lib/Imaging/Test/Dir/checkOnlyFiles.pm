@@ -1,4 +1,4 @@
-package Grim::Test::Dir::checkOnlyFiles;
+package Imaging::Test::Dir::checkOnlyFiles;
 use Moo;
 
 sub test {
@@ -17,6 +17,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;

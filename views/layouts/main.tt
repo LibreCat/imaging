@@ -23,7 +23,7 @@
 					[% END %]
 					[% IF auth.can('directories','edit') %]
 					<li>
-                        <a href="/directories">directories per user</a>
+                        <a href="/directories">directories per scanner</a>
                     </li>
 					[% END %]
 					[% IF session.user.id %]

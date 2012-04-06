@@ -1,4 +1,4 @@
-package Grim::Test::Dir::checkEmpty;
+package Imaging::Test::Dir::checkEmpty;
 use Moo;
 
 sub test {
@@ -15,6 +15,6 @@ sub test {
 	scalar(@errors) == 0,\@errors;
 }	
 
-with qw(Grim::Test::Dir);
+with qw(Imaging::Test::Dir);
 
 1;
