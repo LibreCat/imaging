@@ -57,27 +57,12 @@ any('/users/add',sub{
 			if($user){
 				push @errors,"user with login $params->{login} already exists";
 			}else{
-				my($ready,$reprocessing);
 				my $roles = join('',@{ $params->{roles} });
-				if($roles =~ /scanner/o){
-					my $mount = mount();
-					my $subdirectories = subdirectories();
-					foreach(qw(ready reprocessing)){
-						try{
-							my $path = "$mount/".$subdirectories->{$_}."/".$params->{login};
-							mkpath($path);
-						};
-					}
-					$ready = "$mount/".$subdirectories->{ready}."/".$params->{login};
-					$reprocessing = "$mount/".$subdirectories->{reprocessing}."/".$params->{login};					
-				}
 				dbi_handle->quick_insert('users',{
 					login => $params->{login},
 					name => $params->{name},
 					roles => join(', ',@{ $params->{roles} }),
-					password => md5_hex($params->{password1}),
-					ready => $ready,
-					reprocessing => $reprocessing
+					password => md5_hex($params->{password1})
 				});
 				redirect(uri_for("/users"));
 			}
@@ -97,10 +82,10 @@ any('/user/:id/edit',sub{
     my $user = dbi_handle()->quick_select('users',{ id => $params->{id} });
 	$user or return not_found();
 
-	if($user->{id} == 1){
+	if($user->{login} eq "admin"){
         return forward("/access_denied",{
             operation => "users",
-            action => "edit first user",
+            action => "edit user admin",
             referrer => request->referer
         });
     }
@@ -112,15 +97,10 @@ any('/user/:id/edit',sub{
         push @errors,@$errs;		
         if(scalar(@errors)==0){
 			my $roles = join(', ',@{ $params->{roles} });
-			my %notscanner = ();
-			if($roles !~ /scanner/o){
-				%notscanner = ( ready => undef,reprocessing => undef );
-			}
 			my $new = {
 				roles => $roles,
 				login => $params->{login},
-				name => $params->{name},
-				%notscanner
+				name => $params->{name}
 			};
 			$user = { %$user,%$new };
             dbi_handle->quick_update('users',{ id => $params->{id} },$user);
@@ -137,10 +117,10 @@ any('/user/:id/delete',sub{
 
     my(@errors,@messages);
 
-	if($user->{id} == 1){
+	if($user->{login} eq "admin"){
 		return forward("/access_denied",{
             operation => "users",
-            action => "delete first user",
+            action => "delete user admin",
             referrer => request->referer
         });
 	}

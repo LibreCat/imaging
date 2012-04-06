@@ -9,7 +9,6 @@ use Data::Pageset;
 use URI::Escape qw(uri_escape);
 use DateTime::Format::Strptime;
 use Try::Tiny;
-use Data::UUID;
 
 sub core {
     state $core = store("core");
@@ -116,10 +115,9 @@ any('/projects/add',sub{
 			datetime_last_modified => time,
 			owner => $params->{owner},
 			query => $params->{query},
-			list => [],
-			dir => config->{mounts}->{projects}."/".Data::UUID->new->create_str()
+			list => []
 		});
-		push @messages,"project was added to the list!","subdirectories should be added to ".$project->{dir}." for automatic processing";
+		push @messages,"project was added to the list!";
 		$success = 1;
 	}
 
