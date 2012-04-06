@@ -43,7 +43,6 @@
 			<th>done</th>
 			<th>last modified</th>
 			<th>start</th>
-			<th>owner</th>
 			<th>actions</th>
 		</tr>
 	[% FOREACH project IN projects %]
@@ -60,7 +59,6 @@
 			</td>
 			<td>[% date.format(project.datetime_last_modified,format => '%d-%m-%Y') %]</td>
 			<td>[% project.date_start %]</td>
-			<td>[% project.item("owner") %]</td>
 			<td>
 				<a href="/project/[% project.item("_id") %]/view">view</a>
 				[% IF auth.can('projects','edit') %]

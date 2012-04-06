@@ -11,9 +11,11 @@
 			[% PROCESS inc/user.tt %]
 			<div id="top">
 				<ul id="menu">
+					[% IF session.user.id %]
 					<li>
 						<a href="/projects">projects</a>
 					</li>
+					[% END %]
 					[% IF auth.can('manage_accounts','edit') %]
 					<li>
 						<a href="/users">users</a>

@@ -1,7 +1,7 @@
 ---
 test_classes:
- - class: "scan"
-   on_error: "stop"
+# - class: "scan"
+#   on_error: "stop"
  - class: "checkPermissions"
    on_error: "stop"
  - class: "checkOnlyFiles"
@@ -33,5 +33,5 @@ test_classes:
    on_error: "continue"
  - class: "checkFilename"
    on_error: "continue"
- - class: "checkAlephID"
-   on_error: "continue"
+# - class: "checkAlephID"
+#   on_error: "continue"

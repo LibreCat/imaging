@@ -1,0 +1,3 @@
+create database imaging;
+create user 'imaging'@'localhost' identified by 'imaging';
+grant all privileges on imaging.* to 'imaging'@'localhost';

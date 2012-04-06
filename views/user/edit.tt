@@ -22,7 +22,7 @@
 				<select name="roles" id="roles" multiple="multiple">
 				[% SET myroles = user.roles.split(', ') %]
 				[% FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
-                    <option value="[% role %]" [% IF myroles.grep(role).size > 0 %]CHECKED[% END %]>[% role %]</option>
+                    <option value="[% role %]" [% IF myroles.grep(role).size > 0 %]selected="selected"[% END %]>[% role %]</option>
                 [% END %]
 				</select>
 			</td>

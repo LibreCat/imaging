@@ -65,60 +65,60 @@ any('/projects/add',sub{
 	my(@messages,@errors);
 	my $success = 0;
 
-	#check empty string
-	my @keys = qw(name name_subproject description owner date_start query);
-	foreach my $key(@keys){
-		if(!is_string($params->{$key})){
-			push @errors,"$key must be supplied";
+	if($params->{submit}){
+		#check empty string
+		my @keys = qw(name name_subproject description date_start query);
+		foreach my $key(@keys){
+			if(!is_string($params->{$key})){
+				push @errors,"$key must be supplied";
+			}
 		}
-	}
-	#check empty array
-	@keys = qw();
-	foreach my $key(@keys){
-		if(is_string($params->{$key})){
-			$params->{$key} = [$params->{$key}];
-		}elsif(!is_array_ref($params->{$key})){
-			$params->{$key} = [];
+		#check empty array
+		@keys = qw();
+		foreach my $key(@keys){
+			if(is_string($params->{$key})){
+				$params->{$key} = [$params->{$key}];
+			}elsif(!is_array_ref($params->{$key})){
+				$params->{$key} = [];
+			}
+			if(scalar( @{ $params->{$key} } ) == 0){
+				push @errors,"$key need to be supplied (one or more)";
+			}
 		}
-		if(scalar( @{ $params->{$key} } ) == 0){
-			push @errors,"$key need to be supplied (one or more)";
+		#check format
+		my %check = (
+			date_start => sub{
+				my $value = shift;
+				my($success,$error)=(1,undef);
+				try{
+					DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
+				}catch{
+					say $_;
+					$success = 0;
+					$error = "invalid start date (day-month-year)";
+				};	
+				return $success,$error;
+			}
+		);	
+		if(scalar(@errors)==0){
+			foreach my $key(keys %check){
+				my($success,$error) = $check{$key}->($params->{$key});
+				push @errors,$error if !$success;
+			}
 		}
-	}
-	#check format
-	my %check = (
-		date_start => sub{
-			my $value = shift;
-			my($success,$error)=(1,undef);
-			try{
-				DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
-			}catch{
-				say $_;
-				$success = 0;
-				$error = "invalid start date (day-month-year)";
-			};	
-			return $success,$error;
+		#insert
+		if(scalar(@errors)==0){
+			my $project = projects->add({
+				name => $params->{name},
+				name_subproject => $params->{name_subproject},
+				description => $params->{description},
+				date_start => $params->{date_start},
+				datetime_last_modified => time,
+				query => $params->{query},
+				list => []
+			});
+			redirect(uri_for("/projects"));
 		}
-	);	
-	if(scalar(@errors)==0){
-		foreach my $key(keys %check){
-			my($success,$error) = $check{$key}->($params->{$key});
-			push @errors,$error if !$success;
-		}
-	}
-	#insert
-	if(scalar(@errors)==0){
-		my $project = projects->add({
-			name => $params->{name},
-			name_subproject => $params->{name_subproject},
-			description => $params->{description},
-			date_start => $params->{date_start},
-			datetime_last_modified => time,
-			owner => $params->{owner},
-			query => $params->{query},
-			list => []
-		});
-		push @messages,"project was added to the list!";
-		$success = 1;
 	}
 
 	template('projects/add',{
@@ -138,66 +138,66 @@ any('/project/:_id/edit',sub{
 	my $project = projects->get($params->{_id});
 	if(!$project){
 		return forward('/not_found',{
-            requested_path => request->path
-        });
+			requested_path => request->path
+		});
 	}
 
-    #check empty string
-    my @keys = qw(name name_subproject description owner date_start query);
-    foreach my $key(@keys){
-        if(!is_string($params->{$key})){
-            push @errors,"$key must be supplied";
-        }
-    }
-    #check empty array
-    @keys = qw();
-    foreach my $key(@keys){
-        if(is_string($params->{$key})){
-            $params->{$key} = [$params->{$key}];
-        }elsif(!is_array_ref($params->{$key})){
-            $params->{$key} = [];
-        }
-        if(scalar( @{ $params->{$key} } ) == 0){
-            push @errors,"$key need to be supplied (one or more)";
-        }
-    }
-    #check format
-	my %check = (
-        date_start => sub{
-            my $value = shift;
-            my($success,$error)=(1,undef);
-            try{
-                DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
-            }catch{
-                say $_;
-                $success = 0;
-                $error = "invalid start date (day-month-year)";
-            };
-            return $success,$error;
-        }
-    );
-    if(scalar(@errors)==0){
-        foreach my $key(keys %check){
-            my($success,$error) = $check{$key}->($params->{$key});
-            push @errors,$error if !$success;
-        }
-    }
-    #insert
-    if(scalar(@errors)==0){
-        my $new = {
-            name => $params->{name},
-			name_subproject => $params->{name_subproject},
-            description => $params->{description},
-            date_start => $params->{date_start},
-            datetime_last_modified => time,
-			owner => $params->{owner},
-			query => $params->{query}
-        };
-		$project = { %$project,%$new };
-		projects->add($project);
-        push @messages,"project was updated!";
-        $success = 1;
-    }
+	if($params->{submit}){
+		#check empty string
+		my @keys = qw(name name_subproject description date_start query);
+		foreach my $key(@keys){
+			if(!is_string($params->{$key})){
+				push @errors,"$key must be supplied";
+			}
+		}
+		#check empty array
+		@keys = qw();
+		foreach my $key(@keys){
+			if(is_string($params->{$key})){
+				$params->{$key} = [$params->{$key}];
+			}elsif(!is_array_ref($params->{$key})){
+				$params->{$key} = [];
+			}
+			if(scalar( @{ $params->{$key} } ) == 0){
+				push @errors,"$key need to be supplied (one or more)";
+			}
+		}
+		#check format
+		my %check = (
+			date_start => sub{
+				my $value = shift;
+				my($success,$error)=(1,undef);
+				try{
+					DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
+				}catch{
+					say $_;
+					$success = 0;
+					$error = "invalid start date (day-month-year)";
+				};
+				return $success,$error;
+			}
+		);
+		if(scalar(@errors)==0){
+			foreach my $key(keys %check){
+				my($success,$error) = $check{$key}->($params->{$key});
+				push @errors,$error if !$success;
+			}
+		}
+		#insert
+		if(scalar(@errors)==0){
+			my $new = {
+				name => $params->{name},
+				name_subproject => $params->{name_subproject},
+				description => $params->{description},
+				date_start => $params->{date_start},
+				datetime_last_modified => time,
+				query => $params->{query}
+			};
+			$project = { %$project,%$new };
+			projects->add($project);
+			redirect(uri_for("/projects"));
+		}
+	}
 
     template('project/edit',{
         errors => \@errors,
@@ -234,6 +234,27 @@ any('/project/:_id/delete',sub{
 		project => $project,
 		auth => auth()
     });
+});
+any('/project/:_id/view',sub{
+    my $config = config;
+    my $params = params;
+    my(@messages,@errors);
+    my $success = 0;
+
+    #check project existence
+    my $project = projects->get($params->{_id});
+    if(!$project){
+        return forward('/not_found',{
+            requested_path => request->path
+        });
+    }
+
+	template('/project/view',{
+		errors => \@errors,
+        messages => \@messages,
+        project => $project,
+        auth => auth()
+	});
 });
 
 true;

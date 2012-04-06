@@ -6,6 +6,7 @@ use File::Basename;
 use File::Find;
 use File::Spec;
 use Cwd qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath);
+use Try::Tiny;
 
 sub import {
 	Catmandu::Sane->import;
@@ -13,6 +14,7 @@ sub import {
 	File::Basename->import;	
 	File::Find->import;
 	Cwd->import(qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath));
+	Try::Tiny->import;
 }
 sub _load_file_info {
 	my $self = shift;
@@ -35,7 +37,6 @@ sub is_valid_basename {
 	foreach my $pattern(@{ $self->valid_patterns }){
 		return 1 if $basename =~ $pattern;
 	}
-	say STDERR "$basename is not a valid filename for ".caller;
 	return 0;
 }
 

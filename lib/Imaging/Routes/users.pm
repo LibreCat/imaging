@@ -104,7 +104,7 @@ any('/user/:id/edit',sub{
 			};
 			$user = { %$user,%$new };
             dbi_handle->quick_update('users',{ id => $params->{id} },$user);
-            push @messages,"profile was updated successfully";
+			redirect(uri_for("/users"));
         }
     }
     template('user/edit',{ user => $user,errors => \@errors,messages => \@messages, auth => auth() });

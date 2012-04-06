@@ -18,11 +18,8 @@ sub dbi_handle {
 sub core {
 	state $core = store("core");
 }
-sub directory_ready {
-	state $directory_ready = core()->bag("directory_ready");
-}
-sub directory_reprocessing {
-    state $directory_reprocessing = core()->bag("directory_reprocessing");
+sub locations {
+	state $locations = core()->bag("locations");
 }
 
 hook before => sub {

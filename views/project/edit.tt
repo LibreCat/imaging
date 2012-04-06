@@ -32,12 +32,6 @@
             </td>
         </tr>
 		<tr>
-			<th>owner:</th>
-			<td>
-				<input name="owner" id="owner" value="[% project.item("owner") %]" />
-			</td>
-		</tr>
-		<tr>
             <th>start project (day-month-year):</th>
             <td>
                 <input class="date" name="date_start" id="date_start" value="[% project.item("date_start") %]" />
