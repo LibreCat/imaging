@@ -1,0 +1,72 @@
+[% USE date %]
+<h1>List of scan assignments</h1>
+<div class="paging">
+[% IF locations && locations.size > 0 && page_info.pages_in_set.size > 1 %]
+
+    [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
+    <a href="/locations?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]">first</a>
+    [% END %]
+
+    [% IF page_info.previous_page %]
+    <a href="/locations?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]" >previous</a>
+    [% END %]
+
+    [% FOREACH page IN page_info.pages_in_set %]
+        [% IF page == page_info.current_page %]
+        <span class="current">[% page %]</span>
+        [% ELSE %]
+        <a href="/locations?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]">[% page %]</a>
+        [% END %]
+    [% END %]
+
+    [% IF page_info.next_page %]
+    <a href="/locations?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]" >next</a>
+    [% END %]
+
+    [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
+    <a href="/locations?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]">last</a>
+    [% END %]
+
+[% END %]
+</div>
+<form method="GET">
+    <input type="text" name="q" id="q" value="[% params.q | html %]" />
+    <input type="submit" value="search" />
+</form>
+[% IF locations && locations.size > 0 %]
+	<table id="table-locations" class="left">
+        [% IF params.q && params.q != "*" %]
+        <tr>
+            <td colspan="5" style="text-align:left">
+            list is filtered on <b>[% params.q | html %]</b>
+            </td>
+        </tr>
+        [% END %]
+		<tr>
+			<th>name</th>
+			<th>stadium</th>
+			<th>user</th>
+			<th>project</th>
+			<th>status</th>
+		</tr>
+	[% FOREACH location IN locations %]
+		<tr>
+			<td>
+                <a href="/locations/view/[% location.item("_id") %]">
+                [% location.item("_id") %]
+                </a>
+            </td>
+			<td>[% location.item("stadium") %]</td>
+			<td>[% location.item("user_name") || "-" %]</td>
+			<td>[% location.item("project_name") || "-" %]</td>
+			<td>[% location.item("status") %]</td>
+		</tr>
+	[% END %]
+	</table>
+[% ELSE %]
+	<table id="table-locations"> 
+		<tr>
+            <td>no scan assignments found for <b>[% params.q || "*" %]</b></td>
+        </tr>
+	</table>
+[% END %]

@@ -9,16 +9,16 @@ use Catmandu::Util qw(:is);
 use Data::Pageset;
 use Try::Tiny;
 use Data::Pageset;
-use File::Basename;
+use URI::Escape qw(uri_escape);
 
 sub core {
     state $core = store("core");
 }
-sub directory_ready {
-    state $directory_ready = core()->bag("directory_ready");
+sub indexer {
+    state $index = store("index")->bag("locations");
 }
-sub directory_reprocessing {
-    state $directory_reprocessing = core()->bag("directory_reprocessing");
+sub locations {
+    state $locations = core()->bag("locations");
 }
 sub dbi_handle {
     state $dbi_handle = database;
@@ -41,44 +41,51 @@ hook before => sub {
 	}
 };
 any('/ready',sub {
-	my $config = config;
 	my $params = params;
-	my $directory = directory_ready->get( session('user')->{id} );
+    my $indexer = indexer();
+    my %opts = (
+        query => "user_id:\"".session('user')->{id}."\" AND stadium:ready",
+        reify => locations()
+    );
+    my $result = indexer->search(%opts);
 	my $user = dbi_handle->quick_select('users',{ id => session('user')->{id} });
-	template('/ready',{
-		directory => $directory,
+	template('ready',{
+		locations => $result->hits,
 		auth => auth(),
 		user => $user,
 		mount_conf => mount_conf()
 	});
 });
 any('/reprocessing',sub {
-    my $config = config;
     my $params = params;
-	my $directory = directory_reprocessing->get( session('user')->{id} );
-	my $user = dbi_handle->quick_select('users',{ id => session('user')->{id} });
-    template('/reprocessing',{
-        directory => $directory,
-		auth => auth(),
+    my $indexer = indexer();
+    my %opts = (
+        query => "user_id:\"".session('user')->{id}."\" AND stadium:reprocessing",
+        reify => locations()
+    );
+    my $result = indexer->search(%opts);
+    my $user = dbi_handle->quick_select('users',{ id => session('user')->{id} });
+    template('reprocessing',{
+        locations => $result->hits,
+        auth => auth(),
         user => $user,
-		mount_conf => mount_conf()
+        mount_conf => mount_conf()
     });
 });
 any('/ready/:directory/status',sub{
 	my $config = config;
     my $params = params;
-	my $directory_ready = directory_ready->get( session('user')->{id} );
-	my $directory;
-	foreach my $dir(@{ $directory_ready->{directories} || [] }){
-		if(basename($dir->{base}) eq $params->{directory}){
-			$directory = $dir->{base};
-			last;
-		}
-	}
-	$directory or return not_found();
+    my %opts = (
+        query => "user_id:\"".session('user')->{id}."\" AND stadium:ready AND id:\"".$params->{id}."\"",
+        reify => locations(),
+        limit => 1
+    );
+    my $result = indexer->search(%opts);
+
+	($result->total > 0) or return not_found();
 	my $user = dbi_handle->quick_select('users',{ id => session('user')->{id} });
-	template('/status',{
-		directory => $directory,
+	template('status',{
+		location => $result->hits->[0],
 		auth => auth(),
         user => $user,
         mount_conf => mount_conf()

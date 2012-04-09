@@ -18,7 +18,7 @@ sub test {
 	#zit er wel iets in?
 	if(scalar(@$file_info)<=0){
 
-		push @errors,[$topdir,"DIRECTORY_EMPTY","$topdir is empty"];
+		push @errors,"$topdir is empty";
 
 	}
 
@@ -29,11 +29,11 @@ sub test {
 
 		if($stats->{basename} !~ $self->_re_filename()){
 
-			push @errors,[$stats->{path},"FILENAME_INVALID_PATTERN",$stats->{path}." does not confirm to required format <directory>_<year>_<sequence>_<type>.<extension>"];
+			push @errors,$stats->{path}." does not confirm to required format <directory>_<year>_<sequence>_<type>.<extension>";
 
 		}elsif($1 ne basename($stats->{dirname})){
 
-			push @errors,[$stats->{path},"FILENAME_DOES_NOT_INCLUDE_DIRECTORY",$stats->{path}." does not include the directory in its path"];
+			push @errors,$stats->{path}." does not include the directory in its path";
 
 		}else{
 
@@ -47,7 +47,7 @@ sub test {
     my $num_st = scalar(@{ $type_numbers->{ST} || [] });
     #indien een ST, dan minstens twee
     if($num_st  > 0 && $num_st < 2){
-        push @errors,[$topdir,"MINIMUM_NUMBER_ST_FILES_LESS_THAN_2","when stitch files are present, the minimum number should be 2, not $num_st"];
+        push @errors,"when stitch files are present, the minimum number should be 2, not $num_st";
     }
 
 	#check volgorde binnen MA, AC, ST en LS
@@ -69,7 +69,7 @@ sub test {
 	foreach my $type(keys %$missing_type_numbers){
 		my $missing = $missing_type_numbers->{$type};
 		if(scalar(@$missing)>0){
-			push @errors,[$topdir,"MISSING_SEQUENCE_NUMBERS","directory $topdir is missing $type-files with these sequence numbers:".join(',',@$missing)];
+			push @errors,"directory $topdir is missing $type-files with these sequence numbers:".join(',',@$missing);
 		}
 
 	}

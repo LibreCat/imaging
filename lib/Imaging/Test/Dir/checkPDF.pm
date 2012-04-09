@@ -16,7 +16,7 @@ sub test {
 			die("cannot print pdf\n") if !$pdf->canPrint();
 			die("cannot copy pdf\n") if !$pdf->canCopy();
 		}catch {
-			push @errors,[$stats->{path},"INVALID_PDF","error in pdf ".$stats->{path}.":$_"];
+			push @errors,"error in pdf ".$stats->{path}.":$_";
 		};
 	}
 	scalar(@errors) == 0,\@errors;

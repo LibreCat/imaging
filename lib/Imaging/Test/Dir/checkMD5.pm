@@ -22,7 +22,7 @@ sub test {
 		}
 	}
 	if(!defined($path_manifest)){
-		push @errors,[$self->name_manifest(),"MANIFEST NOT FOUND",$self->name_manifest()." could not be found in $topdir"];
+		push @errors,$self->name_manifest()." could not be found in $topdir";
 	}else{
 		
         #open manifest: <md5sum> <file>
@@ -31,27 +31,27 @@ sub test {
         local(*MANIFEST);
         my $open_manifest = open MANIFEST,"<:encoding(UTF-8)",$path_manifest;
         if(!$open_manifest){
-            push @errors,[$path_manifest,"MANIFEST_OPEN_FAILED",$!];
+            push @errors,$!;
         }
 
         while(my $line = <MANIFEST>){
             chomp($line);
             my($md5sum_original,$filename) = split(/\s+/o,$line);
             if(!defined($filename)){
-                push @errors,[$path_manifest,"MANIFEST_INCORRECT_FORMAT","$path_manifest format incorrect (<md5sum> <path>)"];
+                push @errors,"$path_manifest format incorrect (<md5sum> <path>)";
                 last;
             } 
             $filename = "$dirname_manifest/$filename";
             local(*FILE);
             my $open_file = open FILE,"<$filename";
             if(!$open_file){
-                push @errors,[$filename,"MANIFEST_FILE_OPEN_FAILED",$!];
+                push @errors,$!;
                 next;
             }
             my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
             close FILE;
             if($md5sum_file ne $md5sum_original){
-                push @errors,[$filename,"MANIFEST_CHECKSUM_FILE_FAILED","checksum for $filename failed"];
+                push @errors,"checksum for $filename failed";
                 next;
             }
         }

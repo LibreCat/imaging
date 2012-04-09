@@ -20,10 +20,10 @@ sub test {
 		%results = $self->_scanner->scan_path_complete(abs_path($topdir));
 	};
 	if($@){
-		push @errors,[$topdir,"ANTIVIRUS_SCAN_FAILED",$@];
+		push @errors,$@->{'-text'};
 	};
 	while(my($path,$result)=each %results){
-		push @errors,[$path,"ANTIVIRUS_SCAN_NOT_PASSED","$result"];
+		push @errors,$result;
 	}
 	scalar(@errors) == 0,\@errors;
 }	

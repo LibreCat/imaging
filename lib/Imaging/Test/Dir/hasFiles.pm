@@ -29,7 +29,7 @@ sub test {
 			$found = $stats if $stats->{basename} =~ $pattern;
 		}
 		if(!$found){
-			push @errors,[$topdir,"FILE_NOT_FOUND","file pattern $pattern not found in $topdir"];
+			push @errors,"file pattern $pattern not found in $topdir";
 		}
 	}
     

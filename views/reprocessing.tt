@@ -1,6 +1,6 @@
 [% USE date %]
-<h1>Scandirectory Status - [% mount_conf.subdirectories.ready %]/[% session.user.login %]</h1>
-[% IF directory_ready.directories && directory_ready.directories.size > 0 %]
+<h1>Scandirectory Status - [% mount_conf.subdirectories.reprocessing %]/[% session.user.login %]</h1>
+[% IF locations && locations.size > 0 %]
 	<table id="table-projects" class="left">
 		<tr>
 			<th>name</th>
@@ -9,28 +9,28 @@
 			<th>status</th>
 			<th>actions</th>
 		</tr>
-	[% FOREACH directory IN directory.directories %]
+	[% FOREACH location IN locations %]
 		<tr>
 			<td>
 				[% TRY %]
-					[% USE File(directory.item("path")) %]
+					[% USE File(location.item("path")) %]
 					[% File.name %]
 				[% CATCH File %]
 					File error:[% error.info %]
 				[% END %]
 			</td>
-			<td>[% date.format(directory.datetime_last_modified,format => '%d-%m-%Y') %]</td>
-			<td>[% directory.files.size || 0 %]</td>
+			<td>[% date.format(location.datetime_last_modified,format => '%d-%m-%Y') %]</td>
+			<td>[% location.files.size || 0 %]</td>
 			<td>
 				<!--
-					/ready/<dir>/status geeft errors/meldingen over map én file-niveau
+					/reprocessing/<dir>/status geeft errors/meldingen over map én file-niveau
 				-->
-				<a href="/ready/[% directory.name %]/status">
-					[% directory.status %]
+				<a href="/ready/[% location.name %]/status">
+					[% location.status %]
 				</a>
 			</td>
 			<td>
-				<a href="/ready/[% directory.name %]/recheck">recheck</a>
+				<a href="/ready/[% location.name %]/recheck">recheck</a>
 			</td>
 		</tr>
 	[% END %]

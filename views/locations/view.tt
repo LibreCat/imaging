@@ -1,0 +1,72 @@
+[% USE date %]
+[% IF location %]
+    <h1>[% location.item("_id") %]</h1>
+	<table id="table-locations" class="left">
+		<tr>
+			<th>name</th>
+            <td>[% location.item("_id") %]</td>
+        </tr>
+        <tr>
+            <th>stadium</th>
+            <td>
+                [% q = "stadium:\"" _ location.stadium _ "\"" %]
+                <a href="/locations?q=[% q | uri  %]">
+                [% location.stadium %]
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <th>status</th>
+            <td>
+                [% q = "status:\"" _ location.status _ "\"" %]
+                <a href="/locations?q=[% q | uri %]">
+                [% location.status %]
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <th>project</th>
+            <td>
+                [% q = "project_name:\"" _ location.project_name _ "\"" %]
+                <a href="/locations?q=[% q | uri %]">
+                [% location.project_name %]
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <th>user name</th>
+            <td>
+                [% q = "user_name:\"" _ location.user_name _ "\"" %]
+                <a href="/locations?q=[% q | uri %]">
+                [% location.user_name %]
+                </a>
+            </td>
+        </tr>
+        [% IF location.comments %]
+        <tr>
+            <th>comments</th>
+            <td>[% location.comments %]</td>
+        </tr>
+        [% END %]
+        <tr>
+            <th>files</th>
+            <td></td>
+        </tr>
+        [% FOREACH file IN location.files %]
+        <tr>
+            <th></th>
+            <td>[% file %]</td>
+        </tr>
+        [% END %]
+        <tr>
+            <th>log</th>
+            <td>
+                [% IF location.item("log").size > 0 %]
+                <textarea rows="20" cols="100">[% location.item("log").join("\n") %]</textarea>
+                [% ELSE %]
+                -
+                [% END %]
+            </td>
+        </tr>
+	</table>
+[% END %]

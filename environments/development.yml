@@ -80,12 +80,16 @@ store:
    data_source: "dbi:mysql:database=imaging"
    username: imaging
    password: imaging
+ index:
+  package: "Catmandu::Store::Solr"
+  options:
+   url: "http://localhost:8983/solr/core0"
 app: {}
 all: {}
 mounts:
  directories:
   path: "/data/imaging/directories"
-#  subdirectories:
-#   ready: "01_ready"
-#   processed: "02_processed"
-#   reprocessing: "03_reprocessing"
+  subdirectories:
+   ready: "ready"
+   processed: "processed"
+   reprocessing: "reprocessing"

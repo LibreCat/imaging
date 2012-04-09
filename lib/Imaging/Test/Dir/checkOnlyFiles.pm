@@ -9,9 +9,9 @@ sub test {
 	foreach my $stats(@$file_info){
 		next if !$self->is_valid_basename($stats->{basename});
 		if(!-f $stats->{path}){
-			push @errors,[$stats->{path},"NOT_A_FILE",$stats->{path}." is not a regular file"];
+			push @errors,$stats->{path}." is not a regular file";
 		}elsif(-l $stats->{path}){
-			push @errors,[$stats->{path},"IS_SYMBOLIC_LINK",$stats->{path}." is a symbolic link"];
+			push @errors,$stats->{path}." is a symbolic link";
 		}
 	}
 	scalar(@errors) == 0,\@errors;

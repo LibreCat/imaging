@@ -43,16 +43,22 @@ any('/directories',sub {
 	my $params = params;
 	my(@errors)=();
 
-	my @users = dbi_handle->quick_select('users',{},{ order_by => 'id' });
-
 	my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
     $params->{page} = $page;
     my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
     $params->{num} = $num;
     my $offset = ($page - 1)*$num;
 
+	my @users = dbi_handle->quick_select('users',{
+        roles => { like => '%scanner%'  }   
+    },{ 
+        order_by => 'id'
+    });
+    my $total = scalar(@users);
+    @users = splice(@users,$offset,$num);
+
     my $page_info = Data::Pageset->new({
-        'total_entries'       => scalar(@users),
+        'total_entries'       => $total,
         'entries_per_page'    => $num,
         'current_page'        => $page,
         'pages_per_set'       => 8,
@@ -61,28 +67,13 @@ any('/directories',sub {
 	#sanity check on mount
 	my($success,$errs) = sanity_check();
 	push @errors,@$errs if !$success;
-	@users = splice(@users,$offset,$num);
 
 	my $mount = mount();
     my $subdirectories = subdirectories();
 
-	#collect bags from ready en reprocessing
-    my %bags = (
-        reprocessing => directory_reprocessing(),
-        ready => directory_ready()
-    );
-	@users = grep { $_->{roles} =~ /scanner/o } @users;
 	foreach my $user(@users){
-		my %dirs = ();
-		foreach(keys %bags){
-			$dirs{$_} = $bags{$_}->get($user->{id}) || {
-				_id => $user->{id},
-				base => "$mount/".$subdirectories->{$_}."/".$user->{login},
-				directories => []
-			};
-			my $key = "directory_$_";
-			$user->{$key} = $dirs{$_}->{base};
-		}
+        $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+        $user->{reprocessing} = "$mount/".$subdirectories->{reprocessing}."/".$user->{login};
 	}
 	#template
     template('directories',{
@@ -113,31 +104,15 @@ any('/directories/:id/edit',sub {
 	my $mount = mount();
     my $subdirectories = subdirectories();
 
-	#collect bags from ready en reprocessing
-	my %bags = (
-		ready => directory_ready(),
-		reprocessing => directory_reprocessing()
-	);
 	#check directories of scanner
-	my %dirs = ();
-	foreach(keys %bags){
-		$dirs{$_} = $bags{$_}->get($user->{id}) || {
-			_id => $user->{id},
-			base => "$mount/".$subdirectories->{$_}."/".$user->{login},
-			directories => []
-		};
-		my $key = "directory_$_";
-        $user->{$key} = $dirs{$_}->{base};
-		$bags{$_}->add($dirs{$_});
-	}
+    $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+    $user->{reprocessing} = "$mount/".$subdirectories->{reprocessing}."/".$user->{login};
 
 	if($params->{submit} && scalar(@errors)==0){
 		foreach(qw(ready reprocessing)){
 			try{
 				my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
 				mkpath($path);
-				$dirs{$_}->{base} = $path;	
-				$bags{$_}->add($dirs{$_});
                 push @messages,"directory '$_' is ok now";
 			}catch{
 				push @errors,$_;
@@ -145,21 +120,10 @@ any('/directories/:id/edit',sub {
 		}
 	}else{
 		foreach(qw(ready reprocessing)){
-			if(!$dirs{$_}->{base}){
-				my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
-				if(!-d $path){
-					push @errors,"directory '$_' does not exist ($path)";
-				}elsif(!-w $path){
-					push @errors,"directory '$_' is not writable ($path)";
-				}else{
-					$dirs{$_}->{base} = $path;
-					$bags{$_}->add($dirs{$_});
-					push @messages,"directory '$_' is ok now";
-				}
-			}elsif(!-d $dirs{$_}->{base}){
-				push @errors,"directory '$_' does not exist ($dirs{$_}->{base}";
-			}elsif(!-w $dirs{$_}->{base}){
-				push @errors,"directory '$_' does not exist ($dirs{$_}->{base})";
+			if(!-d $user->{$_}){
+				push @errors,"directory '$_' does not exist ($user->{$_})";
+			}elsif(!-w $user->{$_}){
+				push @errors,"directory '$_' is not writable ($user->{$_})";
 			}
 		}
 	}

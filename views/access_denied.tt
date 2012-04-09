@@ -6,7 +6,7 @@
 	</tr>
 	<tr>
         <td>
-			<a href="[% params.referrer %]">back</a>
+			<a href="javascript: history.go(-1);">back</a>
         </td>
     </tr>
 </table>

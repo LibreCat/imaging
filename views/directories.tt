@@ -42,20 +42,20 @@
 		<tr>
 			<td>[% user.item("login") %]</td>
 			<td>
-				[% user.item("directory_ready") || "-" %]
+				[% user.item("ready") || "-" %]
 				[% IF roles.grep('scanner').size > 0 %]
 					[% TRY %]
-                        [% USE File(user.item("directory_ready")) %]
+                        [% USE File(user.item("ready")) %]
                     [% CATCH File %]
                     	<span style="color:red">error!</span>
                     [% END %]					
 				[% END %]
 			</td>
 			<td>
-				[% user.item("directory_reprocessing") || "-" %]
+				[% user.item("reprocessing") || "-" %]
 				[% IF roles.grep('scanner').size > 0 %]
                     [% TRY %]
-                        [% USE File(user.item("directory_reprocessing")) %]
+                        [% USE File(user.item("reprocessing")) %]
                     [% CATCH File %]
                         <span style="color:red">error!</span>
                     [% END %]

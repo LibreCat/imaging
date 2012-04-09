@@ -31,7 +31,7 @@ sub test {
 			$found = $stats if $stats->{basename} =~ $pattern;
 		}
 		if($found){
-			push @errors,[$found->{path},"FORBIDDEN_FILE_PATTERN_FOUND","forbidden file ".$found->{path}." found in $topdir"];
+			push @errors,"forbidden file ".$found->{path}." found in $topdir";
 		}
 	}
 	scalar(@errors) == 0,\@errors;

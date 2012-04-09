@@ -17,11 +17,11 @@ sub test {
 	#file found: now make sure the topdir is not the same!
 	if($aleph_file){
 		if($topdir =~ /^RUG01-\d{9}$/){
-			push @errors,[$topdir,"DIR_AND_ALEPH_FILE_ARE_EQUAL","The aleph file ".$aleph_file->{path}." equals directory name $topdir"];
+			push @errors,"The aleph file ".$aleph_file->{path}." equals directory name $topdir";
 		}	
 	}else{
 		if(basename($topdir) !~ /^RUG01-\d{9}$/){
-			push @errors,[$topdir,"ALEPH_ID_NOT_FOUND","No aleph file found, or directory with name of aleph identifier"];
+			push @errors,"No aleph file found, or directory with name of aleph identifier";
 		}
 	}
 	scalar(@errors) == 0,\@errors;

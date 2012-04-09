@@ -9,7 +9,7 @@ sub test {
 	foreach my $stats(@$file_info){
 		next if !$self->is_valid_basename($stats->{basename});
 		if((-s $stats->{path}) == 0){
-			push @errors,[$stats->{path},"FILE_IS_EMPTY",$stats->{path}." is empty"];
+			push @errors,$stats->{path}." is empty";
 		}
 	}
 	scalar(@errors) == 0,\@errors;

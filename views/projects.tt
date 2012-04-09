@@ -65,6 +65,7 @@
 				<a href="/project/[% project.item("_id") %]/edit">edit</a>
 				<a href="/project/[% project.item("_id") %]/delete">delete</a>&nbsp;
 				[% END %]
+                <a href="/locations?q=project_id:[% project.item("_id") %]">list</a>
 			</td>
 		</tr>
 	[% END %]

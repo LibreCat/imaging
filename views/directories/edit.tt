@@ -7,7 +7,7 @@
 				<input type="submit" value="create directories" name="submit" id="submit" />
 			</td>
 		</tr>
-		[% FOREACH dir IN ["directory_ready","directory_reprocessing"] %]
+		[% FOREACH dir IN ["ready","reprocessing"] %]
 		<tr>
 			<th>[% dir %]</th>
 			<td>[% user.item(dir) || "-" %]</td>
