@@ -14,10 +14,10 @@ use YAML;
 use File::Find;
 use Try::Tiny;
 use DBI;
-use Data::Dumper;
+use JSON qw(decode_json encode_json);
+use XML::Simple;
+use LWP::UserAgent;
 use Clone qw(clone);
-use DateTime::Format::Strptime;
-use DateTime;
 
 my %opts = (
     data_source => "dbi:mysql:database=imaging",
@@ -69,6 +69,7 @@ while(my $user = $sth_each->fetchrow_hashref()){
     }
     close CMD;   
 }
+
 #stap 2: doe check
 sub get_package {
     my($class,$args)=@_;
@@ -121,6 +122,59 @@ foreach my $location_id(@location_ids){
 }
 
 #stap 3: ken locations toe aan projecten -> TODO
+my $ua = LWP::UserAgent->new();
+my $base_url = "http://adore.ugent.be/rest";
+
+$projects->each(sub{
+
+    my $project = shift;
+    my $query = $project->{query};
+    next if !$query;
+
+    my $res = $ua->get($base_url."?q=$query&format=json&limit=0");
+    if($res->is_error()){
+        die($res->content());
+    }
+    my $ref = decode_json($res->content);
+    if($ref->{error}){
+        die($ref->{error});
+    }
+    my $total = $ref->{totalhits};
+    my($offset,$limit) = (0,100);
+    my $xml_reader = XML::Simple->new();
+    while(($offset + $limit - 1) <= $total){
+        $res = $ua->get($base_url."?q=$query&format=json&start=$offset&limit=$limit");
+        if($res->is_error()){
+            die($res->content());
+        }
+        $ref = decode_json($res->content);
+        if($ref->{error}){
+            die($ref->{error});
+        }
+        foreach my $hit(@{ $ref->{hits} }){
+            my $xml = $xml_reader->XMLin($hit->{fXML},ForceArray => 1);
+            foreach my $marc_datafield(@{ $xml->{'marc:datafield'} }){
+                if($marc_datafield->{tag} eq "852"){
+                    foreach my $marc_subfield(@{ $marc_datafield->{'marc:subfield'} }){
+                        if($marc_subfield->{code} eq "j"){
+                            my $location_id = $marc_subfield->{content};
+                            $location_id =~ s/[\.\/]/-/go;
+                            say $marc_subfield->{content}." => $location_id";
+                            my $location = $locations->get($location_id);
+                            if($location){
+                                $location->{project_id} = $project->{_id};
+                                $locations->add($location);
+                            }
+                            last;
+                        }
+                    }
+                    last;
+                }
+            }
+        }
+        $offset += $limit;
+    }
+});
 #stap 4: vroegere locations die op 'processed' stonden -> nog niet verplaatst naar 'reprocessing'?
 # => TODO: ene keer naar 'reprocessing', andere keer naar elders? (of verdwenen?)
 #stap 5: indexeer

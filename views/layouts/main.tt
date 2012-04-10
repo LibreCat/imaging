@@ -25,6 +25,10 @@
                         <a href="/locations?q=[% q | uri %]">ready</a>
                     </li>
                     <li>
+                        [% q = "user_id:" _ session.user.id _ " AND stadium:processed" %]
+                        <a href="/locations?q=[% q | uri %]">processed</a>
+                    </li>
+                    <li>
                         [% q = "user_id:" _ session.user.id _ " AND stadium:reprocessing" %]
                         <a href="/locations?q=[% q | uri %]">reprocessing</a>
                     </li>

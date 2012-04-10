@@ -27,18 +27,22 @@
         <tr>
             <th>project</th>
             <td>
-                [% q = "project_name:\"" _ location.project_name _ "\"" %]
-                <a href="/locations?q=[% q | uri %]">
-                [% location.project_name %]
-                </a>
+                [% IF project %]
+                    [% q = "project_name:\"" _ project.name _ "\"" %]
+                    <a href="/locations?q=[% q | uri %]">
+                    [% project.name %]
+                    </a>
+                [% ELSE %]
+                -
+                [% END %]
             </td>
         </tr>
         <tr>
             <th>user name</th>
             <td>
-                [% q = "user_name:\"" _ location.user_name _ "\"" %]
+                [% q = "user_id:\"" _ user.id _ "\"" %]
                 <a href="/locations?q=[% q | uri %]">
-                [% location.user_name %]
+                [% user.login %]
                 </a>
             </td>
         </tr>
@@ -62,7 +66,7 @@
             <th>log</th>
             <td>
                 [% IF location.item("log").size > 0 %]
-                <textarea rows="20" cols="100">[% location.item("log").join("\n") %]</textarea>
+                <textarea readonly="readonly" rows="20" cols="100">[% location.item("log").join("\n") %]</textarea>
                 [% ELSE %]
                 -
                 [% END %]

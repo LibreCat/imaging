@@ -1,7 +1,7 @@
 [% USE date %]
 <h1>List of scan assignments</h1>
 <div class="paging">
-[% IF locations && locations.size > 0 && page_info.pages_in_set.size > 1 %]
+[% IF locations && locations.size > 0 %]
 
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
     <a href="/locations?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]">first</a>
@@ -29,9 +29,18 @@
 
 [% END %]
 </div>
-<form method="GET">
+<form method="GET" id="query-form">
     <input type="text" name="q" id="q" value="[% params.q | html %]" />
     <input type="submit" value="search" />
+    [% IF locations.size > 0 %]
+    <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
+        <option value="">--sort results--</option>
+    [% FOREACH key IN ["_id","user_name","stadium","datetime_last_modified"] %]
+        <option value="[% key %] asc" [% IF params.item("sort") == ( key _ " asc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] ascending</option>
+        <option value="[% key %] desc" [% IF params.item("sort") == ( key _ " desc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] descending</option>
+    [% END %]
+    </select>
+    [% END %]
 </form>
 [% IF locations && locations.size > 0 %]
 	<table id="table-locations" class="left">
@@ -48,6 +57,7 @@
 			<th>user</th>
 			<th>project</th>
 			<th>status</th>
+            <th>last modified</th>
 		</tr>
 	[% FOREACH location IN locations %]
 		<tr>
@@ -60,6 +70,7 @@
 			<td>[% location.item("user_name") || "-" %]</td>
 			<td>[% location.item("project_name") || "-" %]</td>
 			<td>[% location.item("status") %]</td>
+            <td>[% location.item("datetime_last_modified") %]</td>
 		</tr>
 	[% END %]
 	</table>

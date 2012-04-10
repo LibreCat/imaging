@@ -14,3 +14,13 @@ mysql:
  create database imaging;
  create user 'imaging'@'localhost' identified by 'imaging';
  grant all privileges on imaging.* to 'imaging'@'localhost';
+solr:
+    download laatste van http://lucene.apache.org/solr/
+    extract to Solr/
+    cp Imaging/schema.xml Solr/solr/conf/
+    rm -rf Solr/solr/data/*
+    cd Solr/
+    java -jar start.jar
+run 'cronjob':
+    cd Image/test
+    ./cron.pl

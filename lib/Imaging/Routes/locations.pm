@@ -51,8 +51,6 @@ any('/locations',sub {
         limit => $num
     );
     $opts{sort} = $sort if $sort && $sort =~ /^\w+\s(?:asc|desc)$/o;
-    session('num' => $num);
-    session('page' => $page);
     my($result,$error);
     try {
         $result= indexer->search(%opts);
@@ -108,11 +106,17 @@ any('/locations/view',sub {
         $error = $_;
     };
     if(!$error){
+        my $project;
+        if($result->hits->[0]->{project_id}){
+            $project = projects->get($result->hits->[0]->{project_id});
+        }
         template('locations/view',{
             location => $result->hits->[0],
             auth => auth(),
             error => $error,
-            mount_conf => mount_conf()
+            mount_conf => mount_conf(),
+            project => $project,
+            user => dbi_handle->quick_select('users',{ id => $result->hits->[0]->{user_id} })
         });
     }else{
         template('locations/view',{

@@ -49,18 +49,11 @@
 		<tr>
 			<td>[% project.item("name") %]</td>
 			<td>[% project.item("name_subproject") %]</td>
-			<td>[% project.item("list").size || 0 %]</td>
-			<td>
-				[% done = 0 %]
-				[% FOREACH item IN project.item("list") %]
-					[% done = done + 1 IF item.done %]
-				[% END %]
-				[% done %]
-			</td>
+			<td>[% project.item("total") || 0 %]</td>
+			<td>[% project.item("done") || 0 %]</td>
 			<td>[% date.format(project.datetime_last_modified,format => '%d-%m-%Y') %]</td>
 			<td>[% project.date_start %]</td>
 			<td>
-				<a href="/project/[% project.item("_id") %]/view">view</a>
 				[% IF auth.can('projects','edit') %]
 				<a href="/project/[% project.item("_id") %]/edit">edit</a>
 				<a href="/project/[% project.item("_id") %]/delete">delete</a>&nbsp;
