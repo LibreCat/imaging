@@ -18,6 +18,8 @@ use JSON qw(decode_json encode_json);
 use XML::Simple;
 use LWP::UserAgent;
 use Clone qw(clone);
+use DateTime;
+use DateTime::Format::Strptime;
 
 my %opts = (
     data_source => "dbi:mysql:database=imaging",
@@ -163,6 +165,7 @@ $projects->each(sub{
                             my $location = $locations->get($location_id);
                             if($location){
                                 $location->{project_id} = $project->{_id};
+								say "location found!!!!!!";
                                 $locations->add($location);
                             }
                             last;
@@ -182,10 +185,12 @@ $locations->each(sub{
     my $location = shift;
     my $doc = clone($location);
     my $project;
-    if($location->{project_id} && ($project = $locations->get($location->{project_id}))){
+    if($location->{project_id} && ($project = $projects->get($location->{project_id}))){
+		say "project found!";
         foreach my $key(keys %$project){
+			next if $key eq "_id";
             my $subkey = "project_$key";
-            $doc->{$subkey} = $project->{$key} if $project->{$key};
+            $doc->{$subkey} = $project->{$key};
         }
     }
     if($location->{user_id}){
