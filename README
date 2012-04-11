@@ -21,6 +21,10 @@ solr:
     rm -rf Solr/solr/data/*
     cd Solr/
     java -jar start.jar
+
+	pas configuratie aan:
+    vim environments/development.yml
+    zoek naar store->index->url en pas url aan naar solr-base-url
 run 'cronjob':
     cd Image/test
     ./cron2.pl
