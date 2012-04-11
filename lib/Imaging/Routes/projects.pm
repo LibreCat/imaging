@@ -54,21 +54,6 @@ any('/projects',sub {
 
 	my $projects = projects->slice($offset,$num)->to_array();
 	
-	my $query = join (' OR ',map { 
-		"project_id:".$_->{_id};
-	} @$projects);	
-	my $result = index_locations->search(
-		query => $query,
-		limit => 1000000
-	);
-	foreach my $hit(@{ $result->hits }){
-		my $index = first_index { $_->{_id} eq $hit->{project_id} } @$projects;
-		if($index >= 0){
-			$projects->[$index]->{locations} ||= [];
-			push @{$projects->[$index]->{locations}},$hit;
-		}
-	}
-
 	my $page_info = Data::Pageset->new({
         'total_entries'       => projects->count,
         'entries_per_page'    => $num,

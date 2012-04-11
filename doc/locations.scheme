@@ -1,0 +1,50 @@
+locations:
+	_id:						BHSL-PAP-0061-BIS-1
+	name:						BHSL.PAP.0061/BIS/1
+	user_id:					2
+	project_id:					EE-999-01-ekrljz
+	path:						/data/imaging/directories/01_ready/geert/BHSL-PAP-0061-BIS-1
+	status:
+								- 'incoming'
+								- 'incoming_error'
+								- 'incoming_ok'
+								- 'registered'
+								- 'derivatives_created'
+								- 'reprocess_scans'
+								- 'reprocess_metadata'
+								- 'qa_control_done'
+								- 'archived'
+								- 'published'
+	files:						[file1,file2..]
+	log:						["cannot ready $file1"..]
+	datetime_last_modified:		2012-04-11T10:05:47Z
+	comments:					"Beste $scanner, scan met nr. 1 is wel technisch correct, maar hij staat op zijn kop.."
+
+
+projects:
+	_id: 						EE-999-01-ekrljz
+	name:						papyri	
+	name_subproject:			1ste batch
+	description:				'dit is de 1ste batch van ..'
+	date_start:					11-04-2012
+	query:						BHSL.PAP
+	total:						203 (totale lijst van objecten, zoals resultatenlijst van de query aangeeft) -> gecached resultaat ('s nachts gegenereerd)
+	done:						0 (aantal objecten die in alle platformen gepubliceerd is) -> gecached resultaat ('s nachts gegeneerd)
+
+users:
+	id:							2
+	login:						geert
+	name:						geert
+	roles:						scanner
+	profile_id:					NARA
+	password:					MD5("geert")
+
+profiles:
+	_id:						NARA
+	packages:					[{
+									class:"Imaging::Test::Dir::scan"
+									args:{},
+									on_error:"stop"
+								},..
+
+								]

@@ -460,8 +460,27 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 
     <field name="_bag" type="string" indexed="true" stored="true" /> 
     <!-- table locations -->
+	<!--
+		_id: BHSL-PAP-0064-BIS-1 (afgeleid op basis van mapnaam)
+	-->
     <field name="_id" type="string" indexed="true" stored="true" />
-	<field name="stadium" type="string" indexed="true" stored="true" />
+	<!--
+		name: BHSL.PAP.0064/BIS/1 (enkel in  meercat-index te vinden)
+	-->
+	<field name="name" type="string" indexed="true" stored="true" />
+	<!--
+		status:
+			- 'incoming'
+			- 'incoming_error'
+			- 'incoming_ok'
+			- 'registered'
+			- 'derivatives_created'
+			- 'reprocess_scans'
+			- 'reprocess_metadata'
+			- 'qa_control_done'
+			- 'archived'
+			- 'published'
+	-->
     <field name="status" type="string" indexed="true" stored="true" />
 	<field name="path" type="string" indexed="true" stored="true" />
     <field name="files" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -480,8 +499,11 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="project_name" type="lupetext" indexed="true" stored="true" />
 	<field name="project_name_subproject" type="lupetext" indexed="true" stored="true" />
 	<field name="project_description" type="lupetext" indexed="true" stored="true" />
-    <field name="project_date_start" type="date" indexed="true" stored="true" />
+    <field name="project_date_start" type="string" indexed="true" stored="true" />
     <field name="project_query" type="lupetext" indexed="true" stored="true" />
+	<field name="project_total" type="int" indexed="true" stored="true" />
+	<field name="project_done" type="int" indexed="true" stored="true" />
+	<field name="project_datetime_last_modified" type="string" indexed="true" stored="true" />
 
     <!--DEFAULT-->
     <field name="text" type="lupetext" indexed="true" stored="false" multiValued="true"/>
@@ -508,7 +530,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <copyField source="user_*" dest="text"/>
     <copyField source="project_*" dest="text"/>
     <copyField source="_id" dest="text" />
-    <copyField source="stadium" dest="text" />
+	<copyField source="name" dest="text" />
     <copyField source="status" dest="text" />
     <copyField source="path" dest="text" />
     <copyField source="files" dest="text" />
@@ -518,7 +540,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <copyField source="user_*" dest="spelling"/>
     <copyField source="project_*" dest="spelling"/>
     <copyField source="_id" dest="spelling" />
-    <copyField source="stadium" dest="spelling" />
+	<copyField source="name" dest="spelling" />
     <copyField source="status" dest="spelling" />
     <copyField source="path" dest="spelling" />
     <copyField source="files" dest="spelling" />

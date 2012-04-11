@@ -4,16 +4,7 @@
 	<table id="table-locations" class="left">
 		<tr>
 			<th>name</th>
-            <td>[% location.item("_id") %]</td>
-        </tr>
-        <tr>
-            <th>stadium</th>
-            <td>
-                [% q = "stadium:\"" _ location.stadium _ "\"" %]
-                <a href="/locations?q=[% q | uri  %]">
-                [% location.stadium %]
-                </a>
-            </td>
+            <td>[% location.item("name") || "-" %]</td>
         </tr>
         <tr>
             <th>status</th>

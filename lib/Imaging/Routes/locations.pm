@@ -92,13 +92,6 @@ any('/locations/view',sub {
         limit => 1
     );
 
-    my $page = session('page');
-    my $num = session('num');
-    $page = is_natural($page) && int($page) > 0 ? int($page) : 1;
-    $num = is_natural($num) && int($num) > 0 ? int($num): 20;
-    session('page' => $page);
-    session('num' => $num);
-
     my($result,$error);
     try {
         $result = indexer->search(%opts);

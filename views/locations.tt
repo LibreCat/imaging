@@ -46,17 +46,17 @@
 	<table id="table-locations" class="left">
         [% IF params.q && params.q != "*" %]
         <tr>
-            <td colspan="5" style="text-align:left">
+            <td colspan="7" style="text-align:left">
             list is filtered on <b>[% params.q | html %]</b>
             </td>
         </tr>
         [% END %]
 		<tr>
 			<th>name</th>
-			<th>stadium</th>
 			<th>user</th>
 			<th>project</th>
 			<th>status</th>
+			<th>done</th>
             <th>last modified</th>
 		</tr>
 	[% FOREACH location IN locations %]
@@ -66,10 +66,12 @@
                 [% location.item("_id") %]
                 </a>
             </td>
-			<td>[% location.item("stadium") %]</td>
 			<td>[% location.item("user_name") || "-" %]</td>
 			<td>[% location.item("project_name") || "-" %]</td>
 			<td>[% location.item("status") %]</td>
+			<td>
+				<input type="checkbox" disabled="disabled" [% IF location.item("done") %] checked="checked"[% END %] />
+			</td>
             <td>[% location.item("datetime_last_modified") %]</td>
 		</tr>
 	[% END %]

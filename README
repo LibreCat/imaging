@@ -1,23 +1,34 @@
 installeer Module::Build:
 	perl -MCPAN -e 'install Module::Build'
+
 clone Catmandu:
 	git clone git://github.com/LibreCat/Catmandu.git
 	cd Catmandu
 	perl Build.PL 
 	./Build installdeps (doe GEEN 'install'!)
+
 clone Imaging:
 	git clone git@github.com:LibreCat/Imaging.git
 	cd Imaging
 	perl Build.PL
     ./Build installdeps (doe GEEN 'install'!)
+
 mysql:
  create database imaging;
  create user 'imaging'@'localhost' identified by 'imaging';
  grant all privileges on imaging.* to 'imaging'@'localhost';
+
+configuratie mappen:
+	vim Imaging/environments/development.yml
+	mounts->directories->path: basis-locatie waar 01_ready,02_processed en 03_reprocessing komt
+	mounts->directories->subdirectories->ready: '01_ready' (effectieve naam van de map)
+									   ->processed: '02_processed'
+									   ->reprocessing: '03_reprocessing'
+
 solr:
     download laatste van http://lucene.apache.org/solr/
     extract to Solr/
-    cp Imaging/schema.xml Solr/solr/conf/
+    cp Imaging/doc/schema.xml Solr/solr/conf/
     rm -rf Solr/solr/data/*
     cd Solr/
     java -jar start.jar
@@ -25,6 +36,7 @@ solr:
 	pas configuratie aan:
     vim environments/development.yml
     zoek naar store->index->url en pas url aan naar solr-base-url
+
 run 'cronjob':
     cd Image/test
-    ./cron2.pl
+    ./cron.pl

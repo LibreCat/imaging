@@ -14,10 +14,12 @@ use YAML;
 use File::Find;
 use Try::Tiny;
 use DBI;
-use Data::Dumper;
+use JSON qw(decode_json encode_json);
+use XML::Simple;
+use LWP::UserAgent;
 use Clone qw(clone);
-use DateTime::Format::Strptime;
 use DateTime;
+use DateTime::Format::Strptime;
 
 my %opts = (
     data_source => "dbi:mysql:database=imaging",
@@ -55,27 +57,28 @@ while(my $user = $sth_each->fetchrow_hashref()){
         if(!$location){
             $locations->add({
                 _id => $basename,
-                stadium => "ready",
+				name => undef,
                 path => $dir,
-                status => "error",
+                status => "incoming",
                 log => [],
                 files => [],
                 user_id => $user->{id},
                 datetime_last_modified => time,
                 comments => "",
-                project_id => undef
+                project_id => undef,
             });
         }
     }
     close CMD;   
 }
+
 #stap 2: doe check
 sub get_package {
     my($class,$args)=@_;
     state $stash->{$class} ||= load_package($class)->new(%$args, dir => ".");
 }
 my @location_ids = ();
-$locations->each(sub{ push @location_ids,$_[0]->{_id} if $_[0]->{stadium} eq "ready"; });
+$locations->each(sub{ push @location_ids,$_[0]->{_id} if ($_[0]->{status} eq "incoming" || $_[0]->{status} eq "incoming_error"); });
 foreach my $location_id(@location_ids){
     my $location = $locations->get($location_id);
     $sth_get->execute( $location->{user_id} ) or die($sth_get->errstr);
@@ -102,9 +105,9 @@ foreach my $location_id(@location_ids){
         }
     }
     if(scalar(@{ $location->{log} }) > 0){
-        $location->{status} = "error";
+        $location->{status} = "incoming_error";
     }else{
-        $location->{status} = "ok";
+        $location->{status} = "incoming_ok";
         my $basename = basename($location->{path});
         my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/$basename";
         if(!move($location->{path},$newpath)){
@@ -114,24 +117,115 @@ foreach my $location_id(@location_ids){
             $file =~ s/^$location->{path}/$newpath/;
         }
         $location->{path} = $newpath;
-        $location->{stadium} = "processed";
     }
     $location->{files} = \@files;
     $locations->add($location);
 }
 
 #stap 3: ken locations toe aan projecten -> TODO
-#stap 4: vroegere locations die op 'processed' stonden -> nog niet verplaatst naar 'reprocessing'?
-# => TODO: ene keer naar 'reprocessing', andere keer naar elders? (of verdwenen?)
-#stap 5: indexeer
+my $ua = LWP::UserAgent->new();
+my $base_url = "http://adore.ugent.be/rest";
+
+my @project_ids = ();
+$projects->each(sub{ push @project_ids,$_[0]->{_id}; });
+
+foreach my $project_id(@project_ids){
+
+    my $project = $projects->get($project_id);
+	my($total,$done) = (0,0);
+    my $query = $project->{query};
+    next if !$query;
+
+    my $res = $ua->get($base_url."?q=$query&format=json&limit=0");
+    if($res->is_error()){
+        die($res->content());
+    }
+    my $ref = decode_json($res->content);
+    if($ref->{error}){
+        die($ref->{error});
+    }
+    $total = $ref->{totalhits};
+    my($offset,$limit) = (0,100);
+    my $xml_reader = XML::Simple->new();
+    while($offset <= $total){
+        $res = $ua->get($base_url."?q=$query&format=json&start=$offset&limit=$limit");
+        if($res->is_error()){
+            die($res->content());
+        }
+        $ref = decode_json($res->content);
+        if($ref->{error}){
+            die($ref->{error});
+        }
+        foreach my $hit(@{ $ref->{hits} }){
+            my $xml = $xml_reader->XMLin($hit->{fXML},ForceArray => 1);
+			my $data_fields = [
+				{
+					tag => '852',
+					subfield => 'j'
+				}
+			];
+			my $control_fields = [{
+				tag => '001',
+			},
+			{
+				tag => 003
+			}];
+			my %values = ();
+		
+			foreach my $control_field(@$control_fields){
+				foreach my $marc_controlfield(@{ $xml->{'marc:controlfield'} }){
+					if($marc_controlfield->{tag} eq $control_field->{tag}){
+						$values{ $control_field->{tag} } = $marc_controlfield->{content};
+						last;
+					}
+				}
+			}
+			foreach my $data_field(@$data_fields){
+				foreach my $marc_datafield(@{ $xml->{'marc:datafield'} }){
+					if($marc_datafield->{tag} eq $data_field->{tag}){
+						foreach my $marc_subfield(@{ $marc_datafield->{'marc:subfield'} }){
+							if($marc_subfield->{code} eq $data_field->{subfield}){
+								$values{ $marc_datafield->{tag}.$marc_subfield->{code} } = $marc_subfield->{content};
+								last;
+							}
+						}
+						last;
+					}
+				}
+			}	
+			my($location_id,$location_name);
+			if($values{'852j'}){
+				$location_id = $values{'852j'};
+				$location_name = $values{'852j'};
+				$location_id =~ s/[\.\/]/-/go;
+			}else{	
+				$location_id = uc($values{'003'})."-".$values{'001'};
+				$location_name = $location_id;				
+			}
+			my $location = $locations->get($location_id);
+			if($location){
+				$done++ if $location->{archived};
+				$location->{name} = $location_name;
+				$location->{project_id} = $project->{_id};
+				$locations->add($location);
+			}
+        }
+        $offset += $limit;
+    }
+	$project->{total} = $total;
+	$project->{done} = $done;
+	$projects->add($project);
+};
+#stap 4: indexeer
 $locations->each(sub{
     my $location = shift;
     my $doc = clone($location);
     my $project;
-    if($location->{project_id} && ($project = $locations->get($location->{project_id}))){
+    if($location->{project_id} && ($project = $projects->get($location->{project_id}))){
         foreach my $key(keys %$project){
             my $subkey = "project_$key";
-            $doc->{$subkey} = $project->{$key} if $project->{$key};
+			$subkey =~ s/_{2,}/_/go;
+            $doc->{$subkey} = $project->{$key};
         }
     }
     if($location->{user_id}){
