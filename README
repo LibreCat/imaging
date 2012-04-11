@@ -23,4 +23,4 @@ solr:
     java -jar start.jar
 run 'cronjob':
     cd Image/test
-    ./cron.pl
+    ./cron2.pl
