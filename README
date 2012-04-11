@@ -18,6 +18,11 @@ mysql:
  create user 'imaging'@'localhost' identified by 'imaging';
  grant all privileges on imaging.* to 'imaging'@'localhost';
 
+clamav: (viruscan)	
+	clamav
+	clamav-devel
+	perl-ClamAV-Client
+
 configuratie mappen:
 	vim Imaging/environments/development.yml
 	mounts->directories->path: basis-locatie waar 01_ready,02_processed en 03_reprocessing komt
