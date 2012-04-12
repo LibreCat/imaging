@@ -90,8 +90,8 @@ app: {}
 all: {}
 mounts:
  directories:
-  path: "/data/imaging/directories"
+  path: "/mnt/data0"
   subdirectories:
-   ready: "ready"
-   processed: "processed"
-   reprocessing: "reprocessing"
+   ready: "01_ready"
+   processed: "02_processed"
+   reprocessing: "03_reprocessing"
