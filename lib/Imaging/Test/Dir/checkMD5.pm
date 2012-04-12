@@ -6,7 +6,10 @@ has name_manifest => (
 	is => 'rw',
 	default => sub{ "manifest.txt"; }
 );
-
+has is_optional => (
+    is => 'ro',
+    default => sub { 0; }
+);
 sub test {
 	my $self = shift;
 	my $topdir = $self->dir();
@@ -22,7 +25,9 @@ sub test {
 		}
 	}
 	if(!defined($path_manifest)){
-		push @errors,$self->name_manifest()." could not be found in $topdir";
+
+		push @errors,$self->name_manifest()." could not be found in $topdir" if !$self->is_optional();
+
 	}else{
 		
         #open manifest: <md5sum> <file>

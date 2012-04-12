@@ -34,29 +34,24 @@ my $profile = $profiles->add({
             args => {},
             on_error => "continue"
         },
+		{
+			class => "Imaging::Test::Dir::checkMD5",
+			args => {
+				is_optional => 1
+			},
+			on_error => "continue"
+		},
         {
             class => "Imaging::Test::Dir::checkTIFF",
             args => {
-                valid_patterns => ['\.tif(?:f)?$']
-            },
+				valid_patterns => [
+					'^(?!manifest\.txt$)'
+				]
+			},
             on_error => "continue"
         },
         {
-            class => "Imaging::Test::Dir::checkPDF",
-            args => {
-                valid_patterns => ['\.pdf$']
-            },
-            on_error => "continue"
-        },
-        {
-            class => "Imaging::Test::Dir::checkJPEG",
-            args => {
-                valid_patterns => ['\.jp(?:e)g$']
-            },
-            on_error => "continue"
-        },
-        {
-            class => "Imaging::Test::Dir::checkFilename",
+            class => "Imaging::Test::Dir::NARA::checkFilename",
             args => {},
             on_error => "continue"
         }

@@ -136,6 +136,7 @@ foreach my $project_id(@project_ids){
     my $query = $project->{query};
     next if !$query;
 
+
     my $res = $ua->get($base_url."?q=$query&format=json&limit=0");
     if($res->is_error()){
         die($res->content());
