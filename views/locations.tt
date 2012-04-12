@@ -35,7 +35,7 @@
     [% IF locations.size > 0 %]
     <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
         <option value="">--sort results--</option>
-    [% FOREACH key IN ["_id","user_name","stadium","datetime_last_modified"] %]
+    [% FOREACH key IN ["_id","user_name","status","datetime_last_modified"] %]
         <option value="[% key %] asc" [% IF params.item("sort") == ( key _ " asc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] ascending</option>
         <option value="[% key %] desc" [% IF params.item("sort") == ( key _ " desc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] descending</option>
     [% END %]

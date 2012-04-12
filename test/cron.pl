@@ -78,7 +78,7 @@ sub get_package {
     state $stash->{$class} ||= load_package($class)->new(%$args, dir => ".");
 }
 my @location_ids = ();
-$locations->each(sub{ push @location_ids,$_[0]->{_id} if ($_[0]->{status} eq "incoming" || $_[0]->{status} eq "incoming_error"); });
+$locations->each(sub{ push @location_ids,$_[0]->{_id} if ($_[0]->{status} && ($_[0]->{status} eq "incoming" || $_[0]->{status} eq "incoming_error")); });
 foreach my $location_id(@location_ids){
     my $location = $locations->get($location_id);
     $sth_get->execute( $location->{user_id} ) or die($sth_get->errstr);
@@ -136,85 +136,107 @@ foreach my $project_id(@project_ids){
     my $query = $project->{query};
     next if !$query;
 
-
-    my $res = $ua->get($base_url."?q=$query&format=json&limit=0");
-    if($res->is_error()){
-        die($res->content());
-    }
-    my $ref = decode_json($res->content);
-    if($ref->{error}){
-        die($ref->{error});
-    }
-    $total = $ref->{totalhits};
-    my($offset,$limit) = (0,100);
-    my $xml_reader = XML::Simple->new();
-    while($offset <= $total){
-        $res = $ua->get($base_url."?q=$query&format=json&start=$offset&limit=$limit");
-        if($res->is_error()){
-            die($res->content());
-        }
-        $ref = decode_json($res->content);
-        if($ref->{error}){
-            die($ref->{error});
-        }
-        foreach my $hit(@{ $ref->{hits} }){
-            my $xml = $xml_reader->XMLin($hit->{fXML},ForceArray => 1);
-			my $data_fields = [
-				{
-					tag => '852',
-					subfield => 'j'
-				}
-			];
-			my $control_fields = [{
-				tag => '001',
-			},
-			{
-				tag => 003
-			}];
-			my %values = ();
-		
-			foreach my $control_field(@$control_fields){
-				foreach my $marc_controlfield(@{ $xml->{'marc:controlfield'} }){
-					if($marc_controlfield->{tag} eq $control_field->{tag}){
-						$values{ $control_field->{tag} } = $marc_controlfield->{content};
-						last;
-					}
-				}
-			}
-			foreach my $data_field(@$data_fields){
-				foreach my $marc_datafield(@{ $xml->{'marc:datafield'} }){
-					if($marc_datafield->{tag} eq $data_field->{tag}){
-						foreach my $marc_subfield(@{ $marc_datafield->{'marc:subfield'} }){
-							if($marc_subfield->{code} eq $data_field->{subfield}){
-								$values{ $marc_datafield->{tag}.$marc_subfield->{code} } = $marc_subfield->{content};
-								last;
-							}
-						}
-						last;
-					}
-				}
-			}	
-			my($location_id,$location_name);
-			if($values{'852j'}){
-				$location_id = $values{'852j'};
-				$location_name = $values{'852j'};
-				$location_id =~ s/[\.\/]/-/go;
-			}else{	
-				$location_id = uc($values{'003'})."-".$values{'001'};
-				$location_name = $location_id;				
-			}
+	if(is_array_ref($project->{list}) && scalar(@{ $project->{list} }) > 0){
+		my $done = 0;
+		foreach my $location_id(@{ $project->{list} }){
 			my $location = $locations->get($location_id);
-			if($location){
-				$done++ if $location->{archived};
-				$location->{name} = $location_name;
-				$location->{project_id} = $project->{_id};
+			if(is_hash_ref($location)){
+				$done++ if $location->{status} eq "archived";
+				$location->{project_id} = $project_id;
+				$location->{datetime_last_modified} = time;
 				$locations->add($location);
 			}
-        }
-        $offset += $limit;
-    }
-	$project->{total} = $total;
-	$project->{done} = $done;
+		}
+		$project->{done} = $done;
+		$project->{datetime_last_modified} = time;
+
+	}else{
+
+		my @list = ();
+
+		my $res = $ua->get($base_url."?q=$query&format=json&limit=0");
+		if($res->is_error()){
+			die($res->content());
+		}
+		my $ref = decode_json($res->content);
+		if($ref->{error}){
+			die($ref->{error});
+		}
+		$total = $ref->{totalhits};
+		my($offset,$limit) = (0,100);
+		my $xml_reader = XML::Simple->new();
+		while($offset <= $total){
+			$res = $ua->get($base_url."?q=$query&format=json&start=$offset&limit=$limit");
+			if($res->is_error()){
+				die($res->content());
+			}
+			$ref = decode_json($res->content);
+			if($ref->{error}){
+				die($ref->{error});
+			}
+			foreach my $hit(@{ $ref->{hits} }){
+				my $xml = $xml_reader->XMLin($hit->{fXML},ForceArray => 1);
+				my $data_fields = [
+					{
+						tag => '852',
+						subfield => 'j'
+					}
+				];
+				my $control_fields = [{
+					tag => '001',
+				},
+				{
+					tag => 003
+				}];
+				my %values = ();
+			
+				foreach my $control_field(@$control_fields){
+					foreach my $marc_controlfield(@{ $xml->{'marc:controlfield'} }){
+						if($marc_controlfield->{tag} eq $control_field->{tag}){
+							$values{ $control_field->{tag} } = $marc_controlfield->{content};
+							last;
+						}
+					}
+				}
+				foreach my $data_field(@$data_fields){
+					foreach my $marc_datafield(@{ $xml->{'marc:datafield'} }){
+						if($marc_datafield->{tag} eq $data_field->{tag}){
+							foreach my $marc_subfield(@{ $marc_datafield->{'marc:subfield'} }){
+								if($marc_subfield->{code} eq $data_field->{subfield}){
+									$values{ $marc_datafield->{tag}.$marc_subfield->{code} } = $marc_subfield->{content};
+									last;
+								}
+							}
+							last;
+						}
+					}
+				}	
+				my($location_id,$location_name);
+				if($values{'852j'}){
+					$location_id = $values{'852j'};
+					$location_name = $values{'852j'};
+					$location_id =~ s/[\.\/]/-/go;
+				}else{	
+					$location_id = uc($values{'003'})."-".$values{'001'};
+					$location_name = $location_id;				
+				}
+				my $location = $locations->get($location_id);
+				if($location){
+					$done++ if $location->{status} eq "archived";
+					$location->{name} = $location_name;
+					$location->{project_id} = $project->{_id};
+					$locations->add($location);
+				}
+				push @list,$location_id;
+			}
+			$offset += $limit;
+		}
+		$project->{list} = \@list;
+		$project->{done} = $done;
+		$project->{datetime_last_modified} = time;
+
+	}
+
 	$projects->add($project);
 };
 #stap 4: indexeer
@@ -224,6 +246,7 @@ $locations->each(sub{
     my $project;
     if($location->{project_id} && ($project = $projects->get($location->{project_id}))){
         foreach my $key(keys %$project){
+			next if $key eq "list";
             my $subkey = "project_$key";
 			$subkey =~ s/_{2,}/_/go;
             $doc->{$subkey} = $project->{$key};

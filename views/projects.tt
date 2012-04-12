@@ -49,7 +49,7 @@
 		<tr>
 			<td>[% project.item("name") %]</td>
 			<td>[% project.item("name_subproject") %]</td>
-			<td>[% project.item("total") || 0 %]</td>
+			<td>[% project.item("list").size || 0 %]</td>
 			<td>[% project.item("done") || 0 %]</td>
 			<td>[% date.format(project.datetime_last_modified,format => '%d-%m-%Y') %]</td>
 			<td>[% project.date_start %]</td>

@@ -52,7 +52,11 @@ my $profile = $profiles->add({
         },
         {
             class => "Imaging::Test::Dir::NARA::checkFilename",
-            args => {},
+            args => {
+				valid_patterns => [
+                    '^(?!manifest\.txt$)'
+                ]
+			},
             on_error => "continue"
         }
     ]
