@@ -58,14 +58,23 @@ plugins:
         operations: ["edit"]
        projects:
         operations: ["edit"]
-     collection_manager:
+     collectie_beheerder:
       permissions:
-       projects:
+       projects: 
         operations: ["edit"]
      scanner:
       permissions:
        directories: 
         operations: ["view"]
+     it manager:
+      permissions:
+       manage_accounts:
+        operations: ["edit"]
+       directories:
+        operations: ["edit"]
+     qa_manager: {}
+     archivaris: {}
+     catalograaf: {}
 cache:
  session:
   package: "Cache::FastMmap"

@@ -1,6 +1,25 @@
 [% PROCESS inc/errors_messages.tt %]
 <h1>Edit user '[% user.login %]'</h1>
 [% IF user %]
+	<script type="text/javascript">
+		function toggle_passwords(){
+			var edit_passwords = document.getElementById("edit_passwords");
+			var button_toggle_passwords = document.getElementById("button_toggle_passwords");
+			var password1 = document.getElementById("password1");
+			var password2 = document.getElementById("password2");
+			if(parseInt(edit_passwords.value)){
+				password1.disabled = true;
+				password2.disabled = true;
+				edit_passwords.value = 0;
+				button_toggle_passwords.value = "edit passwords..";
+			}else{
+				password1.disabled = false;
+                password2.disabled = false;
+                edit_passwords.value = 1;
+                button_toggle_passwords.value = "cancel..";
+			}
+		}
+	</script>
 	<form method="post">
 		<input type="submit" name="submit" id="submit" value="update" />
 	<table id="form-user-delete-detail" class="right">
@@ -27,6 +46,22 @@
 				</select>
 			</td>
 		</tr>
+		<tr>
+			<td colspan="2">
+				<input type="button" id="button_toggle_passwords" value="edit passwords" onclick="toggle_passwords();"/>
+			</td>
+		</tr>
+		<tr>
+			<th>password:</th>
+			<td><input type="password" name="password1" id="password1" disabled="disabled" /></td>
+		</tr>	
+		<tr>
+            <th>retype password:</th>
+            <td>
+				<input type="password" name="password2" id="password2" disabled="disabled" />
+				<input type="hidden" name="edit_passwords" id="edit_passwords" value="0" />
+			</td>
+        </tr>
 	</table>
 	</form>
 [% END %]

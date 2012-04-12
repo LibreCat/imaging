@@ -102,9 +102,24 @@ any('/user/:id/edit',sub{
 				login => $params->{login},
 				name => $params->{name}
 			};
-			$user = { %$user,%$new };
-            dbi_handle->quick_update('users',{ id => $params->{id} },$user);
-			redirect(uri_for("/users"));
+			#nieuw wachtwoord opgegeven? -> check!
+			if($params->{edit_passwords}){
+				if(!(
+					is_string($params->{password1}) && 
+					is_string($params->{password2}) &&
+					$params->{password1} eq $params->{password2}
+					)
+				){
+					push @errors,"passwords are not equal";
+				}else{
+					$new->{password} = md5_hex($params->{password1});
+				}
+			}
+			if(scalar(@errors)==0){
+				$user = { %$user,%$new };
+    	        dbi_handle->quick_update('users',{ id => $params->{id} },$user);
+				redirect(uri_for("/users"));
+			}
         }
     }
     template('user/edit',{ user => $user,errors => \@errors,messages => \@messages, auth => auth() });
