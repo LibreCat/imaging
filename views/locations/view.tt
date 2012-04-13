@@ -43,25 +43,71 @@
             <td>[% location.comments %]</td>
         </tr>
         [% END %]
+		<tr>
+            <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">technisch</th>
+        </tr>
         <tr>
             <th>files</th>
-            <td></td>
-        </tr>
-        [% FOREACH file IN location.files %]
-        <tr>
-            <th></th>
-            <td>[% file %]</td>
-        </tr>
-        [% END %]
-        <tr>
-            <th>log</th>
             <td>
-                [% IF location.item("log").size > 0 %]
-                <textarea readonly="readonly" rows="20" cols="100">[% location.item("log").join("\n") %]</textarea>
+				<table style="width:100%">
+				[% FOREACH file IN location.files %]
+				<tr>
+					<td>[% file %]</td>
+				</tr>
+				[% END %]
+				</table>
+			</td>
+        </tr>
+        <tr>
+            <th>check log</th>
+            <td>
+                [% IF location.item("check_log").size > 0 %]
+                <textarea readonly="readonly" rows="20" cols="100">[% location.item("check_log").join("\n") %]</textarea>
                 [% ELSE %]
                 -
                 [% END %]
             </td>
         </tr>
+		<tr>
+			<th>status history</th>
+            <td>
+				<table style="width:100%">
+                [% IF location.item("status_history").size > 0 %]
+					<tr>
+						<th>status</th>
+						<th>time</th>
+					</tr>
+					[% FOREACH status_entry IN location.item("status_history") %]
+						[% entries = status_entry.split(' ') %]
+						<tr>
+							<td>[% entries.0 %]</td>
+							<td>[% entries.1 %]</td>
+						</tr>
+					[% END %]
+                [% ELSE %]
+                -
+                [% END %]
+				</table>
+            </td>
+		</tr>
+		<tr>
+			<th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">metadata</th>
+		</tr>
+		<tr>
+            <th>identifier</th>
+            <td>
+                [% location.item("metadata_id") || "-" %]
+            </td>
+        </tr>
+		<tr>
+			<th>marc</th>
+			<td>
+				[% IF location.item("marcxml") %]
+                <textarea readonly="readonly" rows="20" cols="100">[% location.item("marcxml") %]</textarea>
+                [% ELSE %]
+                -
+                [% END %]
+			</td>
+		</tr>
 	</table>
 [% END %]

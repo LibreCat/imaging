@@ -30,7 +30,7 @@
 [% END %]
 </div>
 <form method="GET" id="query-form">
-    <input type="text" name="q" id="q" value="[% params.q | html %]" />
+    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" />
     <input type="submit" value="search" />
     [% IF locations.size > 0 %]
     <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">

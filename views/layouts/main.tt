@@ -21,16 +21,10 @@
 					[% END %]
                     [% IF session.user.roles.grep('scanner').size > 0 %]
                     <li>
-                        [% q = "user_id:" _ session.user.id _ " AND stadium:ready" %]
-                        <a href="/locations?q=[% q | uri %]">ready</a>
+                        <a href="/ready/[% session.user.login %]/">ready</a>
                     </li>
                     <li>
-                        [% q = "user_id:" _ session.user.id _ " AND stadium:processed" %]
-                        <a href="/locations?q=[% q | uri %]">processed</a>
-                    </li>
-                    <li>
-                        [% q = "user_id:" _ session.user.id _ " AND stadium:reprocessing" %]
-                        <a href="/locations?q=[% q | uri %]">reprocessing</a>
+                        <a href="/reprocessing/[% session.user.login %]/">reprocessing</a>
                     </li>
                     [% END %]
 					[% IF auth.can('manage_accounts','edit') %]

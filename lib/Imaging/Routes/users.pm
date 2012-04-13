@@ -4,6 +4,7 @@ use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
+use Catmandu qw(store);
 use Catmandu::Util qw(:is);
 use URI::Escape qw(uri_escape);
 use Digest::MD5 qw(md5_hex);
@@ -12,6 +13,12 @@ use Try::Tiny;
 
 sub dbi_handle {
     state $dbi_handle = database;
+}
+sub core {
+	state $core = store("core");
+}
+sub profiles {
+	state $profiles = core()->bag("profiles");
 }
 hook before => sub {
 	if(request->path =~ /^\/user/o){
@@ -62,7 +69,8 @@ any('/users/add',sub{
 					login => $params->{login},
 					name => $params->{name},
 					roles => join(', ',@{ $params->{roles} }),
-					password => md5_hex($params->{password1})
+					password => md5_hex($params->{password1}),
+					profile_id => $params->{profile_id}
 				});
 				redirect(uri_for("/users"));
 			}
@@ -72,7 +80,8 @@ any('/users/add',sub{
     template('users/add',{
         errors => \@errors,
 		messages => \@messages,
-		auth => auth()
+		auth => auth(),
+		profiles => profiles()->to_array
     });
 
 });
@@ -102,6 +111,7 @@ any('/user/:id/edit',sub{
 				login => $params->{login},
 				name => $params->{name}
 			};
+			$new->{profile_id} = $params->{profile_id} if defined($params->{profile_id});
 			#nieuw wachtwoord opgegeven? -> check!
 			if($params->{edit_passwords}){
 				if(!(
@@ -122,7 +132,13 @@ any('/user/:id/edit',sub{
 			}
         }
     }
-    template('user/edit',{ user => $user,errors => \@errors,messages => \@messages, auth => auth() });
+    template('user/edit',{ 
+		user => $user,
+		errors => \@errors,
+		messages => \@messages, 
+		auth => auth(),
+		profiles => profiles()->to_array
+	});
 });
 any('/user/:id/delete',sub{
 
@@ -174,6 +190,17 @@ sub check_params_new_user {
             push @errors,"$key must be supplied"
         }
     }
+	if(scalar(@errors)==0){
+		my $is_scanner = scalar(grep { $_ =~ /scanner/o } @{$params->{roles}}) > 0;
+		if($is_scanner){
+			my $profile;
+			if(!is_string($params->{profile_id})){
+				push @errors,"no profile given for scanner";
+			}elsif(!($profile = profiles->get($params->{profile_id}))){
+				push @errors,"profile given does not exist";
+			}
+		}
+	}
 	return scalar(@errors)==0,\@errors;
 }
 

@@ -482,11 +482,16 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 			- 'published'
 	-->
     <field name="status" type="string" indexed="true" stored="true" />
+	<!--
+		incoming_error 2012-12-31T23:59:59.999Z
+	-->
+    <field name="status_history" type="string" indexed="true" stored="true" multiValued="true"/>
 	<field name="path" type="string" indexed="true" stored="true" />
-    <field name="files" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="log" type="lupetext" indexed="true" stored="true" multiValued="true"/>
+    <field name="files" type="string" indexed="true" stored="true" multiValued="true" />
+	<field name="check_log" type="string" indexed="true" stored="true" multiValued="true" />
     <field name="comments" type="lupetext" indexed="true" stored="true" />
     <field name="datetime_last_modified" type="date" indexed="true" stored="true" />
+	<field name="metadata_id" type="string" indexed="true" stored="true" />
 
     <!-- table users -->
 	<field name="user_id" type="string" indexed="true" stored="true" />
@@ -534,17 +539,12 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <copyField source="status" dest="text" />
     <copyField source="path" dest="text" />
     <copyField source="files" dest="text" />
-    <copyField source="log" dest="text" />
+    <copyField source="check_log" dest="text" />
+	<copyField source="status_history" dest="text" />
     <copyField source="comments" dest="text" />
 
     <copyField source="user_*" dest="spelling"/>
     <copyField source="project_*" dest="spelling"/>
-    <copyField source="_id" dest="spelling" />
-	<copyField source="name" dest="spelling" />
-    <copyField source="status" dest="spelling" />
-    <copyField source="path" dest="spelling" />
-    <copyField source="files" dest="spelling" />
-    <copyField source="log" dest="spelling" />
     <copyField source="comments" dest="spelling" />
     
 	

@@ -20,6 +20,53 @@ use LWP::UserAgent;
 use Clone qw(clone);
 use DateTime;
 use DateTime::Format::Strptime;
+use XML::XPath;
+
+sub formatted_date {
+	my $time = shift || time;
+	DateTime::Format::Strptime::strftime(
+        '%FT%TZ', DateTime->from_epoch(epoch=>$time)
+    );
+}
+sub marcxml_2_aleph_sequential {
+	my $record = shift;
+
+	return "" unless $record =~ m{\S+};
+	
+	my @values = ();
+
+	$record =~ s/<marc:/</go;
+	$record =~ s/<\/marc:/<\//go;
+	my $xpath  = XML::XPath->new(xml => $record);
+	my $id = $xpath->findvalue('/record/controlfield[@tag=\'001\']')->value();
+
+	push @values,"$id FMT   L BK";
+	my $leader = $xpath->findvalue('/record/leader')->value();
+	$leader =~ s/ /^/go;
+	push @values,"$id LDR   L $leader";
+	foreach my $cntrl ($xpath->find('/record/controlfield')->get_nodelist) {
+		my $tag   = $cntrl->findvalue('@tag')->value();
+		my $value = $cntrl->findvalue('.')->value();
+		push @values,"$id $tag   L $value";
+	}
+	foreach my $data ($xpath->find('/record/datafield')->get_nodelist) {
+		my $tag   = $data->findvalue('@tag')->value();
+		my $ind1  = $data->findvalue('@ind1')->value();
+		my $ind2  = $data->findvalue('@ind2')->value();
+
+		my @subf = ();
+		  foreach my $subf ($data->find('.//subfield')->get_nodelist) {
+		  my $code  = $subf->findvalue('@code')->value();
+		  my $value = $subf->findvalue('.')->value();
+		  push(@subf,"\$\$$code$value");
+		}
+
+		my $value = join "" , @subf;
+		push @values,"$id $tag$ind1$ind2 L $value";
+	}
+	join("\n",@values);
+}
+
 
 my %opts = (
     data_source => "dbi:mysql:database=imaging",
@@ -54,13 +101,15 @@ while(my $user = $sth_each->fetchrow_hashref()){
         chomp($dir);    
         my $basename = basename($dir);
         my $location = $locations->get($basename);
+		my $now = formatted_date();
         if(!$location){
             $locations->add({
                 _id => $basename,
 				name => undef,
                 path => $dir,
                 status => "incoming",
-                log => [],
+				status_history => ["incoming $now"],
+                check_log => [],
                 files => [],
                 user_id => $user->{id},
                 datetime_last_modified => time,
@@ -78,7 +127,7 @@ sub get_package {
     state $stash->{$class} ||= load_package($class)->new(%$args, dir => ".");
 }
 my @location_ids = ();
-$locations->each(sub{ push @location_ids,$_[0]->{_id} if ($_[0]->{status} eq "incoming" || $_[0]->{status} eq "incoming_error"); });
+$locations->each(sub{ push @location_ids,$_[0]->{_id} if ($_[0]->{status} && ($_[0]->{status} eq "incoming" || $_[0]->{status} eq "incoming_error")); });
 foreach my $location_id(@location_ids){
     my $location = $locations->get($location_id);
     $sth_get->execute( $location->{user_id} ) or die($sth_get->errstr);
@@ -88,13 +137,13 @@ foreach my $location_id(@location_ids){
         return;
     }
     my $profile = $profiles->get($user->{profile_id});
-    $location->{log} = [];
+    $location->{check_log} = [];
     my @files = ();
     foreach my $test(@{ $profile->{packages} }){
         my $ref = get_package($test->{class},$test->{args});
         $ref->dir($location->{path});        
         my($success,$errors) = $ref->test();
-        push @{ $location->{log} }, @$errors if !$success;
+        push @{ $location->{check_log} }, @$errors if !$success;
         unless(scalar(@files)){
             foreach my $stats(@{ $ref->file_info() }){
                 push @files,$stats->{path};
@@ -104,10 +153,12 @@ foreach my $location_id(@location_ids){
             last;
         }
     }
-    if(scalar(@{ $location->{log} }) > 0){
+    if(scalar(@{ $location->{check_log} }) > 0){
         $location->{status} = "incoming_error";
+		push @{$location->{status_history}},"incoming_error ".formatted_date();
     }else{
         $location->{status} = "incoming_ok";
+		push @{$location->{status_history}},"incoming_ok ".formatted_date();
         my $basename = basename($location->{path});
         my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/$basename";
         if(!move($location->{path},$newpath)){
@@ -136,96 +187,127 @@ foreach my $project_id(@project_ids){
     my $query = $project->{query};
     next if !$query;
 
-
-    my $res = $ua->get($base_url."?q=$query&format=json&limit=0");
-    if($res->is_error()){
-        die($res->content());
-    }
-    my $ref = decode_json($res->content);
-    if($ref->{error}){
-        die($ref->{error});
-    }
-    $total = $ref->{totalhits};
-    my($offset,$limit) = (0,100);
-    my $xml_reader = XML::Simple->new();
-    while($offset <= $total){
-        $res = $ua->get($base_url."?q=$query&format=json&start=$offset&limit=$limit");
-        if($res->is_error()){
-            die($res->content());
-        }
-        $ref = decode_json($res->content);
-        if($ref->{error}){
-            die($ref->{error});
-        }
-        foreach my $hit(@{ $ref->{hits} }){
-            my $xml = $xml_reader->XMLin($hit->{fXML},ForceArray => 1);
-			my $data_fields = [
-				{
-					tag => '852',
-					subfield => 'j'
-				}
-			];
-			my $control_fields = [{
-				tag => '001',
-			},
-			{
-				tag => 003
-			}];
-			my %values = ();
-		
-			foreach my $control_field(@$control_fields){
-				foreach my $marc_controlfield(@{ $xml->{'marc:controlfield'} }){
-					if($marc_controlfield->{tag} eq $control_field->{tag}){
-						$values{ $control_field->{tag} } = $marc_controlfield->{content};
-						last;
-					}
-				}
-			}
-			foreach my $data_field(@$data_fields){
-				foreach my $marc_datafield(@{ $xml->{'marc:datafield'} }){
-					if($marc_datafield->{tag} eq $data_field->{tag}){
-						foreach my $marc_subfield(@{ $marc_datafield->{'marc:subfield'} }){
-							if($marc_subfield->{code} eq $data_field->{subfield}){
-								$values{ $marc_datafield->{tag}.$marc_subfield->{code} } = $marc_subfield->{content};
-								last;
-							}
-						}
-						last;
-					}
-				}
-			}	
-			my($location_id,$location_name);
-			if($values{'852j'}){
-				$location_id = $values{'852j'};
-				$location_name = $values{'852j'};
-				say STDERR "location:$location_id";
-				$location_id =~ s/[\.\/]/-/go;
-			}else{	
-				$location_id = uc($values{'003'})."-".$values{'001'};
-				$location_name = $location_id;				
-				say STDERR "id:$location_name";
-			}
+	#TODO: de 1ste batch in 01_ready krijgt op deze manier metadata toegewezen, maar de volgende niet, omdat het attribuut 'list' in project reeds gevuld is
+	#beter:
+	#	1. query index om plaatsnaam/rug01 te weten te komen en sla die op in 'list'
+	#	2. itereer over projects, en kijk voor alle locations in 'list' of
+	#		2.1 bestaan ze al in 'locations'
+	#		2.2 is er al metadata aan gekoppeld? (metadata_id en marc)
+	if(is_array_ref($project->{list}) && scalar(@{ $project->{list} }) > 0){
+		my $done = 0;
+		foreach my $location_id(@{ $project->{list} }){
 			my $location = $locations->get($location_id);
-			if($location){
-				$done++ if $location->{archived};
-				$location->{name} = $location_name;
-				$location->{project_id} = $project->{_id};
+			if(is_hash_ref($location)){
+				$done++ if $location->{status} eq "archived";
+				$location->{project_id} = $project_id;
+				$location->{datetime_last_modified} = time;
 				$locations->add($location);
 			}
-        }
-        $offset += $limit;
-    }
-	$project->{total} = $total;
-	$project->{done} = $done;
+		}
+		$project->{done} = $done;
+		$project->{datetime_last_modified} = time;
+
+	}else{
+
+		my @list = ();
+
+		my $res = $ua->get($base_url."?q=$query&format=json&limit=0");
+		if($res->is_error()){
+			die($res->content());
+		}
+		my $ref = decode_json($res->content);
+		if($ref->{error}){
+			die($ref->{error});
+		}
+		$total = $ref->{totalhits};
+		my($offset,$limit) = (0,100);
+		my $xml_reader = XML::Simple->new();
+		while($offset <= $total){
+			$res = $ua->get($base_url."?q=$query&format=json&start=$offset&limit=$limit");
+			if($res->is_error()){
+				die($res->content());
+			}
+			$ref = decode_json($res->content);
+			if($ref->{error}){
+				die($ref->{error});
+			}
+			foreach my $hit(@{ $ref->{hits} }){
+				$hit->{fXML} =~ s/(?:\n|\r)//go;
+				my $xml = $xml_reader->XMLin($hit->{fXML},ForceArray => 1);
+				my $data_fields = [
+					{
+						tag => '852',
+						subfield => 'j'
+					}
+				];
+				my $control_fields = [{
+					tag => '001',
+				},
+				{
+					tag => 003
+				}];
+				my %values = ();
+			
+				foreach my $control_field(@$control_fields){
+					foreach my $marc_controlfield(@{ $xml->{'marc:controlfield'} }){
+						if($marc_controlfield->{tag} eq $control_field->{tag}){
+							$values{ $control_field->{tag} } = $marc_controlfield->{content};
+							last;
+						}
+					}
+				}
+				foreach my $data_field(@$data_fields){
+					foreach my $marc_datafield(@{ $xml->{'marc:datafield'} }){
+						if($marc_datafield->{tag} eq $data_field->{tag}){
+							foreach my $marc_subfield(@{ $marc_datafield->{'marc:subfield'} }){
+								if($marc_subfield->{code} eq $data_field->{subfield}){
+									$values{ $marc_datafield->{tag}.$marc_subfield->{code} } = $marc_subfield->{content};
+									last;
+								}
+							}
+							last;
+						}
+					}
+				}	
+				my($location_id,$location_name);
+				if($values{'852j'}){
+					$location_id = $values{'852j'};
+					$location_name = $values{'852j'};
+					$location_id =~ s/[\.\/]/-/go;
+				}else{	
+					$location_id = uc($values{'003'})."-".$values{'001'};
+					$location_name = $location_id;				
+				}
+				my $location = $locations->get($location_id);
+				if($location){
+					$done++ if $location->{status} eq "archived";
+					$location->{name} = $location_name;
+					$location->{project_id} = $project->{_id};
+					$location->{marc} = marcxml_2_aleph_sequential($hit->{fXML});
+					$location->{metadata_id} = uc($values{'003'}).":".$values{'001'};
+					$locations->add($location);
+				}
+				push @list,$location_id;
+			}
+			$offset += $limit;
+		}
+		$project->{list} = \@list;
+		$project->{done} = $done;
+		$project->{datetime_last_modified} = time;
+
+	}
+
 	$projects->add($project);
 };
 #stap 4: indexeer
 $locations->each(sub{
     my $location = shift;
     my $doc = clone($location);
+	delete $doc->{marcxml};
     my $project;
     if($location->{project_id} && ($project = $projects->get($location->{project_id}))){
         foreach my $key(keys %$project){
+			next if $key eq "list";
             my $subkey = "project_$key";
 			$subkey =~ s/_{2,}/_/go;
             $doc->{$subkey} = $project->{$key};
@@ -240,10 +322,7 @@ $locations->each(sub{
             $doc->{user_roles} = [split(',',$user->{roles})];   
         }
     }
-    my $date = DateTime->from_epoch(epoch=>$doc->{datetime_last_modified});
-    $doc->{datetime_last_modified} = DateTime::Format::Strptime::strftime(
-        '%FT%TZ',$date
-    );
+	$doc->{datetime_last_modified} = formatted_date( $doc->{datetime_last_modified} );
         
     say $doc->{_id};
     $index_locations->add($doc);   

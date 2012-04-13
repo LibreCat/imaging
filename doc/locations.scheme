@@ -16,7 +16,11 @@ locations:
 								- 'archived'
 								- 'published'
 	files:						[file1,file2..]
-	log:						["cannot ready $file1"..]
+	check_log:					["cannot ready $file1"..]
+	status_history:				[
+									"incoming 2012-04-11T10:05:47Z",
+									"incoming_error 2012-04-11T10:05:47Z"
+								]
 	datetime_last_modified:		2012-04-11T10:05:47Z
 	comments:					"Beste $scanner, scan met nr. 1 is wel technisch correct, maar hij staat op zijn kop.."
 

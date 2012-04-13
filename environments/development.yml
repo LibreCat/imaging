@@ -99,7 +99,7 @@ app: {}
 all: {}
 mounts:
  directories:
-  path: "/mnt/data0"
+  path: "/mnt/data01"
   subdirectories:
    ready: "01_ready"
    processed: "02_processed"

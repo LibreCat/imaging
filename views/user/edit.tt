@@ -47,6 +47,17 @@
 			</td>
 		</tr>
 		<tr>
+            <th>profile (indien scanner)</th>
+            <td>
+                <select name="profile_id" id="profile_id">
+					<option value="">--select profile--</option>
+                [% FOREACH profile IN profiles %]
+                    <option value="[% profile.item("_id") %]" [% IF user.item("profile_id") == profile.item("_id") %]selected="selected"[% END %]>[% profile.item("_id") %]</option>
+                [% END %]
+                </select>
+            </td>
+        </tr>
+		<tr>
 			<td colspan="2">
 				<input type="button" id="button_toggle_passwords" value="edit passwords" onclick="toggle_passwords();"/>
 			</td>

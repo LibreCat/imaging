@@ -1,0 +1,14 @@
+<h1>Directory [% dir %]</h1>
+<table id="table-files">
+[% FOREACH file IN files %]
+	<tr>
+		<td>
+		[% IF file.is_dir %]
+			<a href="[% file.href %]">[% file.name %]</a>
+		[% ELSE %]
+			[% file.name %]
+		[% END %]
+        </td>
+	</tr>
+[% END %]
+</table>
