@@ -1,4 +1,8 @@
 #!/usr/bin/env perl
+use lib qw(
+	/home/nicolas/Catmandu/lib
+	/home/nicolas/Imaging/lib
+);
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
 use Catmandu::Store::Solr;
@@ -16,10 +20,6 @@ use DateTime;
 use DateTime::Format::Strptime;
 use Array::Diff;
 use File::Find;
-BEGIN {
-	my $libdir = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"lib");
-	push @INC,$libdir;
-}
 
 sub formatted_date {
 	my $time = shift || time;
