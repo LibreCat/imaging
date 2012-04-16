@@ -32,9 +32,7 @@ hook before => sub {
 		}elsif(!$auth->can('directories','edit')){
 			request->path_info('/access_denied');
             my $params = params;
-            $params->{operation} = "directories";
-            $params->{action} = "edit";
-            $params->{referrer} = request->referer;
+            $params->{text} = "user has not the right to edit the directories";
 		}
 	}
 };
@@ -91,9 +89,7 @@ any('/directories/:id/edit',sub {
 	$user or return not_found();	
 	if($user->{roles} !~ /scanner/o){
 		return forward("/access_denied",{
-            operation => "users",
-            action => "create directory for user with other than 'scanner'",
-            referrer => request->referer
+			text => "Only directories for users with role 'scanner' can be created"
         });
 	}
 

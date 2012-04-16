@@ -1,7 +1,7 @@
 <table class="access-denied">
 	<tr>
 		<td>
-			<b>[% session.user.login %]</b> cannot perform action '[% params.action %]' on '[% params.operation %]'
+			[% text %]
 		</td>
 	</tr>
 	<tr>

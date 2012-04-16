@@ -1,0 +1,56 @@
+[% USE date %]
+[% IF location %]
+    <h1>[% location.item("_id") %]</h1>
+	<table id="table-locations" class="left">
+        <tr>
+            <th>status</th>
+            <td>
+                [% location.status %]
+            </td>
+        </tr>
+        <tr>
+            <th>files ([% location.files.size %])</th>
+            <td>
+				<table style="width:100%">
+				[% FOREACH file IN location.files %]
+				<tr>
+					<td>[% file %]</td>
+				</tr>
+				[% END %]
+				</table>
+			</td>
+        </tr>
+        <tr>
+            <th>check log</th>
+            <td>
+                [% IF location.item("check_log").size > 0 %]
+                <textarea readonly="readonly" rows="20" cols="100">[% location.item("check_log").join("\n") %]</textarea>
+                [% ELSE %]
+                -
+                [% END %]
+            </td>
+        </tr>
+		<tr>
+			<th>status history (laatste 5)</th>
+            <td>
+				<table style="width:100%">
+                [% IF location.item("status_history").size > 0 %]
+					<tr>
+						<th>status</th>
+						<th>time</th>
+					</tr>
+					[% FOREACH status_entry IN location.item("status_history").reverse.slice(0,4) %]
+						[% entries = status_entry.split(' ') %]
+						<tr>
+							<td>[% entries.0 %]</td>
+							<td>[% entries.1 %]</td>
+						</tr>
+					[% END %]
+                [% ELSE %]
+                -
+                [% END %]
+				</table>
+            </td>
+		</tr>
+	</table>
+[% END %]

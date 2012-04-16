@@ -34,9 +34,7 @@ hook before => sub {
 		}elsif($subpath =~ /(?:add|edit|delete)/o && !$auth->can('projects','edit')){
 			request->path_info('/access_denied');
             my $params = params;
-            $params->{operation} = "projects";
-            $params->{action} = "edit";
-            $params->{referrer} = request->referer;
+			$params->{text} = "user has not the right to edit user information"
 		}
 	}
 };

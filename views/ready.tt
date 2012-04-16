@@ -1,36 +1,31 @@
-[% USE date %]
-<h1>Scandirectory Status - [% mount_conf.subdirectories.ready %]/[% session.user.login %]</h1>
-[% IF directory_ready.directories && directory_ready.directories.size > 0 %]
-	<table id="table-projects" class="left">
+<script type="text/javascript">
+	//om de minuut de pagina herladen
+	setTimeout(function(){
+		document.location.href = document.location.href;
+	},60*1000);
+</script>
+<h1>Scandirectory Status - [% mount_conf.subdirectories.ready %]/[% user.login %]</h1>
+[% IF directories && directories.size > 0 %]
+	<table id="table-ready" class="left">
 		<tr>
 			<th>name</th>
-			<th>date</th>
 			<th>num files</th>
 			<th>status</th>
-			<th>actions</th>
 		</tr>
-	[% FOREACH directory IN directory.directories %]
+	[% FOREACH directory IN directories %]
 		<tr>
 			<td>
-				[% TRY %]
-					[% USE File(directory.item("path")) %]
-					[% File.name %]
-				[% CATCH File %]
-					File error:[% error.info %]
+				[% IF directory.record %]
+					<a href="/ready/[% user.login %]/[% directory.name %]">
+					[% directory.name %]
+					</a>
+				[% ELSE %]
+					[% directory.name %]
 				[% END %]
 			</td>
-			<td>[% date.format(directory.datetime_last_modified,format => '%d-%m-%Y') %]</td>
-			<td>[% directory.files.size || 0 %]</td>
+			<td>[% directory.record.files.size || "wait.." %]</td>
 			<td>
-				<!--
-					/ready/<dir>/status geeft errors/meldingen over map én file-niveau
-				-->
-				<a href="/ready/[% directory.name %]/status">
-					[% directory.status %]
-				</a>
-			</td>
-			<td>
-				<a href="/ready/[% directory.name %]/recheck">recheck</a>
+				[% directory.record.status || "wait.." %]
 			</td>
 		</tr>
 	[% END %]

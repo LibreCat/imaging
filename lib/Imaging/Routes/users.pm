@@ -30,9 +30,7 @@ hook before => sub {
 		}elsif(!$auth->can('manage_accounts','edit')){
 			request->path_info('/access_denied');
 			my $params = params;
-			$params->{operation} = "users";
-			$params->{action} = "edit";
-			$params->{referrer} = request->referer;
+			$params->{text} = "user has not the right to edit user information";
 		}
 	}
 };	
@@ -93,9 +91,7 @@ any('/user/:id/edit',sub{
 
 	if($user->{login} eq "admin"){
         return forward("/access_denied",{
-            operation => "users",
-            action => "edit user admin",
-            referrer => request->referer
+			text => "user has not the right to edit user information"
         });
     }
 
@@ -150,9 +146,7 @@ any('/user/:id/delete',sub{
 
 	if($user->{login} eq "admin"){
 		return forward("/access_denied",{
-            operation => "users",
-            action => "delete user admin",
-            referrer => request->referer
+			text => "user has not the right to edit user information"
         });
 	}
     if($params->{submit}){
