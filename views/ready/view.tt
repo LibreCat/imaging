@@ -39,7 +39,8 @@
 						<th>status</th>
 						<th>time</th>
 					</tr>
-					[% FOREACH status_entry IN location.item("status_history").reverse.slice(0,4) %]
+					[% FOREACH status_entry IN location.item("status_history").reverse %]
+						[% NEXT IF loop.index >= 5 %]
 						[% entries = status_entry.split(' ') %]
 						<tr>
 							<td>[% entries.0 %]</td>

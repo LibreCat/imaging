@@ -140,10 +140,10 @@ foreach my $location_id(@location_ids){
     }
     if(scalar(@{ $location->{check_log} }) > 0){
         $location->{status} = "incoming_error";
-		push @{$location->{status_history}},"incoming_error ".formatted_date();
+		$location->{status_history} = ["incoming_error ".formatted_date()];
     }else{
         $location->{status} = "incoming_ok";
-		push @{$location->{status_history}},"incoming_ok ".formatted_date();
+		$location->{status_history} = ["incoming_ok ".formatted_date()];
 		#verplaats maar pas 's nachts!
     }
     $location->{files} = \@files;
