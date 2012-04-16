@@ -24,7 +24,9 @@ my $requires = {
 	'Hash::Merge::Simple' => 0,
 	'Digest::MD5' => 0,
 	'Cache::FastMmap' => 0,
-	'ClamAV::Client' => 0
+	'ClamAV::Client' => 0,
+	'Array::Diff' => 0,		
+	'Image::ExifTool' => 0
 };
 my $recommends = {
 	'Starman' => 0,
