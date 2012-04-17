@@ -4,7 +4,8 @@ use Dancer::Plugin::Imaging::Routes::Common;
 use Catmandu::Sane;
 
 any('/access_denied',sub{
-	template('access_denied',{});
+	my $params = params();
+	template('access_denied',$params);
 });
 
 true;
