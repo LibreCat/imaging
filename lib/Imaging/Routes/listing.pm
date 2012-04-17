@@ -77,10 +77,22 @@ any('/ready/:user_login/:location_id',sub{
     }
 
 	my $location = locations()->get($params->{location_id});
-	$location or not_found();
+	$location or return not_found();
+
+	my $mount = mount();
+    my $subdirectories = subdirectories();
+	my @errors = ();
+
+	#fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
+	if($location->{user_id} != $user->{id}){
+		push @errors,"$location->{_id} eerst bij gebruiker $user->{login} aangetroffen.";
+		push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
+		push @errors,"Uw map: $mount/".$subdirectories->{ready}."/".$location->{_id};
+	}
 	
 	template('ready/view',{
-		location => $location
+		location => $location,
+		errors => \@errors
 	});
 });
 

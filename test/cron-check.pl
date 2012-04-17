@@ -64,13 +64,14 @@ while(my $user = $sth_each->fetchrow_hashref()){
 				name => undef,
                 path => $dir,
                 status => "incoming",
-				status_history => ["incoming $now"],
+				status_history => ["admin incoming $now"],
                 check_log => [],
                 files => [],
                 user_id => $user->{id},
                 datetime_last_modified => time,
                 comments => "",
                 project_id => undef,
+				metadata => []
             });
         }
     }
@@ -91,7 +92,7 @@ $locations->each(sub{
 		push @location_ids,$location->{_id};
 	}
 	#incoming_ok enkel indien er iets aan bestandslijst gewijzigd is
-	else{
+	elsif($location->{status} eq "incoming_ok"){
 		my $new = [];
 		find({			
 			wanted => sub{
@@ -140,12 +141,15 @@ foreach my $location_id(@location_ids){
     }
     if(scalar(@{ $location->{check_log} }) > 0){
         $location->{status} = "incoming_error";
-		$location->{status_history} = ["incoming_error ".formatted_date()];
+		push @{$location->{status_history}},"admin incoming_error ".formatted_date();
     }else{
         $location->{status} = "incoming_ok";
-		$location->{status_history} = ["incoming_ok ".formatted_date()];
+		push @{$location->{status_history}}, "admin incoming_ok ".formatted_date();
 		#verplaats maar pas 's nachts!
     }
+	if(scalar( @{ $location->{status_history} }) > 5){
+		splice(@{ $location->{status_history} },0,1);
+	}
     $location->{files} = \@files;
     $locations->add($location);
 }

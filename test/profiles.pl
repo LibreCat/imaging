@@ -58,6 +58,15 @@ my $profile = $profiles->add({
                 ]
 			},
             on_error => "continue"
-        }
+        },
+		{
+			class => "Imaging::Test::Dir::checkAleph",
+			args => {
+				solr_args => {
+					url => "http://localhost:4000/solr"
+				}
+			},
+			on_error => "continue"
+		}
     ]
 });

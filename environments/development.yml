@@ -82,7 +82,7 @@ cache:
    share_file: "/tmp/session.data"
    empty_on_exit: 1
    init_file: 1
-   expire_time: '20m'
+   expire_time: '60m'
    cache_size: '30m'
 store:
  core:
@@ -96,6 +96,7 @@ store:
   options:
    url: "http://localhost:8983/solr/core0"
 app: {}
+default_app: "/projects"
 all: {}
 mounts:
  directories:

@@ -8,18 +8,18 @@ use URI::Escape qw(uri_unescape);
 use Digest::MD5 qw(md5_hex);
 
 post('/login',sub{
-	return redirect( uri_for("/projects") ) if authd;
+	return redirect( uri_for(config->{default_app} || "/") ) if authd;
 	my $params = params;
 	my $auth = auth($params->{user},md5_hex($params->{password}));
 	if($auth->errors){
 		forward('/login',{ errors => $auth->errors },{ method => 'GET' });
 	}else{
-		my $service = is_string($params->{service})? uri_unescape($params->{service}) : uri_for("/projects");
+		my $service = is_string($params->{service})? uri_unescape($params->{service}) : uri_for(config->{default_app} || "/");
 		return redirect( $service );
 	}
 });
 get('/login',sub{
-	return redirect( uri_for("/projects") ) if authd;
+	return redirect( uri_for(config->{default_app} || "/") ) if authd;
 	template('login',{ errors => params->{errors} || [], auth => auth() });
 });
 any('/logout',sub{

@@ -1,3 +1,4 @@
+[% PROCESS inc/errors_messages.tt %]
 [% USE date %]
 [% IF location %]
     <h1>[% location.item("_id") %]</h1>
@@ -14,7 +15,15 @@
 				<table style="width:100%">
 				[% FOREACH file IN location.files %]
 				<tr>
-					<td>[% file %]</td>
+					<!--
+						/mnt/data01/01_ready/geert/BHSL-PAP-000/BHSL-PAP-000_2012_0001_MA.tif
+						wordt BHSL-PAP-000_2012_0001_MA.tif,						
+						..
+						maar..
+						/mnt/data01/01_ready/geert/BHSL-PAP-000/test/manifest.txt
+						wordt test/manifest.txt
+					-->
+					<td>[% file.replace(location.path _ "/","") %]</td>	
 				</tr>
 				[% END %]
 				</table>
@@ -30,28 +39,5 @@
                 [% END %]
             </td>
         </tr>
-		<tr>
-			<th>status history (laatste 5)</th>
-            <td>
-				<table style="width:100%">
-                [% IF location.item("status_history").size > 0 %]
-					<tr>
-						<th>status</th>
-						<th>time</th>
-					</tr>
-					[% FOREACH status_entry IN location.item("status_history").reverse %]
-						[% NEXT IF loop.index >= 5 %]
-						[% entries = status_entry.split(' ') %]
-						<tr>
-							<td>[% entries.0 %]</td>
-							<td>[% entries.1 %]</td>
-						</tr>
-					[% END %]
-                [% ELSE %]
-                -
-                [% END %]
-				</table>
-            </td>
-		</tr>
 	</table>
 [% END %]

@@ -1,4 +1,5 @@
 [% USE date %]
+[% USE SizePretty %]
 [% IF location %]
     <h1>[% location.item("_id") %]</h1>
 	<table id="table-locations" class="left">
@@ -50,10 +51,24 @@
             <th>files</th>
             <td>
 				<table style="width:100%">
-				[% FOREACH file IN location.files %]
-				<tr>
-					<td>[% file %]</td>
-				</tr>
+					<tr>
+						<th>name</th>
+						<th>size</th>
+						<th>last modified</th>
+					</tr>
+				[% FOREACH file IN location.files.sort %]
+					<tr>
+						[% TRY %]
+							[% USE File(file) %]
+							<td>[% File.name %]</td>
+							<td>[% File.size.size_pretty %]</td>
+							<td>[% date.format(File.mtime,'%FT%TZ') %]</td>
+						[% CATCH %]
+							<td>[% file %]!error!</td>
+							<td></td>
+							<td></td>
+						[% END %]
+					</tr>
 				[% END %]
 				</table>
 			</td>
@@ -74,14 +89,16 @@
 				<table style="width:100%">
                 [% IF location.item("status_history").size > 0 %]
 					<tr>
+						<th>user</th>
 						<th>status</th>
 						<th>time</th>
 					</tr>
 					[% FOREACH status_entry IN location.item("status_history") %]
 						[% entries = status_entry.split(' ') %]
 						<tr>
-							<td>[% entries.0 %]</td>
-							<td>[% entries.1 %]</td>
+							[% FOREACH entry IN entries %]
+							<td>[% entry %]</td>
+							[% END %]
 						</tr>
 					[% END %]
                 [% ELSE %]
@@ -91,23 +108,31 @@
             </td>
 		</tr>
 		<tr>
-			<th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">metadata</th>
+			<th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">
+			metadata
+			[% IF location.metadata.size > 1 %]
+				(!!meerdere records gevonden!!)
+			[% ELSIF location.metadata.size == 1 %]
+				(ok)
+			[% ELSE %]
+				(!!geen records gevonden!!)
+			[% END %]
+			</th>
 		</tr>
+		[% FOREACH metadata IN location.metadata %]
 		<tr>
             <th>identifier</th>
             <td>
-                [% location.item("metadata_id") || "-" %]
+				<a href="http://search.ugent.be/meercat/x/view/rug01/[% metadata.fSYS %]">[% metadata.fSYS %]</a>
+				(bekijk in meercat)
             </td>
         </tr>
 		<tr>
 			<th>marc</th>
 			<td>
-				[% IF location.item("marcxml") %]
-                <textarea readonly="readonly" rows="20" cols="100">[% location.item("marcxml") %]</textarea>
-                [% ELSE %]
-                -
-                [% END %]
+                <textarea readonly="readonly" rows="20" cols="100">[% metadata.fXML %]</textarea>
 			</td>
 		</tr>
+		[% END %]
 	</table>
 [% END %]
