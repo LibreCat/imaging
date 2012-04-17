@@ -43,7 +43,7 @@ sub is_valid_basename {
 has dir => (
 	is => 'rw',
 	isa => sub{ (is_string($_[0]) && -d $_[0]) || die("directory not given or does not exist"); },
-	required => 1,
+    lazy => 1,
 	trigger => sub {
 		$_[0]->_load_file_info();
 	}

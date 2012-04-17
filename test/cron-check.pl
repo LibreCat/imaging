@@ -81,7 +81,7 @@ while(my $user = $sth_each->fetchrow_hashref()){
 #stap 2: doe check
 sub get_package {
     my($class,$args)=@_;
-    state $stash->{$class} ||= load_package($class)->new(%$args, dir => ".");
+    state $stash->{$class} ||= load_package($class)->new(%$args);
 }
 my @location_ids = ();
 
