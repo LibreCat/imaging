@@ -8,6 +8,7 @@ my $requires = {
 	Plack => '>=0.9985',
 
 	'Dancer::Session::PSGI' => 0,
+	'Dancer::Session::Cookie' => 0,
 	'DBD::SQLite' => 0,
 	'List::MoreUtils' => 0,
 	'Moo' => 0,

@@ -73,16 +73,14 @@
 				</table>
 			</td>
         </tr>
+		[% IF location.item("check_log").size > 0 %]
         <tr>
             <th>check log</th>
             <td>
-                [% IF location.item("check_log").size > 0 %]
                 <textarea readonly="readonly" rows="20" cols="100">[% location.item("check_log").join("\n") %]</textarea>
-                [% ELSE %]
-                -
-                [% END %]
             </td>
         </tr>
+		[% END %]
 		<tr>
 			<th>status history</th>
             <td>
@@ -123,7 +121,7 @@
 		<tr>
             <th>identifier</th>
             <td>
-				<a href="http://search.ugent.be/meercat/x/view/rug01/[% metadata.fSYS %]">[% metadata.fSYS %]</a>
+				<a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata.source _ ":" _ metadata.fSYS %]</a>
 				(bekijk in meercat)
             </td>
         </tr>

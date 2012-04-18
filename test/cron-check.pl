@@ -115,6 +115,13 @@ $locations->each(sub{
 foreach my $location_id(@location_ids){
     my $location = $locations->get($location_id);
 
+	#directory is ondertussen riebedebie
+	if(!(-d $location->{path})){
+		say "$location->{path} is gone, deleting from database";
+		$locations->delete($location->{_id});
+		next;
+	}
+
 	say "checking $location_id at $location->{path}";
     $sth_get->execute( $location->{user_id} ) or die($sth_get->errstr);
     my $user = $sth_get->fetchrow_hashref();
@@ -141,15 +148,12 @@ foreach my $location_id(@location_ids){
     }
     if(scalar(@{ $location->{check_log} }) > 0){
         $location->{status} = "incoming_error";
-		push @{$location->{status_history}},"admin incoming_error ".formatted_date();
+		$location->{status_history} = ["admin incoming_error ".formatted_date()];
     }else{
         $location->{status} = "incoming_ok";
-		push @{$location->{status_history}}, "admin incoming_ok ".formatted_date();
+		$location->{status_history} = ["admin incoming_ok ".formatted_date()];
 		#verplaats maar pas 's nachts!
     }
-	if(scalar( @{ $location->{status_history} }) > 5){
-		splice(@{ $location->{status_history} },0,1);
-	}
     $location->{files} = \@files;
     $locations->add($location);
 }

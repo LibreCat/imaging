@@ -29,6 +29,7 @@
 				</table>
 			</td>
         </tr>
+		[% IF location.status != "incoming_ok" %]
         <tr>
             <th>check log</th>
             <td>
@@ -39,5 +40,6 @@
                 [% END %]
             </td>
         </tr>
+		[% END %]
 	</table>
 [% END %]

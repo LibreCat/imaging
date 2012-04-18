@@ -15,9 +15,9 @@ sub test {
 		next if !$self->is_valid_basename($stats->{basename});
 		my $exif = $self->_exif->ImageInfo($stats->{path});
 		if($exif->{Error}){
-			push @errors,$exif->{Error};
+			push @errors,$stats->{path}." is not an image";
 		}elsif(!(uc($exif->{FileType}) eq "JPEG" && $exif->{MIMEType} eq "image/jpeg")){
-			push @errors,$stats->{path}." is not a jpeg";	
+			push @errors,$stats->{path}." is not a jpeg (filetype found:".$exif->{FileType}.")";	
 		}
 	}
 	scalar(@errors) == 0,\@errors;

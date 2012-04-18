@@ -1,6 +1,5 @@
 # configuration file for development environment
-session: "cookie"
-session_cookie_key: "Imaging"
+session: "PSGI"
  
 #myparser: !!perl/hash:Rft_id::Common {}
 # the logger engine to use
@@ -76,7 +75,15 @@ plugins:
      qa_manager: {}
      archivaris: {}
      catalograaf: {}
-cache: {}
+cache:
+ session:
+  package: "Cache::FastMmap"
+  options:
+   share_file: "/tmp/session.data"
+   empty_on_exit: 1
+   init_file: 1
+   expire_time: '60m'
+   cache_size: '30m'
 store:
  core:
   package: "Catmandu::Store::DBI"

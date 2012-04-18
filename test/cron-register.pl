@@ -81,7 +81,7 @@ foreach my $project_id(@project_ids){
 			if(is_array_ref($hit->{location}) && scalar(@{ $hit->{location} }) > 0){
 				push @list,@{$hit->{location}};
 			}else{
-				push @list,$hit->{fSYS};
+				push @list,$hit->{source}.":".$hit->{fSYS};
 			}
 		}
 		$offset += $limit;
@@ -101,41 +101,51 @@ foreach my $project_id(@project_ids){
 #stap 2: ken locations toe aan projects
 $projects->each(sub{
 	my $project = shift;
+	say $project->{query};
 	return if !is_array_ref($project->{list});
 	foreach my $location_id(@{ $project->{list} }){
 		my $location_dir = $location_id;
-		$location_dir =~ s/[\.\/]/-/go;
+		if($location_dir =~ /^rug01:\d{9}$/o){
+			$location_dir =~ s/rug01:/RUG01-/go;
+		}else{
+			$location_dir =~ s/[\.\/]/-/go;	
+		}
 		my $location = $locations->get($location_dir);
 
 		#directory nog niet aanwezig
-		return if !$location;
-
+		next if !$location;
 		#enkel incoming_ok
 		my $status = $location->{status};
-        return if $status eq "incoming" || $status eq "incoming_error";
 
-        #deze directory is reeds geregistreerd
-        return if $status ne "incoming_ok";
+        next if $status eq "incoming" || $status eq "incoming_error";
 
-		#haal metadata op
-        my $res = $meercat->search($location_id,{rows=>1000});
-        if($res->content->{response}->{numFound} == 0){			
-
-			my $docs = $res->content->{response}->{docs};
-
-			$location->{metadata} = [];
-			foreach my $doc(@$docs){
-				push @{ $location->{metadata} },{
-					fSYS => $doc->{fSYS},
-					fXML => $doc->{fXML}
-				};
-			}
-
+        #location toekennen aan project
+		if(!$location->{project_id}){
+			$location->{name} = $location_id;
+	        $location->{project_id} = $project->{_id};
 		}
 
-		#eenmaal metadata gekoppeld, sla dan alles op onder het project
-		$location->{name} = $location_id;
-		$location->{project_id} = $project->{_id};
+		#haal metadata op
+		if(!(
+			is_array_ref($location->{metadata}) && scalar(@{ $location->{metadata} }) > 0
+		)){
+			my $res = $meercat->search($location_id,{rows=>1000});
+			if($res->content->{response}->{numFound} > 0){			
+
+				my $docs = $res->content->{response}->{docs};
+
+				$location->{metadata} = [];
+				foreach my $doc(@$docs){
+					push @{ $location->{metadata} },{
+						fSYS => $doc->{fSYS},#000000001
+						source => $doc->{source},#rug01
+						fXML => $doc->{fXML}
+					};
+				}
+
+			}
+		}
+
 		$locations->add($location);
 
 	}

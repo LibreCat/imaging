@@ -16,6 +16,7 @@ sub test {
 	my $topdir = $self->dir();
 	my(@errors) = ();
 	my %results = ();
+	$@ = undef;
 	eval{
 		%results = $self->_scanner->scan_path_complete(abs_path($topdir));
 	};

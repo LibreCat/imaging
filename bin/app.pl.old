@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 use Dancer;
 use Plack::Builder;
+use Plack::Session::Store::Cache;
 use Plack::Util;
 
 #routes
@@ -16,5 +17,11 @@ my $app = sub {
 	Dancer->dance($request);
 };
 builder {
+	enable 'Session',
+		store => Plack::Session::Store::Cache->new(
+		cache => Plack::Util::load_class(config->{cache}->{session}->{package})->new(
+		    %{ config->{cache}->{session}->{options} }
+		)
+	);
 	$app;
 };

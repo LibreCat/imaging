@@ -16,7 +16,6 @@ has _solr => (
 	lazy => 1,
 	default => sub {
 		my $self = shift;
-		print Dumper($self->solr_args);
 		my $url = delete $self->solr_args->{url};
 		WebService::Solr->new($url,{ default_params => {wt => "json"} });
 	}
@@ -26,11 +25,17 @@ sub test {
 	my $self = shift;
 	my $topdir = $self->dir();
 	my(@errors) = ();
+	my $query = basename($topdir);
+
+	if($query =~ /^RUG01-(\d{9})$/o){
+		$query = "rug01:$1";
+	}
 
 	try{
-		my $res = $self->_solr->search(basename($topdir),{ rows => 0, wt => "json" });
+		print "searching for $query\n";
+		my $res = $self->_solr->search($query,{ rows => 0, wt => "json" });
 		if($res->content->{response}->{numFound} <= 0){
-			push @errors,basename($topdir)." not found in Aleph";
+			push @errors,"$query not found in Aleph";
 		}
 	}catch{
 		push @errors,$_;
