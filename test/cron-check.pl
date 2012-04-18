@@ -57,19 +57,22 @@ while(my $user = $sth_each->fetchrow_hashref()){
         chomp($dir);    
         my $basename = basename($dir);
         my $location = $locations->get($basename);
-		my $now = formatted_date();
         if(!$location){
             $locations->add({
                 _id => $basename,
 				name => undef,
                 path => $dir,
                 status => "incoming",
-				status_history => ["admin incoming $now"],
+				status_history => [{
+					user_name => "admin",
+					status => "incoming",
+					datetime => time,
+					comments => ""
+				}],
                 check_log => [],
                 files => [],
                 user_id => $user->{id},
                 datetime_last_modified => time,
-                comments => "",
                 project_id => undef,
 				metadata => []
             });
@@ -148,10 +151,20 @@ foreach my $location_id(@location_ids){
     }
     if(scalar(@{ $location->{check_log} }) > 0){
         $location->{status} = "incoming_error";
-		$location->{status_history} = ["admin incoming_error ".formatted_date()];
+		$location->{status_history}->[1] = {
+			user_name =>"admin",
+			status => "incoming_error",
+			datetime => time,
+			comments => ""
+		};
     }else{
         $location->{status} = "incoming_ok";
-		$location->{status_history} = ["admin incoming_ok ".formatted_date()];
+		$location->{status_history}->[1] = {
+			user_name =>"admin",
+            status => "incoming_ok",
+            datetime => time,
+            comments => ""
+		};
 		#verplaats maar pas 's nachts!
     }
     $location->{files} = \@files;

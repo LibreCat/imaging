@@ -87,16 +87,17 @@
 				<table style="width:100%">
                 [% IF location.item("status_history").size > 0 %]
 					<tr>
-						<th>user</th>
+						<th>username</th>
 						<th>status</th>
 						<th>time</th>
+						<th>comments</th>
 					</tr>
 					[% FOREACH status_entry IN location.item("status_history") %]
-						[% entries = status_entry.split(' ') %]
 						<tr>
-							[% FOREACH entry IN entries %]
-							<td>[% entry %]</td>
-							[% END %]
+							<td>[% status_entry.user_name %]</td>
+							<td>[% status_entry.status %]</td>
+							<td>[% date.format(status_entry.time,'%FT%TZ') %]</td>
+                            <td>[% status_entry.comments || "-"%]</td>
 						</tr>
 					[% END %]
                 [% ELSE %]

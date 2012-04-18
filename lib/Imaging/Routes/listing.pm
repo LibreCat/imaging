@@ -62,7 +62,8 @@ any('/ready/:user_login',sub{
 		template('ready',{
 			directories => \@directories,
 			mount_conf => mount_conf(),
-			user => $user
+			user => $user,
+			auth => auth()
 		});
     }
 });
@@ -94,7 +95,8 @@ any('/ready/:user_login/:location_id',sub{
 	
 	template('ready/view',{
 		location => $location,
-		errors => \@errors
+		errors => \@errors,
+		auth => auth()
 	});
 });
 

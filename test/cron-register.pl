@@ -65,6 +65,9 @@ foreach my $project_id(@project_ids){
 	my($total,$done) = (0,0);
     my $query = $project->{query};
     next if !$query;
+
+	#1. vorige uitvoer van dit script heeft lijst reeds opgevuld
+	#2. lijst is manueel ingevuld (wanneer de dingen niet in aleph terug te vinden zijn)
 	next if is_array_ref($project->{list}) && scalar(@{ $project->{list} }) > 0;
 
 	my @list = ();
@@ -81,6 +84,7 @@ foreach my $project_id(@project_ids){
 			if(is_array_ref($hit->{location}) && scalar(@{ $hit->{location} }) > 0){
 				push @list,@{$hit->{location}};
 			}else{
+				#piranesi-collectie heeft bijvoorbeeld geen plaatsnummers
 				push @list,$hit->{source}.":".$hit->{fSYS};
 			}
 		}
@@ -163,7 +167,12 @@ foreach my $id (@incoming_ok){
 	#registreer
 	$location->{status} = "registered";
 	
-	push @{ $location->{status_history} },"admin registered ".formatted_date();
+	push @{ $location->{status_history} },{
+		user_name =>"admin",
+		status => "registered",
+		datetime => time,
+		comments => ""
+	};
 
 	#verplaats	
 	my $oldpath = $location->{path};
@@ -207,6 +216,10 @@ $locations->each(sub{
 	return if $location->{status} eq "incoming" || $location->{status} eq "incoming_error" || $location->{status} eq "incoming_ok";
     my $doc = clone($location);
 	delete $doc->{metadata};
+	for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
+		my $item = $doc->{status_history}->[$i];
+		$doc->{status_history}->[$i] = $item->{user_name}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
+	}	
 	
     my $project;
     if($location->{project_id} && ($project = $projects->get($location->{project_id}))){

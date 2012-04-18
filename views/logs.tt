@@ -1,0 +1,72 @@
+[% USE date %]
+<h1>Latest activities</h1>
+<div class="paging">
+[% IF logs && logs.size > 0 %]
+
+    [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
+    <a href="/logs?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">first</a>
+    [% END %]
+
+    [% IF page_info.previous_page %]
+    <a href="/logs?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >previous</a>
+    [% END %]
+
+    [% FOREACH page IN page_info.pages_in_set %]
+        [% IF page == page_info.current_page %]
+        <span class="current">[% page %]</span>
+        [% ELSE %]
+        <a href="/logs?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">[% page %]</a>
+        [% END %]
+    [% END %]
+
+    [% IF page_info.next_page %]
+    <a href="/logs?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >next</a>
+    [% END %]
+
+    [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
+    <a href="/logs?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">last</a>
+    [% END %]
+
+[% END %]
+</div>
+<form method="GET" id="query-form">
+    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" />
+    <input type="submit" value="search" />
+</form>
+[% IF logs && logs.size > 0 %]
+	<table id="table-logs" class="left">
+        [% IF params.q && params.q != "*" %]
+        <tr>
+            <td colspan="7" style="text-align:left">
+            list is filtered on <b>[% params.q | html %]</b>
+            </td>
+        </tr>
+        [% END %]
+		<tr>
+			<th>date</th>
+			<th>name</th>
+			<th>user name</th>
+			<th>status</th>
+			<th>comments</th>
+		</tr>
+	[% FOREACH log IN logs %]
+		<tr>
+			<td>[% log.datetime %]</td>
+			<td>
+                <a href="/locations/view/[% log.location_id %]">
+                [% log.location_id %]
+                </a>
+            </td>
+			<td>[% log.user_name %]</td>
+			<td>[% log.status %]</td>
+            <td>[% log.comments || "-" %]</td>
+		</tr>
+	[% END %]
+	</table>
+[% ELSE %]
+	<table id="table-logs"> 
+		<tr>
+            <td>no logs found for <b>[% params.q || "*" %]</b></td>
+        </tr>
+	</table>
+[% END %]

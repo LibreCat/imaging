@@ -18,15 +18,10 @@
                     <li>
                         <a href="/locations">scan assignments</a>
                     </li>
+					<li>
+                        <a href="/logs">logs</a>
+                    </li>
 					[% END %]
-                    [% IF session.user.roles.grep('scanner').size > 0 %]
-                    <li>
-                        <a href="/ready/[% session.user.login %]">ready</a>
-                    </li>
-                    <li>
-                        <a href="/reprocessing/[% session.user.login %]">reprocessing</a>
-                    </li>
-                    [% END %]
 					[% IF auth.can('manage_accounts','edit') %]
 					<li>
 						<a href="/users">users</a>
@@ -37,6 +32,14 @@
                         <a href="/directories">directories per scanner</a>
                     </li>
 					[% END %]
+                    [% IF session.user.roles.grep('scanner').size > 0 %]
+                    <li>
+                        <a href="/ready/[% session.user.login %]">ready</a>
+                    </li>
+                    <li>
+                        <a href="/reprocessing/[% session.user.login %]">reprocessing</a>
+                    </li>
+                    [% END %]
 					[% IF session.user.id %]
 					<li>
                         <a href="/logout">logout</a>

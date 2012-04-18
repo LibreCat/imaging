@@ -42,7 +42,9 @@
 		<tr>
 			<td>[% user.item("login") %]</td>
 			<td>
+				<a href="/ready/[% user.login %]">
 				[% user.item("ready") || "-" %]
+				</a>
 				[% IF roles.grep('scanner').size > 0 %]
 					[% TRY %]
                         [% USE File(user.item("ready")) %]
@@ -52,7 +54,9 @@
 				[% END %]
 			</td>
 			<td>
+				<a href="/reprocessing/[% user.login %]">
 				[% user.item("reprocessing") || "-" %]
+				</a>
 				[% IF roles.grep('scanner').size > 0 %]
                     [% TRY %]
                         [% USE File(user.item("reprocessing")) %]

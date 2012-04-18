@@ -88,6 +88,10 @@ store:
   package: "Catmandu::Store::Solr"
   options:
    url: "http://localhost:8983/solr/core0"
+ index_log:
+  package: "Catmandu::Store::Solr"
+  options:
+   url: "http://localhost:8983/solr/core1"
 app: {}
 default_app: "/projects"
 all: {}

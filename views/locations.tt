@@ -4,27 +4,27 @@
 [% IF locations && locations.size > 0 %]
 
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/locations?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]">first</a>
+    <a href="/locations?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">first</a>
     [% END %]
 
     [% IF page_info.previous_page %]
-    <a href="/locations?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]" >previous</a>
+    <a href="/locations?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >previous</a>
     [% END %]
 
     [% FOREACH page IN page_info.pages_in_set %]
         [% IF page == page_info.current_page %]
         <span class="current">[% page %]</span>
         [% ELSE %]
-        <a href="/locations?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]">[% page %]</a>
+        <a href="/locations?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">[% page %]</a>
         [% END %]
     [% END %]
 
     [% IF page_info.next_page %]
-    <a href="/locations?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]" >next</a>
+    <a href="/locations?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >next</a>
     [% END %]
 
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/locations?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.sort | uri %]">last</a>
+    <a href="/locations?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">last</a>
     [% END %]
 
 [% END %]
