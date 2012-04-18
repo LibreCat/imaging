@@ -85,9 +85,11 @@ any('/ready/:user_login/:location_id',sub{
 
 	#fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
 	if($location->{user_id} != $user->{id}){
-		push @errors,"$location->{_id} eerst bij gebruiker $user->{login} aangetroffen.";
-		push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
-		push @errors,"Uw map: $mount/".$subdirectories->{ready}."/".$location->{_id};
+		my $other_user = dbi_handle->quick_select('users',{ id => $location->{user_id} });
+        push @errors,"$location->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
+        push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
+        push @errors,"Uw map: $mount/".$subdirectories->{ready}."/".$user->{login}."/".$location->{_id};
+
 	}
 	
 	template('ready/view',{
