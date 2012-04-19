@@ -1,5 +1,4 @@
-[% USE date %]
-<h1>Latest activities</h1>
+<h1>Laatste activiteiten</h1>
 <div class="paging">
 [% IF logs && logs.size > 0 %]
 
@@ -51,7 +50,10 @@
 		</tr>
 	[% FOREACH log IN logs %]
 		<tr>
-			<td>[% log.datetime %]</td>
+			<td>
+				[% matches = log.datetime.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z') %]
+				[% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
+			</td>
 			<td>
                 <a href="/locations/view/[% log.location_id %]">
                 [% log.location_id %]

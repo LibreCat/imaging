@@ -79,6 +79,7 @@ any('/ready/:user_login/:location_id',sub{
 
 	my $location = locations()->get($params->{location_id});
 	$location or return not_found();
+	$location->{status} eq "incoming" || $location->{status} eq "incoming_error" || $location->{status} eq "incoming_ok" || return not_found();
 
 	my $mount = mount();
     my $subdirectories = subdirectories();

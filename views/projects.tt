@@ -1,5 +1,5 @@
 [% USE date %]
-<h1>List of projects</h1>
+<h1>Lijst van projecten</h1>
 <div class="paging">
 [% IF projects && projects.size > 0 && page_info.pages_in_set.size > 1 %]
 
@@ -31,7 +31,7 @@
 </div>
 [% IF auth.can('projects','edit') %]
 <p>
-	<a href="/projects/add">add project</a>
+	<a href="/projects/add">nieuw project</a>
 </p>
 [% END %]
 [% IF projects && projects.size > 0 %]
@@ -55,10 +55,10 @@
 			<td>[% project.date_start %]</td>
 			<td>
 				[% IF auth.can('projects','edit') %]
-				<a href="/project/[% project.item("_id") %]/edit">edit</a>
-				<a href="/project/[% project.item("_id") %]/delete">delete</a>&nbsp;
+				<a href="/project/[% project.item("_id") %]/edit">aanpassen</a>
+				<a href="/project/[% project.item("_id") %]/delete">verwijder</a>&nbsp;
 				[% END %]
-                <a href="/locations?q=project_id:[% project.item("_id") %]">list</a>
+                <a href="/locations?q=project_id:[% project.item("_id") %]">lijst</a>
 			</td>
 		</tr>
 	[% END %]
@@ -66,7 +66,7 @@
 [% ELSE %]
 	<table id="table-projects"> 
 		<tr>
-            <th>no projects added yet to the list</th>
+            <th>Geen projecten aanwezig</th>
         </tr>
 	</table>
 [% END %]

@@ -13,10 +13,10 @@
 				<ul id="menu">
 					[% IF session.user.id %]
 					<li>
-						<a href="/projects">projects</a>
+						<a href="/projects">projecten</a>
 					</li>
                     <li>
-                        <a href="/locations">scan assignments</a>
+                        <a href="/locations">scan opdrachten</a>
                     </li>
 					<li>
                         <a href="/logs">logs</a>

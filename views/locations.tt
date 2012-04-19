@@ -1,5 +1,5 @@
 [% USE date %]
-<h1>List of scan assignments</h1>
+<h1>Lijst van scanopdrachten</h1>
 <div class="paging">
 [% IF locations && locations.size > 0 %]
 

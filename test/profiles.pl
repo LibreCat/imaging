@@ -34,13 +34,6 @@ my $profile = $profiles->add({
             args => {},
             on_error => "continue"
         },
-		{
-			class => "Imaging::Test::Dir::checkMD5",
-			args => {
-				is_optional => 1
-			},
-			on_error => "continue"
-		},
         {
             class => "Imaging::Test::Dir::checkTIFF",
             args => {

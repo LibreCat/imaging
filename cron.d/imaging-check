@@ -1,0 +1,1 @@
+*/5 2-22 * * * root /home/nicolas/Imaging/bash/imaging-check.sh 1>> /var/log/Imaging/imaging-check.log 2>> /var/log/Imaging/imaging-check.error

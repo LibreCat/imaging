@@ -1,0 +1,1 @@
+0 0 * * * root /home/nicolas/Imaging/bash/cron-register.pl 1>> /var/log/Imaging/imaging-register.log 2>> /var/log/Imaging/imaging-register.error

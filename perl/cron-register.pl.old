@@ -18,15 +18,9 @@ use DateTime::Format::Strptime;
 use WebService::Solr;
 use Digest::MD5;
 
-#functions
-	sub formatted_date {
-		my $time = shift || time;
-		DateTime::Format::Strptime::strftime(
-			'%FT%TZ', DateTime->from_epoch(epoch=>$time)
-		);
-	}
 
-#important variables
+
+#variabelen
 	my %opts = (
 		data_source => "dbi:mysql:database=imaging",
 		username => "imaging",
@@ -55,6 +49,54 @@ use Digest::MD5;
 	my $sth_each = $users->prepare("select * from users where roles like '%scanner'");
 	my $sth_get = $users->prepare("select * from users where id = ?");
 
+#functions
+	sub formatted_date {
+		my $time = shift || time;
+		DateTime::Format::Strptime::strftime(
+			'%FT%TZ', DateTime->from_epoch(epoch=>$time)
+		);
+	}
+	sub index_location {
+		my $location = shift;		
+		return if $location->{status} eq "incoming" || $location->{status} eq "incoming_error" || $location->{status} eq "incoming_ok";
+
+		my $doc = clone($location);
+		delete $doc->{metadata};
+
+		for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
+			my $item = $doc->{status_history}->[$i];
+			$doc->{status_history}->[$i] = $item->{user_name}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
+		}
+
+		my $project;
+		if($location->{project_id} && ($project = $projects->get($location->{project_id}))){
+			foreach my $key(keys %$project){
+				next if $key eq "list";
+				my $subkey = "project_$key";
+				$subkey =~ s/_{2,}/_/go;
+				$doc->{$subkey} = $project->{$key};
+			}
+		}
+
+		if($location->{user_id}){
+			$sth_get->execute( $location->{user_id} ) or die($sth_get->errstr);
+			my $user = $sth_get->fetchrow_hashref();
+			if($user){
+				$doc->{user_name} = $user->{name};
+				$doc->{user_login} = $user->{login};
+				$doc->{user_roles} = [split(',',$user->{roles})];
+			}
+		}
+
+		foreach my $key(keys %$doc){
+			next if $key !~ /datetime/o;
+			$doc->{$key} = formatted_date($doc->{$key});
+		}
+
+		say $doc->{_id}." added to index";
+		$own_index->add($doc);
+	}
+
 #stap 1: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list'
 my @project_ids = ();
 $projects->each(sub{ push @project_ids,$_[0]->{_id}; });
@@ -63,12 +105,14 @@ foreach my $project_id(@project_ids){
 
     my $project = $projects->get($project_id);
 	my($total,$done) = (0,0);
-    my $query = $project->{query};
-    next if !$query;
 
 	#1. vorige uitvoer van dit script heeft lijst reeds opgevuld
 	#2. lijst is manueel ingevuld (wanneer de dingen niet in aleph terug te vinden zijn)
 	next if is_array_ref($project->{list}) && scalar(@{ $project->{list} }) > 0;
+
+	#geval 1)
+    my $query = $project->{query};
+    next if !$query;
 
 	my @list = ();
 
@@ -103,10 +147,13 @@ foreach my $project_id(@project_ids){
 };
 
 #stap 2: ken locations toe aan projects
+say "\nassigning locations to projects\n";
 $projects->each(sub{
 	my $project = shift;
-	say $project->{query};
-	return if !is_array_ref($project->{list});
+	if(!is_array_ref($project->{list})){
+		say "project $project->{_id}: no list available";
+		return;
+	}
 	foreach my $location_id(@{ $project->{list} }){
 		my $location_dir = $location_id;
 		if($location_dir =~ /^rug01:\d{9}$/o){
@@ -117,11 +164,17 @@ $projects->each(sub{
 		my $location = $locations->get($location_dir);
 
 		#directory nog niet aanwezig
-		next if !$location;
+		if(!$location){
+			say "project ".$project->{_id}.":location $location_dir not found";
+			next;
+		}
 		#enkel incoming_ok
 		my $status = $location->{status};
 
-        next if $status eq "incoming" || $status eq "incoming_error";
+		if($status eq "incoming" || $status eq "incoming_error"){
+			say "project ".$project->{_id}.":location $location_dir not ready to be registered";
+			next;
+		}
 
         #location toekennen aan project
 		if(!$location->{project_id}){
@@ -149,7 +202,7 @@ $projects->each(sub{
 
 			}
 		}
-
+		say "project ".$project->{_id}.":location $location_dir assigned to project";
 		$locations->add($location);
 
 	}
@@ -160,10 +213,10 @@ $locations->each(sub{
 	my $location = shift;
 	push @incoming_ok,$location->{_id} if $location->{status} eq "incoming_ok";
 });
-
+say "\nregistering incoming_ok\n";
 foreach my $id (@incoming_ok){
 	my $location = $locations->get($id);
-
+	say "location $id:";
 	#registreer
 	$location->{status} = "registered";
 	
@@ -173,29 +226,18 @@ foreach my $id (@incoming_ok){
 		datetime => time,
 		comments => ""
 	};
-
-	#verplaats	
-	my $oldpath = $location->{path};
-	my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".basename($oldpath);
-	say "moving from $oldpath to $newpath";
-	move($oldpath,$newpath);
-	$location->{path} = $newpath;
-	foreach my $file(@{ $location->{files} }){
-		$file =~ s/^$oldpath/$newpath/;
-	}
-	
-	#pas manifest aan
+	#pas manifest -> maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)
 		
-	#verwijder oude manifest
-	unlink("$newpath/manifest.txt") if -f "$newpath/manifest.txt";
-	my $index = first_index { $_ eq "$newpath/manifest.txt" } @{ $location->{files} };
-	if($index >= 0){
-		splice(@{ $location->{files} },$index,1);
-	}
+	#verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
+	unlink($location->{path}."/manifest.txt") if -f $location->{path}."/manifest.txt";
+	my $index = first_index { $_ eq $location->{path}."/manifest.txt" } @{ $location->{files} };
+	splice(@{ $location->{files} },$index,1) if $index >= 0;
+
+	say "creating new manifest.txt";
 
 	#maak nieuwe manifest
 	local(*MANIFEST);
-	open MANIFEST,">$newpath/manifest.txt" or die($!);
+	open MANIFEST,">".$location->{path}."/manifest.txt" or die($!);
 	foreach my $file(@{ $location->{files} }){
 		local(*FILE);
 		open FILE,$file or die($!);
@@ -206,11 +248,23 @@ foreach my $id (@incoming_ok){
 	close MANIFEST;
 
 	#voeg manifest toe aan de lijst
-	push @{ $location->{files} },"$newpath/manifest.txt";
+	push @{ $location->{files} },$location->{path}."/manifest.txt";
+	
+
+	#verplaats	
+	my $oldpath = $location->{path};
+	my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".basename($oldpath);
+	say "\tmoving from $oldpath to $newpath";
+	move($oldpath,$newpath);
+	$location->{path} = $newpath;
+	foreach my $file(@{ $location->{files} }){
+		$file =~ s/^$oldpath/$newpath/;
+	}
 	
 	$locations->add($location);
 }
 #stap 4: indexeer
+say "\nindexing merge locations-projects-users\n";
 $locations->each(sub{
     my $location = shift;
 	return if $location->{status} eq "incoming" || $location->{status} eq "incoming_error" || $location->{status} eq "incoming_ok";
@@ -243,7 +297,7 @@ $locations->each(sub{
 		next if $key !~ /datetime/o;
 		$doc->{$key} = formatted_date($doc->{$key});
 	}
-        
+	say $doc->{_id}." added to index";
     $own_index->add($doc);   
 });
 $own_index->commit();
@@ -251,12 +305,35 @@ $own_index->store->solr->optimize();
 
 #stap 5: gooi records met incoming en incoming_error weg
 #reden: indien een mapnaam verbetert is, dan blijft het oude record staan (zelfs niet meer in /ready/$login te zien), en wordt daar niet meer naar gekeken
+say "\ndeleting bad locations from database\n";
 my @bad_locations = ();
 $locations->each(sub{
 	my $location = shift;
 	push @bad_locations,$location->{_id} if $location->{status} eq "incoming" || $location->{status} eq "incoming_error";
 });
 foreach my $id(@bad_locations){
-	say "deleting bad location $id from database";
+	say "location $id deleted from database";
 	$locations->delete($id);
 }
+
+#stap 6: indexeer logs
+$own_index = Catmandu::Store::Solr->new(
+	url => "http://localhost:8983/solr/core1"
+)->bag("log_locations");
+
+$locations->each(sub{
+    my $location = shift;
+    return if $location->{status} eq "incoming" || $location->{status} eq "incoming_error" || $location->{status} eq "incoming_ok";
+
+    foreach my $history(@{ $location->{status_history} || [] }){
+        my $doc = clone($history);
+        $doc->{datetime} = formatted_date($doc->{datetime});
+        $doc->{location_id} = $location->{_id};
+        my $blob = join('',map { $doc->{$_} } sort keys %$doc);
+        $doc->{_id} = md5_hex($blob);
+        say "adding status log to index:".$doc->{_id};
+        $own_index->add($doc);
+    }
+});
+$own_index->commit();
+$own_index->store->solr->optimize();

@@ -27,7 +27,8 @@ my $requires = {
 	'Cache::FastMmap' => 0,
 	'ClamAV::Client' => 0,
 	'Array::Diff' => 0,		
-	'Image::ExifTool' => 0
+	'Image::ExifTool' => 0,
+	'enum' => 0
 };
 my $recommends = {
 	'Starman' => 0,

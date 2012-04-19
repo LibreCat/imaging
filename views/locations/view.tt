@@ -62,7 +62,7 @@
 							[% USE File(file) %]
 							<td>[% File.name %]</td>
 							<td>[% File.size.size_pretty %]</td>
-							<td>[% date.format(File.mtime,'%FT%TZ') %]</td>
+							<td>[% date.format(File.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
 						[% CATCH %]
 							<td>[% file %]!error!</td>
 							<td></td>
@@ -73,14 +73,6 @@
 				</table>
 			</td>
         </tr>
-		[% IF location.item("check_log").size > 0 %]
-        <tr>
-            <th>check log</th>
-            <td>
-                <textarea readonly="readonly" rows="20" cols="100">[% location.item("check_log").join("\n") %]</textarea>
-            </td>
-        </tr>
-		[% END %]
 		<tr>
 			<th>status history</th>
             <td>
@@ -96,7 +88,7 @@
 						<tr>
 							<td>[% status_entry.user_name %]</td>
 							<td>[% status_entry.status %]</td>
-							<td>[% date.format(status_entry.time,'%FT%TZ') %]</td>
+							<td>[% date.format(status_entry.time,'%d-%m-%Y %H:%M:%S') %]</td>
                             <td>[% status_entry.comments || "-"%]</td>
 						</tr>
 					[% END %]
