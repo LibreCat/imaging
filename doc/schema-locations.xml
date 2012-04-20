@@ -509,6 +509,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="project_total" type="int" indexed="true" stored="true" />
 	<field name="project_done" type="int" indexed="true" stored="true" />
 	<field name="project_datetime_last_modified" type="string" indexed="true" stored="true" />
+	<field name="project_locked" type="int" indexed="true" stored="true" />
 
     <!--DEFAULT-->
     <field name="text" type="lupetext" indexed="true" stored="false" multiValued="true"/>
