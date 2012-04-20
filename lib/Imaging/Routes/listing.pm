@@ -77,13 +77,26 @@ any('/ready/:user_login/:location_id',sub{
         });
     }
 
+
 	my $location = locations()->get($params->{location_id});
 	$location or return not_found();
-	$location->{status} eq "incoming" || $location->{status} eq "incoming_error" || $location->{status} eq "incoming_ok" || return not_found();
 
+	my $status = $location->{status};
+	if($status eq "registering"){
+		
+		forward('/access_denied',{
+			text => "This directory is registered, and will be moved to 'processed' in any time."
+      	});
+
+	}elsif($status ne "incoming" && $status ne "incoming_error" && $status ne "incoming_ok"){
+
+		return not_found();
+
+	}
+
+	my @errors = ();
 	my $mount = mount();
     my $subdirectories = subdirectories();
-	my @errors = ();
 
 	#fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
 	if($location->{user_id} != $user->{id}){

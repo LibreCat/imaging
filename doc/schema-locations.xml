@@ -473,6 +473,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 			- 'incoming'
 			- 'incoming_error'
 			- 'incoming_ok'
+			- 'registering'
 			- 'registered'
 			- 'derivatives_created'
 			- 'reprocess_scans'

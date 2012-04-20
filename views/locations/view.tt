@@ -2,6 +2,12 @@
 [% USE SizePretty %]
 [% IF location %]
     <h1>[% location.item("_id") %]</h1>
+	[% IF location.status == "registering" %]
+		<div class="error">
+		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
+		naar status 'registered'.
+		</div>
+	[% END %]
 	<table id="table-locations" class="left">
 		<tr>
 			<th>name</th>

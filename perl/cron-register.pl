@@ -281,11 +281,11 @@ foreach my $id (@incoming_ok){
 	my $location = locations()->get($id);
 	say "\tlocation $id:";
 
-	#registreer
-	$location->{status} = "registered";
+	#status 'registering'
+	$location->{status} = "registering";
 	push @{ $location->{status_history} },{
 		user_name =>"admin",
-		status => "registered",
+		status => "registering",
 		datetime => time,
 		comments => ""
 	};
@@ -335,9 +335,21 @@ foreach my $id (@incoming_ok){
 		$file =~ s/^$oldpath/$newpath/;
 	}
 	
+	#status 'registered'
+	$location->{status} = "registered";
+    push @{ $location->{status_history} },{
+        user_name =>"admin",
+        status => "registered",
+        datetime => time,
+        comments => ""
+    };
+	
 	locations->add($location);
 	location2index($location);
 	index_locations->commit();
+
+	status2index($location);
+    index_log->commit();
 }
 
 #stap 6: indexeer

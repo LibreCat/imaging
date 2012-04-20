@@ -28,7 +28,8 @@ my $requires = {
 	'ClamAV::Client' => 0,
 	'Array::Diff' => 0,		
 	'Image::ExifTool' => 0,
-	'enum' => 0
+	'enum' => 0,
+	'Time::Seconds' => 0
 };
 my $recommends = {
 	'Starman' => 0,
