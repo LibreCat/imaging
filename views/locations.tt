@@ -1,3 +1,4 @@
+[% PROCESS inc/reload.tt %]
 [% USE date %]
 <h1>Lijst van scanopdrachten</h1>
 <div class="paging">
@@ -55,6 +56,7 @@
 			<th>name</th>
 			<th>user</th>
 			<th>project</th>
+			<th>subproject</th>
 			<th>status</th>
 			<th>done</th>
             <th>last modified</th>
@@ -68,6 +70,7 @@
             </td>
 			<td>[% location.item("user_name") || "-" %]</td>
 			<td>[% location.item("project_name") || "-" %]</td>
+			<td>[% location.item("project_name_subproject") %]</td>
 			<td>[% location.item("status") %]</td>
 			<td>
 				<input type="checkbox" disabled="disabled" [% IF location.item("done") %] checked="checked"[% END %] />

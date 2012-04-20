@@ -1,3 +1,4 @@
+[% PROCESS inc/reload.tt %]
 [% PROCESS inc/errors_messages.tt %]
 [% USE date %]
 [% IF location %]

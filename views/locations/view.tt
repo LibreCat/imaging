@@ -35,6 +35,19 @@
                 [% END %]
             </td>
         </tr>
+		<tr>
+            <th>subproject</th>
+            <td>
+                [% IF project %]
+                    [% q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" %]
+                    <a href="/locations?q=[% q | uri %]">
+                    [% project.name_subproject %]
+                    </a>
+                [% ELSE %]
+                -
+                [% END %]
+            </td>
+        </tr>
         <tr>
             <th>user name</th>
             <td>

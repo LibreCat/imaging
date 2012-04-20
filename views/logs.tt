@@ -1,3 +1,4 @@
+[% PROCESS inc/reload.tt %]
 <h1>Laatste activiteiten</h1>
 <div class="paging">
 [% IF logs && logs.size > 0 %]

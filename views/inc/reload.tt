@@ -1,0 +1,6 @@
+<script type="text/javascript">
+    //om de minuut de pagina herladen
+    setTimeout(function(){
+        document.location.href = document.location.href;
+    },60*1000);
+</script>

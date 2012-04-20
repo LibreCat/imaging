@@ -1,9 +1,4 @@
-<script type="text/javascript">
-	//om de minuut de pagina herladen
-	setTimeout(function(){
-		document.location.href = document.location.href;
-	},60*1000);
-</script>
+[% PROCESS inc/reload.tt %]
 <h1>Scandirectory Status - [% mount_conf.subdirectories.ready %]/[% user.login %]</h1>
 [% IF directories && directories.size > 0 %]
 	<table id="table-ready" class="left">

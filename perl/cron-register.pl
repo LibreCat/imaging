@@ -235,17 +235,15 @@ projects()->each(sub{
 
 	}
 });
-#stap 4: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => UPDATE altijd
+#stap 4: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
+#wijziging/update moet gebeuren door qa_manager
 say "\nretrieving metadata for good locations:\n";
 my @ids_ok_for_metadata = ();
 locations()->each(sub{
 	my $location = shift;
 	my $status = $location->{status};
 	my $metadata = $location->{metadata};
-	if(
-		$status ne "incoming" && $status ne "incoming_error" && 
-		!(is_array_ref($metadata) && scalar(@$metadata) > 0)
-	){
+	if(	$status ne "incoming" && $status ne "incoming_error" && !(is_array_ref($metadata) && scalar(@$metadata) > 0 )){
 		push @ids_ok_for_metadata,$location->{_id};
 	}
 });
@@ -290,7 +288,7 @@ foreach my $id (@incoming_ok){
 	#status 'registering'
 	$location->{status} = "registering";
 	push @{ $location->{status_history} },{
-		user_name =>"admin",
+		user_name =>"-",
 		status => "registering",
 		datetime => time,
 		comments => ""
@@ -344,7 +342,7 @@ foreach my $id (@incoming_ok){
 	#status 'registered'
 	$location->{status} = "registered";
     push @{ $location->{status_history} },{
-        user_name =>"admin",
+        user_name =>"-",
         status => "registered",
         datetime => time,
         comments => ""

@@ -65,10 +65,10 @@ while(my $user = $sth_each->fetchrow_hashref()){
 				path => $dir,
 				status => "incoming",
 				status_history => [{
-				user_name => "admin",
-				status => "incoming",
-				datetime => time,
-				comments => ""
+					user_name => "-",
+					status => "incoming",
+					datetime => time,
+					comments => ""
 				}],
 				check_log => [],
 				files => [],
@@ -180,7 +180,7 @@ foreach my $location_id(@location_ids){
 	if(scalar(@{ $location->{check_log} }) > 0){
 		$location->{status} = "incoming_error";
 		$location->{status_history}->[1] = {
-			user_name =>"admin",
+			user_name =>"-",
 			status => "incoming_error",
 			datetime => time,
 			comments => ""
@@ -188,7 +188,7 @@ foreach my $location_id(@location_ids){
 	}else{
 		$location->{status} = "incoming_ok";
 		$location->{status_history}->[1] = {
-			user_name =>"admin",
+			user_name =>"-",
 			status => "incoming_ok",
 			datetime => time,
 			comments => ""
