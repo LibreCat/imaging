@@ -55,7 +55,8 @@ sub index_log {
 }
 sub mount_conf {
 	state $mount_conf = do {
-		my $conf = YAML::LoadFile("../environments/development.yml");
+		my $dir = dirname(__FILE__);
+		my $conf = YAML::LoadFile("$dir/../environments/development.yml");
 	    my $mount_conf = $conf->{mounts}->{directories};
 	};
 }
@@ -195,6 +196,7 @@ foreach my $project_id(@project_ids){
 	@list = keys %uniq;
 	$project->{list} = \@list;
 	$project->{datetime_last_modified} = time;
+	$project->{locked} = 1;
 
 	projects()->add($project);
 };
@@ -250,7 +252,11 @@ locations()->each(sub{
 foreach my $id(@ids_ok_for_metadata){
 	my $location = locations()->get($id);
 	my $query = $location->{_id};
-	$query =~ s/^RUG01-/rug01:/go;
+	if($query !~ /^RUG01-/o){
+		$query =~ s/^RUG01-/rug01:/o;
+	}else{
+		$query = "location:$query";
+	}
 	my $res = meercat()->search($query,{rows=>1000});
 	$location->{metadata} = [];
     if($res->content->{response}->{numFound} > 0){

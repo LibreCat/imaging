@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use lib qw(
-		/home/nicolas/Catmandu/lib
-		/home/nicolas/Imaging/lib
+	/home/nicolas/Catmandu/lib
+	/home/nicolas/Imaging/lib
 );
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
@@ -20,18 +20,19 @@ use DateTime;
 use DateTime::Format::Strptime;
 use Array::Diff;
 use File::Find;
+our($a,$b);
 
 sub formatted_date {
 	my $time = shift || time;
 	DateTime::Format::Strptime::strftime(
-			'%FT%TZ', DateTime->from_epoch(epoch=>$time)
-			);
+		'%FT%TZ', DateTime->from_epoch(epoch=>$time)
+	);
 }
 
 my %opts = (
-		data_source => "dbi:mysql:database=imaging",
-		username => "imaging",
-		password => "imaging"
+	data_source => "dbi:mysql:database=imaging",
+	username => "imaging",
+	password => "imaging"
 );
 my $store = Catmandu::Store::DBI->new(%opts);
 my $locations = $store->bag("locations");
@@ -41,10 +42,10 @@ my $conf = YAML::LoadFile($conf_file);
 my $mount_conf = $conf->{mounts}->{directories};
 
 my $users = DBI->connect($opts{data_source}, $opts{username}, $opts{password}, {
-		AutoCommit => 1,
-		RaiseError => 1,
-		mysql_auto_reconnect => 1
-		});
+	AutoCommit => 1,
+	RaiseError => 1,
+	mysql_auto_reconnect => 1
+});
 
 #stap 1: zoek locations van scanners
 my $sth_each = $users->prepare("select * from users where roles like '%scanner'");
@@ -59,23 +60,23 @@ while(my $user = $sth_each->fetchrow_hashref()){
 		my $location = $locations->get($basename);
 		if(!$location){
 			$locations->add({
-					_id => $basename,
-					name => undef,
-					path => $dir,
-					status => "incoming",
-					status_history => [{
-					user_name => "admin",
-					status => "incoming",
-					datetime => time,
-					comments => ""
-					}],
-					check_log => [],
-					files => [],
-					user_id => $user->{id},
-					datetime_last_modified => time,
-					project_id => undef,
-					metadata => []
-					});
+				_id => $basename,
+				name => undef,
+				path => $dir,
+				status => "incoming",
+				status_history => [{
+				user_name => "admin",
+				status => "incoming",
+				datetime => time,
+				comments => ""
+				}],
+				check_log => [],
+				files => [],
+				user_id => $user->{id},
+				datetime_last_modified => time,
+				project_id => undef,
+				metadata => []
+			});
 		}
 	}
 	close CMD;   
@@ -88,15 +89,15 @@ sub get_package {
 }
 my @location_ids = ();
 
-
 $locations->each(sub{ 
-		my $location = shift;
-#nieuwe of slechte directories moeten sowieso opnieuw gecheckt worden
-		if ($location->{status} && ($location->{status} eq "incoming" || $location->{status} eq "incoming_error")){
+
+	my $location = shift;
+	#nieuwe of slechte directories moeten sowieso opnieuw gecheckt worden
+	if ($location->{status} && ($location->{status} eq "incoming" || $location->{status} eq "incoming_error")){
 		push @location_ids,$location->{_id};
-		}
-#incoming_ok enkel indien er iets aan bestandslijst gewijzigd is
-		elsif($location->{status} eq "incoming_ok"){
+	}
+	#incoming_ok enkel indien er iets aan bestandslijst gewijzigd is
+	elsif($location->{status} eq "incoming_ok"){
 		my $new = [];
 		find({			
 			wanted => sub{
@@ -113,7 +114,8 @@ $locations->each(sub{
 			say STDERR "something has changed to $location->{path}, lets check what it is";
 			push @location_ids,$location->{_id};
 		}
-		}
+	}
+
 });
 
 #test timing
