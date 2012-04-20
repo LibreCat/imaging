@@ -49,7 +49,7 @@ sub index_locations {
     )->bag("locations");
 }
 sub index_log {
-	my $index_log = Catmandu::Store::Solr->new(
+	state $index_log = Catmandu::Store::Solr->new(
         url => "http://localhost:8983/solr/core1"
     )->bag("log_locations");
 }
@@ -85,19 +85,19 @@ sub formatted_date {
 sub status2index {
 	my $location = shift;
 	my $doc;
+	my $index_log = index_log();
 	foreach my $history(@{ $location->{status_history} || [] }){
 		$doc = clone($history);
 		$doc->{datetime} = formatted_date($doc->{datetime});
 		$doc->{location_id} = $location->{_id};
 		my $blob = join('',map { $doc->{$_} } sort keys %$doc);
 		$doc->{_id} = md5_hex($blob);
-		index_log()->add($doc);
+		$index_log->add($doc);
 	}
 	$doc;
 }
 sub location2index {
 	my $location = shift;		
-	return if $location->{status} eq "incoming" || $location->{status} eq "incoming_error" || $location->{status} eq "incoming_ok";
 
 	my $doc = clone($location);
 	delete $doc->{metadata};
@@ -283,12 +283,6 @@ foreach my $id (@incoming_ok){
 
 	#registreer
 	$location->{status} = "registered";
-
-	#=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /locations is terug te vinden
-	#=> daarom opnemen in databank én indexeren
-	locations->add($location);
-	location2index($location);
-	
 	push @{ $location->{status_history} },{
 		user_name =>"admin",
 		status => "registered",
@@ -296,7 +290,15 @@ foreach my $id (@incoming_ok){
 		comments => ""
 	};
 
+	#=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /locations is terug te vinden
+	#=> daarom opnemen in databank én indexeren
+	locations->add($location);
+	location2index($location);
+	index_locations->commit();
+
 	status2index($location);
+	index_log->commit();
+
 	#pas manifest -> maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)
 		
 	#verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
@@ -304,7 +306,7 @@ foreach my $id (@incoming_ok){
 	my $index = first_index { $_ eq $location->{path}."/manifest.txt" } @{ $location->{files} };
 	splice(@{ $location->{files} },$index,1) if $index >= 0;
 
-	say "creating new manifest.txt";
+	say "\tcreating new manifest.txt";
 
 	#maak nieuwe manifest
 	local(*MANIFEST);
@@ -333,19 +335,20 @@ foreach my $id (@incoming_ok){
 		$file =~ s/^$oldpath/$newpath/;
 	}
 	
-	locations()->add($location);
+	locations->add($location);
 	location2index($location);
+	index_locations->commit();
 }
 
 #stap 6: indexeer
 say "\nindexing merge locations-projects-users\n";
-locations()->each(sub{
+locations->each(sub{
     my $location = shift;
 	my $doc = location2index($location);
 	say "\tlocation $location->{_id} added to index";
 });
-index_locations()->commit();
-index_locations()->store->solr->optimize();
+index_locations->commit();
+index_locations->store->solr->optimize();
 
 #stap 7: indexeer logs
 say "\nlogging:\n";
@@ -354,5 +357,5 @@ locations()->each(sub{
 	my $doc = status2index($location);
 	say "\tlocation $location->{_id} added to log (_id:$doc->{_id})" if $doc;
 });
-index_log()->commit();
-index_log()->store->solr->optimize();
+index_log->commit();
+index_log->store->solr->optimize();

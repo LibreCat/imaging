@@ -48,7 +48,7 @@
             <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">technisch</th>
         </tr>
         <tr>
-            <th>files</th>
+            <th>files ([% location.files.size || 0 %])</th>
             <td>
 				<table style="width:100%">
 					<tr>
@@ -98,6 +98,18 @@
 				</table>
             </td>
 		</tr>
+		[% IF location.check_log.size > 0 %]
+        <tr>
+            <th>check log</th>
+            <td>
+                [% IF location.item("check_log").size > 0 %]
+                <textarea readonly="readonly" rows="20" cols="100">[% location.item("check_log").join("\n") %]</textarea>
+                [% ELSE %]
+                -
+                [% END %]
+            </td>
+        </tr>
+        [% END %]
 		<tr>
 			<th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">
 			metadata

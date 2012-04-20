@@ -10,7 +10,7 @@
             </td>
         </tr>
         <tr>
-            <th>files ([% location.files.size %])</th>
+            <th>files ([% location.files.size || 0 %])</th>
             <td>
 				<table style="width:100%">
 				[% FOREACH file IN location.files %]

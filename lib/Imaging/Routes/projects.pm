@@ -121,6 +121,7 @@ any('/projects/add',sub{
 				date_start => $params->{date_start},
 				datetime_last_modified => time,
 				query => $params->{query},
+				locked => 0,
 				list => []
 			});
 			redirect(uri_for("/projects"));
@@ -149,59 +150,63 @@ any('/project/:_id/edit',sub{
 	}
 
 	if($params->{submit}){
-		#check empty string
-		my @keys = qw(name name_subproject description date_start query);
-		foreach my $key(@keys){
-			if(!is_string($params->{$key})){
-				push @errors,"$key must be supplied";
+		if(!$project->{locked}){
+			#check empty string
+			my @keys = qw(name name_subproject description date_start query);
+			foreach my $key(@keys){
+				if(!is_string($params->{$key})){
+					push @errors,"$key must be supplied";
+				}
 			}
-		}
-		#check empty array
-		@keys = qw();
-		foreach my $key(@keys){
-			if(is_string($params->{$key})){
-				$params->{$key} = [$params->{$key}];
-			}elsif(!is_array_ref($params->{$key})){
-				$params->{$key} = [];
+			#check empty array
+			@keys = qw();
+			foreach my $key(@keys){
+				if(is_string($params->{$key})){
+					$params->{$key} = [$params->{$key}];
+				}elsif(!is_array_ref($params->{$key})){
+					$params->{$key} = [];
+				}
+				if(scalar( @{ $params->{$key} } ) == 0){
+					push @errors,"$key need to be supplied (one or more)";
+				}
 			}
-			if(scalar( @{ $params->{$key} } ) == 0){
-				push @errors,"$key need to be supplied (one or more)";
+			#check format
+			my %check = (
+				date_start => sub{
+					my $value = shift;
+					my($success,$error)=(1,undef);
+					try{
+						DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
+					}catch{
+						say $_;
+						$success = 0;
+						$error = "invalid start date (day-month-year)";
+					};
+					return $success,$error;
+				}
+			);
+			if(scalar(@errors)==0){
+				foreach my $key(keys %check){
+					my($success,$error) = $check{$key}->($params->{$key});
+					push @errors,$error if !$success;
+				}
 			}
-		}
-		#check format
-		my %check = (
-			date_start => sub{
-				my $value = shift;
-				my($success,$error)=(1,undef);
-				try{
-					DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
-				}catch{
-					say $_;
-					$success = 0;
-					$error = "invalid start date (day-month-year)";
+			#insert
+			if(scalar(@errors)==0){
+				my $new = {
+					name => $params->{name},
+					name_subproject => $params->{name_subproject},
+					description => $params->{description},
+					date_start => $params->{date_start},
+					datetime_last_modified => time,
+					query => $params->{query}
 				};
-				return $success,$error;
+				$project = { %$project,%$new };
+				projects->add($project);
+				redirect(uri_for("/projects"));
 			}
-		);
-		if(scalar(@errors)==0){
-			foreach my $key(keys %check){
-				my($success,$error) = $check{$key}->($params->{$key});
-				push @errors,$error if !$success;
-			}
-		}
-		#insert
-		if(scalar(@errors)==0){
-			my $new = {
-				name => $params->{name},
-				name_subproject => $params->{name_subproject},
-				description => $params->{description},
-				date_start => $params->{date_start},
-				datetime_last_modified => time,
-				query => $params->{query}
-			};
-			$project = { %$project,%$new };
-			projects->add($project);
-			redirect(uri_for("/projects"));
+		}else{
+			push @errors,"Sorry, dit project kan niet meer gewijzigd worden. Er zijn reeds scanobjecten aan gekoppeld.";
 		}
 	}
 
