@@ -59,6 +59,8 @@ plugins:
         operations: ["edit"]
        projects:
         operations: ["edit"]
+       locations:
+        operations: ["comment"]
      collectie_beheerder:
       permissions:
        projects: 
@@ -67,12 +69,16 @@ plugins:
       permissions:
        directories: 
         operations: ["view"]
+       locations:
+        operations: ["comment"]
      it manager:
       permissions:
        manage_accounts:
         operations: ["edit"]
        directories:
         operations: ["edit"]
+       locations:
+        operations: ["comment"]
      qa_manager: {}
      archivaris: {}
      catalograaf: {}
@@ -92,7 +98,22 @@ store:
   package: "Catmandu::Store::Solr"
   options:
    url: "http://localhost:8983/solr/core1"
-app: {}
+index:
+ meercat:
+  url: "http://localhost:4000/solr"
+app:
+ location:
+  edit:
+   baginfo:
+    - key: "DC-Title"
+    - key: "DC-Identifier"
+    - key: "DC-Description"
+    - key: "DC-Type"
+      values: ["Text","audio","Sound","Image","Dataset","MovingImage","Sound","MovingImage"]
+    - key: "DC-Creator"
+    - key: "DC-AccessRights"
+      values: ["open","closed","ugent"]
+    - key: "DC-Subject"
 default_app: "/projects"
 all: {}
 mounts:

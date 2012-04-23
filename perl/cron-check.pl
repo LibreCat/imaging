@@ -65,7 +65,7 @@ while(my $user = $sth_each->fetchrow_hashref()){
 				path => $dir,
 				status => "incoming",
 				status_history => [{
-					user_name => "-",
+					user_name => $user->{login},
 					status => "incoming",
 					datetime => time,
 					comments => ""
@@ -75,7 +75,8 @@ while(my $user = $sth_each->fetchrow_hashref()){
 				user_id => $user->{id},
 				datetime_last_modified => time,
 				project_id => undef,
-				metadata => []
+				metadata => [],
+				comments => []
 			});
 		}
 	}

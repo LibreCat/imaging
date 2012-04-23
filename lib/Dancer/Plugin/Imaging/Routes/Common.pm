@@ -63,6 +63,8 @@ sub sanity_check {
     };
     scalar(@errors)==0,\@errors;
 }
+
+
 register mount_conf => \&mount_conf;
 register mount => \&mount;
 register subdirectories => \&subdirectories;

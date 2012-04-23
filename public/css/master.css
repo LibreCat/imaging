@@ -67,4 +67,17 @@ ul#menu li {
 	right:0px;
 	top:0px;
 	padding: 10px;
+}
+div.comment {
+	padding:5px;
+	margin: 0px;
 }	
+div.comment_text {
+	font-size:11pt;
+	color:#333333;
+	padding-bottom:10px;
+}
+div.comment_info {
+	font-size:9pt;
+	color:#888888;
+}

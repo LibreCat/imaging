@@ -83,75 +83,125 @@ any('/locations',sub {
         });
     }
 });
-any('/locations/view/:_id',sub {
+any('/locations/view',sub {
     my $params = params;
+    my $indexer = indexer();
+    $params->{q} = is_string($params->{q}) ? $params->{q} : "*";
+    $params->{start} = is_natural($params->{start}) && int($params->{start}) >= 0 ? int($params->{start}) : 0;
+    my %opts = (
+        query => $params->{q},
+        reify => locations(),
+        start => $params->{start},
+        limit => 1
+    );
 	my @errors = ();
-	my $auth = auth;
-	my $location = locations->get($params->{_id});
-	$location or return not_found();
-
-    my $project;
-    if($location->{project_id}){
-        $project = projects->get($location->{project_id});
-    }
-	#comment - start
-	if(is_string($params->{comment})){
-		if($auth->can('locations','comment')){
-			push @{ $location->{comments} ||= [] },{
+    my($result);
+    try {
+        $result = indexer->search(%opts);
+    }catch{
+		push @errors,"ongeldige zoekvraag";
+    };
+    if(scalar(@errors)==0){
+        my $project;
+        if($result->hits->[0]->{project_id}){
+            $project = projects->get($result->hits->[0]->{project_id});
+        }
+		#comment - start
+		if(is_string($params->{comment})){
+			push @{ $result->hits->[0]->{comments} ||= [] },{
 				'time' => time,
 				text => $params->{comment},
 				user_name => session('user')->{login}
 			};
-			locations->add($location);
-		}else{
-			#complain
+			locations->add($result->hits->[0]);
 		}
-	}
-	#comment - end
-    template('locations/view',{
-        location => $location,
-        auth => $auth,
-        errors => \@errors,
-        mount_conf => mount_conf(),
-        project => $project,
-        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
-    });
+		#comment - end
+        template('locations/view',{
+            location => $result->hits->[0],
+            auth => auth(),
+            errors => \@errors,
+            mount_conf => mount_conf(),
+            project => $project,
+            user => dbi_handle->quick_select('users',{ id => $result->hits->[0]->{user_id} })
+        });
+    }else{
+        template('locations/view',{
+            location => [],
+            errors => \@errors,
+            auth => auth(),
+            mount_conf => mount_conf()
+        });
+    }
+});
+any('/locations/view/:_id',sub {
+    my $params = params;
+    my $_id = delete $params->{_id};
+    $params->{q} = "_id:\"$_id\"";
+    redirect(uri_for('/locations/view',$params));
 });
 
-any('/locations/edit/:_id',sub{
+
+any('/locations/edit',sub{
 	my $params = params;
 	my $auth = auth;
-	my @errors = ();
-    my $location = locations->get($params->{_id});
-    $location or return not_found();
-
 	if(!($auth->asa('admin') || $auth->can('locations','edit'))){
         return forward('/access_denied',{
             text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
         });
     }
 
-    my $project;
-    if($location->{project_id}){
-        $project = projects->get($location->{project_id});
-    }
-	#edit - start 	
-	my $errs;
-	($location,$errs) = edit_location($location);
-	push @errors,@$errs;
-	if(scalar(@$errs)==0){
-		locations->add($location);
-	}
-	#edit - end	
-    template('locations/edit',{
-        location => $location,
-        auth => $auth,
-        errors => \@errors,
-        mount_conf => mount_conf(),
-        project => $project,
-        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
-    });
 
+    my $indexer = indexer();
+    $params->{q} = is_string($params->{q}) ? $params->{q} : "*";
+    $params->{start} = is_natural($params->{start}) && int($params->{start}) >= 0 ? int($params->{start}) : 0;
+    my %opts = (
+        query => $params->{q},
+        reify => locations(),
+        start => $params->{start},
+        limit => 1
+    );
+	my @errors = ();
+    my($result);
+    try {
+        $result = indexer->search(%opts);
+    }catch{
+        push @errors,"ongeldige zoekvraag";
+    };
+    if(scalar(@errors)==0){
+        my $project;
+        if($result->hits->[0]->{project_id}){
+            $project = projects->get($result->hits->[0]->{project_id});
+        }
+		#edit - start 
+		my($location,$errs) = edit_location($result->hits->[0]);
+		push @errors,@$errs;
+		if(scalar(@$errs)==0){
+			locations->add($location);
+		}
+		#edit - end	
+        template('locations/edit',{
+            location => $result->hits->[0],
+            auth => auth(),
+            errors => \@errors,
+            mount_conf => mount_conf(),
+            project => $project,
+            user => dbi_handle->quick_select('users',{ id => $result->hits->[0]->{user_id} })
+        });
+    }else{
+        template('locations/edit',{
+            location => [],
+            errors => \@errors,
+            auth => auth(),
+            mount_conf => mount_conf()
+        });
+    }
+});
+
+any('/locations/edit/:_id',sub {
+    my $params = params;
+    my $_id = delete $params->{_id};
+    $params->{q} = "_id:\"$_id\"";
+    redirect(uri_for('/locations/edit',$params));
 });
 
 sub edit_location {

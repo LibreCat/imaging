@@ -1,7 +1,8 @@
+[% PROCESS inc/errors_messages.tt %]
 [% USE date %]
 [% USE SizePretty %]
 [% IF location %]
-    <h1>[% location.item("_id") %]</h1>
+    <h1>Wijzig [% location.item("_id") %]</h1>
 	[% IF location.status == "registering" %]
 		<div class="error">
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
@@ -139,8 +140,15 @@
 		<tr>
             <th>identifier</th>
             <td>
-				<a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata.source _ ":" _ metadata.fSYS %]</a>
-				(bekijk in meercat)
+				<form method="get">
+					<input type="text" name="metadata_id" id="metadata_id" value="[% metadata.source _ ":" _ metadata.fSYS %]" />
+					<input type="button" onclick="window.location.href='http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]'" value="bekijk record"/>
+					[% IF location.metadata.size == 1 %]
+					<input type="submit" name="submit" value="save" />	
+					<input type="hidden" name="action" value="edit_metadata_id" />
+					[% END %]
+					<input type="button" onclick="window.location.href='/locations/edit/[% location.item("_id") %]?action=delete_metadata_id&metadata_id=[% metadata.source _ ":" _ metadata.fSYS %]'" value="delete"/>
+				</form>
             </td>
         </tr>
 		<tr>
@@ -156,40 +164,71 @@
 				[% FOREACH key IN metadata.baginfo.keys.sort %]
 					[% FOREACH value IN metadata.baginfo.${key} %]
 						<tr>
-							<th>[% key %]</th>
-							<td>[% value %]</td>
+							<th>[% key IF loop.index == 0 %]</th>
+							<td>
+								<input type="text" name="baginfo_[% key %]" id="baginfo_[% key %]" value="[% value %]" />
+							</td>
 						</tr>
 					[% END %]
 				[% END %]
+					<tr>
+						<td colspan="2">
+							<input type="button" onclick="window.location.href='/locations/edit/[% location.item("_id") %]?action=edit_metadata_id&metadata_id=[% metadata.source _ ":" _ metadata.fSYS %]'" value="restore" />
+						</td>
+					</tr>
 				</table>
-			</td>
-		</tr>
-		[% END %]
-		<tr>
-            <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">
-			Comments
-            </th>
-        </tr>
-		[% IF auth.can('locations','comment') %]
-		<tr>
-			<th>voeg commentaar toe</th>
-			<td>
-				<form method="post">
-					<textarea name="comment" id="comment"></textarea>
-					<input type="submit" id="submit" name="submit" value="post" />
+				[% USE ToJSON %]
+				<script type="text/javascript">
+					var baginfo_config = [% settings.app.location.edit.baginfo.to_json || "{}" %];
+					function set_baginfo_input(select_id,value_id){
+						var select = document.getElementById(select_id);
+						var key = select.options[ select.selectedIndex ].value;
+						for(var i = 0;i < baginfo_config.length;i++){
+							if(baginfo_config[i].key == key){
+								var data = [];
+								if(baginfo_config[i].values && baginfo_config[i].values.length > 0){
+									data.push("<select name=\"value\" id=\"value\">");
+									for(var j = 0;j < baginfo_config[i].values.length;j++){
+										data.push("<option value=\""+baginfo_config[i].values[j]+"\">"+baginfo_config[i].values[j]+"</option>");
+									}
+									data.push("</select>");
+								}else{
+									data.push("<input type=\"text\" name=\"value\" id=\"value\" value=\"\" />");
+								}
+								$('#'+value_id).replaceWith(data.join(''));
+								return;
+							}
+						}
+					}
+				</script>
+				<form method="get">
+				<table>
+					<tr>
+						<th>
+							<select name="key" id="key" onchange="set_baginfo_input('key','value');">
+							[% FOREACH element IN settings.app.location.edit.baginfo %]
+								<option value="[% element.key %]">[% element.key %]</option>
+							[% END %]
+							</select>
+						</th>
+						<td>	
+							[% IF settings.app.location.edit.baginfo.0.item("values") %]
+								<select name="[% settings.app.location.edit.baginfo.0.key %]" id="[% settings.app.location.edit.baginfo.0.key %]">
+								[% FOREACH val IN settings.app.location.edit.baginfo.0.item("values") %]
+									<option value="[% val %]">[% val %]</option>
+								[% END %]
+								</select>
+							[% ELSE %]
+								<input type="text" name="value" id="value" />
+							[% END %]
+							<input type="submit" value="voeg toe" id="submit" name="submit" />
+							<input type="hidden" value="add_baginfo_pair" name="action" id="action" />
+						</td>
+					</tr>
+				</table>
 				</form>
 			</td>
 		</tr>
 		[% END %]
-		<tr>
-			<td colspan="2">
-			[% FOREACH comment IN location.comments.reverse %]
-				<div class="comment">
-					<div class="comment_text">[% comment.text | html %]</div>
-					<div class="comment_info">posted by [% comment.user_name %] at [% date.format(comment.time,'%d-%m-%Y %H:%M:%S') %]</div>
-				</div>
-			[% END %]
-			</td>
-		</tr>
 	</table>
 [% END %]
