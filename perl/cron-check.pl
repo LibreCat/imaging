@@ -17,6 +17,7 @@ use YAML;
 use Try::Tiny;
 use DBI;
 use DateTime;
+use DateTime::TimeZone;
 use DateTime::Format::Strptime;
 use Array::Diff;
 use File::Find;
@@ -25,7 +26,7 @@ our($a,$b);
 sub formatted_date {
 	my $time = shift || time;
 	DateTime::Format::Strptime::strftime(
-		'%FT%TZ', DateTime->from_epoch(epoch=>$time)
+		'%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
 	);
 }
 

@@ -3,8 +3,8 @@
 [% IF directories && directories.size > 0 %]
 	<table id="table-ready" class="left">
 		<tr>
-			<th>name</th>
-			<th>num files</th>
+			<th>naam</th>
+			<th>aantal bestanden</th>
 			<th>status</th>
 		</tr>
 	[% FOREACH directory IN directories %]
@@ -28,7 +28,7 @@
 [% ELSE %]
 	<table id="table-ready"> 
 		<tr>
-            <th>no scandirectories found yet</th>
+            <th>Geen mappen gevonden</th>
         </tr>
 	</table>
 [% END %]

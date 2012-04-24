@@ -8,7 +8,7 @@
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
 		naar status 'registered'.
 		</div>
-	[% END %]
+	[% ELSE %]
 	<table id="table-locations" class="left">
 		<tr>
 			<th>name</th>
@@ -37,7 +37,7 @@
             </td>
         </tr>
 		<tr>
-            <th>subproject</th>
+            <th>deelproject</th>
             <td>
                 [% IF project %]
                     [% q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" %]
@@ -50,7 +50,7 @@
             </td>
         </tr>
         <tr>
-            <th>user name</th>
+            <th>gebruiker</th>
             <td>
                 [% q = "user_id:\"" _ user.id _ "\"" %]
                 <a href="/locations?q=[% q | uri %]">
@@ -62,7 +62,7 @@
             <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">technisch</th>
         </tr>
         <tr>
-            <th>files ([% location.files.size || 0 %])</th>
+            <th>bestanden ([% location.files.size || 0 %])</th>
             <td>
 				<table style="width:100%">
 					<tr>
@@ -88,21 +88,21 @@
 			</td>
         </tr>
 		<tr>
-			<th>status history</th>
+			<th>status geschiedenis</th>
             <td>
 				<table style="width:100%">
                 [% IF location.item("status_history").size > 0 %]
 					<tr>
-						<th>username</th>
+						<th>gebruiker</th>
 						<th>status</th>
-						<th>time</th>
-						<th>comments</th>
+						<th>tijd</th>
+						<th>commentaar</th>
 					</tr>
 					[% FOREACH status_entry IN location.item("status_history") %]
 						<tr>
 							<td>[% status_entry.user_name %]</td>
 							<td>[% status_entry.status %]</td>
-							<td>[% date.format(status_entry.time,'%d-%m-%Y %H:%M:%S') %]</td>
+							<td>[% date.format(status_entry.datetime,'%d-%m-%Y %H:%M:%S') %]</td>
                             <td>[% status_entry.comments || "-"%]</td>
 						</tr>
 					[% END %]
@@ -140,7 +140,7 @@
 		<tr>
             <th>identifier</th>
             <td>
-				<form method="get">
+				<form method="post">
 					<input type="text" name="metadata_id" id="metadata_id" value="[% metadata.source _ ":" _ metadata.fSYS %]" />
 					<input type="button" onclick="window.location.href='http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]'" value="bekijk record"/>
 					[% IF location.metadata.size == 1 %]
@@ -160,48 +160,68 @@
 		<tr>
 			<th>dublin core</th>
 			<td>
-				<table>
-				[% FOREACH key IN metadata.baginfo.keys.sort %]
-					[% FOREACH value IN metadata.baginfo.${key} %]
-						<tr>
-							<th>[% key IF loop.index == 0 %]</th>
+				<form method="post">
+				<table id="table-baginfo" style="width:100%;">
+				[% i = 0 %]
+				[% FOREACH element IN settings.app.location.edit.baginfo %]
+					[% NEXT IF !( metadata.baginfo.${element.key} && metadata.baginfo.${element.key}.size > 0 ) %]
+					[% FOREACH value IN metadata.baginfo.${element.key} %]
+						<tr class="tr-baginfo" id="tr-baginfo-[% i %]">
+							<th>[% element.key %]</th>
 							<td>
-								<input type="text" name="baginfo_[% key %]" id="baginfo_[% key %]" value="[% value %]" />
+							[% IF element.item("values") %]
+								<select name="baginfo.[% element.key %]" id="baginfo.[% element.key %]">
+								[% FOREACH conf_value IN element.item("values").sort %]
+									<option value="[% conf_value %]" [% IF value == conf_value %]selected="selected"[% END %]>
+										[% conf_value %]
+									</option>
+								[% END %]
+								</select>
+							[% ELSE %]
+								<input type="text" name="baginfo.[% element.key %]" id="baginfo.[% element.key %]" value="[% value %]" />
+							[% END %]
+							</td>
+							<td>
+								<a href="#" onclick="$('#tr-baginfo-[% i %]').remove();return false;">x</a>
 							</td>
 						</tr>
+						[% i = i + 1 %]
 					[% END %]
 				[% END %]
 					<tr>
-						<td colspan="2">
+						<td colspan="3">
 							<input type="button" onclick="window.location.href='/locations/edit/[% location.item("_id") %]?action=edit_metadata_id&metadata_id=[% metadata.source _ ":" _ metadata.fSYS %]'" value="restore" />
+							<input type="submit" name="submit" value="save" />
+							<input type="hidden" name="action" value="edit_baginfo" />
 						</td>
 					</tr>
 				</table>
+				</form>
+				<form method="post">
 				[% USE ToJSON %]
-				<script type="text/javascript">
-					var baginfo_config = [% settings.app.location.edit.baginfo.to_json || "{}" %];
-					function set_baginfo_input(select_id,value_id){
-						var select = document.getElementById(select_id);
-						var key = select.options[ select.selectedIndex ].value;
-						for(var i = 0;i < baginfo_config.length;i++){
-							if(baginfo_config[i].key == key){
-								var data = [];
-								if(baginfo_config[i].values && baginfo_config[i].values.length > 0){
-									data.push("<select name=\"value\" id=\"value\">");
-									for(var j = 0;j < baginfo_config[i].values.length;j++){
-										data.push("<option value=\""+baginfo_config[i].values[j]+"\">"+baginfo_config[i].values[j]+"</option>");
-									}
-									data.push("</select>");
-								}else{
-									data.push("<input type=\"text\" name=\"value\" id=\"value\" value=\"\" />");
-								}
-								$('#'+value_id).replaceWith(data.join(''));
-								return;
-							}
-						}
-					}
-				</script>
-				<form method="get">
+                <script type="text/javascript">
+                    var baginfo_config = [% settings.app.location.edit.baginfo.to_json || "{}" %];
+                    function set_baginfo_input(select_id,value_id){
+                        var select = document.getElementById(select_id);
+                        var key = select.options[ select.selectedIndex ].value;
+                        for(var i = 0;i < baginfo_config.length;i++){
+                            if(baginfo_config[i].key == key){
+                                var data = [];
+                                if(baginfo_config[i].values && baginfo_config[i].values.length > 0){
+                                    data.push("<select name=\"value\" id=\"value\">");
+                                    for(var j = 0;j < baginfo_config[i].values.length;j++){
+                                        data.push("<option value=\""+baginfo_config[i].values[j]+"\">"+baginfo_config[i].values[j]+"</option>");
+                                    }
+                                    data.push("</select>");
+                                }else{
+                                    data.push("<input type=\"text\" name=\"value\" id=\"value\" value=\"\" />");
+                                }
+                                $('#'+value_id).replaceWith(data.join(''));
+                                return;
+                            }
+                        }
+                    }
+                </script>
 				<table>
 					<tr>
 						<th>
@@ -231,4 +251,5 @@
 		</tr>
 		[% END %]
 	</table>
+	[% END %]
 [% END %]

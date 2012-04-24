@@ -5,10 +5,10 @@
 [% IF users && users.size > 0 %]
 	<table id="table-users" class="right">
 		<tr>
-			<th>name</th>
+			<th>naam</th>
 			<th>login</th>
-			<th>roles</th>
-			<th>actions</th>
+			<th>rol</th>
+			<th>acties</th>
 		</tr>
 	[% FOREACH user IN users %]
 		<tr>
@@ -27,7 +27,7 @@
 [% ELSE %]
 	<table id="table-users"> 
 		<tr>
-            <th>no users added yet to the list</th>
+            <th>Geen gebruikers aanwezig</th>
         </tr>
 	</table>
 [% END %]

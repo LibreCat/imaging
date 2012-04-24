@@ -48,18 +48,18 @@
         [% IF params.q && params.q != "*" %]
         <tr>
             <td colspan="7" style="text-align:left">
-            list is filtered on <b>[% params.q | html %]</b>
+            lijst is gefilterd op <b>[% params.q | html %]</b>
             </td>
         </tr>
         [% END %]
 		<tr>
-			<th>name</th>
-			<th>user</th>
+			<th>naam</th>
+			<th>gebruiker</th>
 			<th>project</th>
-			<th>subproject</th>
+			<th>deelproject</th>
 			<th>status</th>
-			<th>done</th>
-            <th>last modified</th>
+			<th>klaar</th>
+            <th>laatst gewijzigd</th>
 		</tr>
 	[% FOREACH location IN locations %]
 		<tr>
@@ -82,7 +82,7 @@
 [% ELSE %]
 	<table id="table-locations"> 
 		<tr>
-            <td>no scan assignments found for <b>[% params.q || "*" %]</b></td>
+            <td>geen scans gevonden voor <b>[% params.q || "*" %]</b></td>
         </tr>
 	</table>
 [% END %]

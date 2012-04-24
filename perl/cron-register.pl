@@ -14,6 +14,7 @@ use Try::Tiny;
 use DBI;
 use Clone qw(clone);
 use DateTime;
+use DateTime::TimeZone;
 use DateTime::Format::Strptime;
 use WebService::Solr;
 use Digest::MD5 qw(md5_hex);
@@ -82,17 +83,22 @@ sub users_get {
 sub formatted_date {
 	my $time = shift || time;
 	DateTime::Format::Strptime::strftime(
-		'%FT%TZ', DateTime->from_epoch(epoch=>$time)
+		'%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
 	);
 }
 sub status2index {
 	my $location = shift;
 	my $doc;
 	my $index_log = index_log();
+	my $users_get = users_get();
+ 	$users_get->execute( $location->{user_id} ) or die($users_get->errstr);
+    my $user = $users_get->fetchrow_hashref();
+
 	foreach my $history(@{ $location->{status_history} || [] }){
 		$doc = clone($history);
 		$doc->{datetime} = formatted_date($doc->{datetime});
 		$doc->{location_id} = $location->{_id};
+		$doc->{owner} = $user->{login};
 		my $blob = join('',map { $doc->{$_} } sort keys %$doc);
 		$doc->{_id} = md5_hex($blob);
 		$index_log->add($doc);

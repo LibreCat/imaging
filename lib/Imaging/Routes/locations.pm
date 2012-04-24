@@ -2,6 +2,7 @@ package Imaging::Routes::locations;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Imaging::Routes::Meercat;
+use Dancer::Plugin::NestedParams;
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
@@ -98,13 +99,14 @@ any('/locations/view/:_id',sub {
 	if(is_string($params->{comment})){
 		if($auth->can('locations','comment')){
 			push @{ $location->{comments} ||= [] },{
-				'time' => time,
+				datetime => time,
 				text => $params->{comment},
 				user_name => session('user')->{login}
 			};
 			locations->add($location);
 		}else{
 			#complain
+			push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
 		}
 	}
 	#comment - end
@@ -122,6 +124,7 @@ any('/locations/edit/:_id',sub{
 	my $params = params;
 	my $auth = auth;
 	my @errors = ();
+	my @messages = ();
     my $location = locations->get($params->{_id});
     $location or return not_found();
 
@@ -136,9 +139,10 @@ any('/locations/edit/:_id',sub{
         $project = projects->get($location->{project_id});
     }
 	#edit - start 	
-	my $errs;
-	($location,$errs) = edit_location($location);
+	my($errs,$msgs);
+	($location,$errs,$msgs) = edit_location($location);
 	push @errors,@$errs;
+	push @messages,@$msgs;
 	if(scalar(@$errs)==0){
 		locations->add($location);
 	}
@@ -147,6 +151,7 @@ any('/locations/edit/:_id',sub{
         location => $location,
         auth => $auth,
         errors => \@errors,
+		messages => \@messages,
         mount_conf => mount_conf(),
         project => $project,
         user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
@@ -158,6 +163,7 @@ sub edit_location {
 	my $location = shift;
 	my $params = params;
 	my @errors = ();
+	my @messages = ();
 	my $action = $params->{action} || "";
 
 	$location->{metadata} ||= [];
@@ -202,6 +208,7 @@ sub edit_location {
 						fXML => $doc->{fXML},
 						baginfo => marcxml2baginfo($doc->{fXML})			
 					}];
+					push @messages,"metadata identifier werd aangepast";
 				}
 			}
 		}
@@ -219,6 +226,7 @@ sub edit_location {
 			my $index = first_index { $_->{source}.":".$_->{fSYS} eq $params->{metadata_id} } @{$location->{metadata}};
 			if($index >= 0){
 				splice @{$location->{metadata}},$index,1;
+				push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
 			}
 		}
 	}
@@ -234,7 +242,8 @@ sub edit_location {
 			my @keys = qw(key value);
 			foreach my $key(@keys){
 				if(!is_string($params->{$key})){
-					push @errors,"$key is niet opgegeven";
+					push @errors,"gelieve een waarde op te geven";
+					last;
 				}
 			}
 			if(scalar(@errors)==0){
@@ -242,33 +251,42 @@ sub edit_location {
 				my $value = $params->{value};
 				$location->{metadata}->[0]->{baginfo}->{$key} ||= [];
 				push @{ $location->{metadata}->[0]->{baginfo}->{$key} },$value;
+				push @messages,"baginfo werd aangepast";
 			}
 
 		}
 	}elsif($action eq "edit_baginfo"){
+		if(is_array_ref($location->{metadata}) && scalar(@{$location->{metadata}}) > 1){
 
-		my @keys = do {
-			my $config = config;
-			my @values = ();
-			foreach(@{$config->{app}->{locations}->{baginfo}}){
-				push @values,$_->{key};
-			}
-			@values;
-		};
-		my $baginfo = {};
-		foreach my $key(@keys){
-            if(!is_string($params->{$key})){
-                push @errors,"$key is niet opgegeven";
-            }else{
-				$baginfo->{$key} = is_array_ref($params->{$key}) ? $params->{$key} : [$params->{$key}];
-			}
-		}
-		if(scalar(@errors)==0){
-			$location->{baginfo} = $baginfo;
-		}
+            push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
+
+        }else{
 		
+			my $baginfo_params = expand_params->{baginfo} || {};
+
+			my @conf_baginfo_keys = do {
+				my $config = config;
+				my @values = ();
+				push @values,$_->{key} foreach(@{$config->{app}->{location}->{edit}->{baginfo}});
+				@values;
+			};
+
+			my $baginfo = {};
+			foreach my $key(sort keys %$baginfo_params){	
+				my $index = first_index { $key eq $_ } @conf_baginfo_keys;
+				if($index >= 0){
+					$baginfo->{$key} = is_array_ref($baginfo_params->{$key}) ? $baginfo_params->{$key}: [$baginfo_params->{$key}];
+				}else{
+					push @errors,"$key is een ongeldige key voor baginfo";
+				}
+			}
+			if(scalar(@errors)==0){
+				$location->{metadata}->[0]->{baginfo} = $baginfo;
+				push @messages,"baginfo werd aangepast";
+			}
+		}
 	}
-	return $location,\@errors;
+	return $location,\@errors,\@messages;
 }
 
 true;

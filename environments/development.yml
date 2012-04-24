@@ -60,7 +60,7 @@ plugins:
        projects:
         operations: ["edit"]
        locations:
-        operations: ["comment"]
+        operations: ["edit","comment"]
      collectie_beheerder:
       permissions:
        projects: 
@@ -79,7 +79,10 @@ plugins:
         operations: ["edit"]
        locations:
         operations: ["comment"]
-     qa_manager: {}
+     qa_manager:
+      permissions:
+       locations:
+        operations: ["edit","comment"]
      archivaris: {}
      catalograaf: {}
 cache: {}

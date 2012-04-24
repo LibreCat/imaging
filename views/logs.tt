@@ -38,16 +38,17 @@
         [% IF params.q && params.q != "*" %]
         <tr>
             <td colspan="7" style="text-align:left">
-            list is filtered on <b>[% params.q | html %]</b>
+            lijst is gefilterd op <b>[% params.q | html %]</b>
             </td>
         </tr>
         [% END %]
 		<tr>
-			<th>date</th>
-			<th>name</th>
-			<th>user name</th>
+			<th>datum</th>
+			<th>naam</th>
+			<th>gebruiker</th>
+			<th>eigenaar</th>
 			<th>status</th>
-			<th>comments</th>
+			<th>commentaar</th>
 		</tr>
 	[% FOREACH log IN logs %]
 		<tr>
@@ -61,6 +62,7 @@
                 </a>
             </td>
 			<td>[% log.user_name %]</td>
+			<td>[% log.owner %]</td>
 			<td>[% log.status %]</td>
             <td>[% log.comments || "-" %]</td>
 		</tr>
@@ -69,7 +71,7 @@
 [% ELSE %]
 	<table id="table-logs"> 
 		<tr>
-            <td>no logs found for <b>[% params.q || "*" %]</b></td>
+            <td>geen loggegevens gevonden voor <b>[% params.q || "*" %]</b></td>
         </tr>
 	</table>
 [% END %]

@@ -1,5 +1,5 @@
 [% PROCESS inc/errors_messages.tt %]
-<h1>Edit directories of user [% user.login %]</h1>
+<h1>Wijzig mappen van gebruiker [% user.login %]</h1>
 <form method="post" accept-charset="UTF-8">
 	<table id="form-directories-edit" class="right">
 		<tr>

@@ -35,7 +35,7 @@
 			<th>login</th>
 			<th>directory ready</th>
 			<th>directory reprocessing</th>
-			<th>actions</th>
+			<th>acties</th>
 		</tr>
 	[% FOREACH user IN users %]
 		[% roles = [ user.roles ] %]
@@ -78,7 +78,7 @@
 [% ELSE %]
 	<table id="table-directories"> 
 		<tr>
-            <th>no users to show</th>
+            <th>geen gebruikers (buiten admin)</th>
         </tr>
 	</table>
 [% END %]

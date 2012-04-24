@@ -3,11 +3,11 @@
 [% IF locations && locations.size > 0 %]
 	<table id="table-projects" class="left">
 		<tr>
-			<th>name</th>
-			<th>date</th>
-			<th>num files</th>
+			<th>naam</th>
+			<th>datum</th>
+			<th>aantal</th>
 			<th>status</th>
-			<th>actions</th>
+			<th>acties</th>
 		</tr>
 	[% FOREACH location IN locations %]
 		<tr>
@@ -38,7 +38,7 @@
 [% ELSE %]
 	<table id="table-ready"> 
 		<tr>
-            <th>no scandirectories found yet</th>
+            <th>geen mappen gevonden</th>
         </tr>
 	</table>
 [% END %]
