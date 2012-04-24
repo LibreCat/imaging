@@ -3,9 +3,6 @@
 [% USE SizePretty %]
 [% IF location %]
     <h1>[% location.item("_id") %]</h1>
-	[% IF auth.can('locations','edit') %]
-		<input type="button" value="wijzig.." onclick="window.location.href='/locations/edit/[% location.item("_id") %]'">
-	[% END %]
 	[% IF location.status == "registering" %]
 		<div class="error">
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
@@ -13,6 +10,14 @@
 		</div>
 	[% END %]
 	<table id="table-locations" class="left">
+		<tr>
+        	<td colspan="2">
+				[% IF auth.can('locations','edit') %]
+				<input type="button" value="wijzig.." onclick="window.location.href='/locations/edit/[% location.item("_id") %]'">
+				[% END %]
+				<input type="button" value="bekijk notities.." onclick="window.location.href='/locations/view/[% location.item("_id") %]/comments'">
+			</td>
+		</tr>
 		<tr>
 			<th>naam</th>
             <td>[% location.item("name") || "-" %]</td>
@@ -22,7 +27,7 @@
             <td>
                 [% q = "status:\"" _ location.status _ "\"" %]
                 <a href="/locations?q=[% q | uri %]">
-                [% location.status %]
+                [% settings.human_readable.${location.status} || location.status %]
                 </a>
             </td>
         </tr>
@@ -104,7 +109,7 @@
 					[% FOREACH status_entry IN location.item("status_history") %]
 						<tr>
 							<td>[% status_entry.user_name %]</td>
-							<td>[% status_entry.status %]</td>
+							<td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
 							<td>[% date.format(status_entry.datetime,'%d-%m-%Y %H:%M:%S') %]</td>
                             <td>[% status_entry.comments || "-"%]</td>
 						</tr>
@@ -154,7 +159,7 @@
 			</td>
 		</tr>
 		<tr>
-			<th>dublin core</th>
+			<th>bag info</th>
 			<td>
 				<table>
 				[% FOREACH key IN metadata.baginfo.keys.sort %]
@@ -169,31 +174,5 @@
 			</td>
 		</tr>
 		[% END %]
-		<tr>
-            <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">
-			Commentaar
-            </th>
-        </tr>
-		[% IF auth.can('locations','comment') %]
-		<tr>
-			<th>voeg commentaar toe</th>
-			<td>
-				<form method="post">
-					<textarea name="comment" id="comment"></textarea>
-					<input type="submit" id="submit" name="submit" value="post" />
-				</form>
-			</td>
-		</tr>
-		[% END %]
-		<tr>
-			<td colspan="2">
-			[% FOREACH comment IN location.comments.reverse %]
-				<div class="comment">
-					<div class="comment_text">[% comment.text | html %]</div>
-					<div class="comment_info">posted by [% comment.user_name %] at [% date.format(comment.datetime,'%d-%m-%Y %H:%M:%S') %]</div>
-				</div>
-			[% END %]
-			</td>
-		</tr>
 	</table>
 [% END %]

@@ -1,0 +1,27 @@
+[% PROCESS inc/errors_messages.tt %]
+[% USE date %]
+[% IF location %]
+    <h1>Commentaar op [% location.item("_id") %]</h1>
+	[% IF location.status == "registering" %]
+		<div class="error">
+		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
+		naar status 'registered'.
+		</div>
+	[% END %]
+		<input type="button" value="terug" onclick="window.location.href='/locations/view/[% location.item("_id") %]'" />	
+		[% IF auth.can('locations','comment') %]
+			<h3>voeg commentaar toe</h3>
+			<p>
+				<form method="post">
+					<textarea name="comment" id="comment"></textarea>
+					<input type="submit" id="submit" name="submit" value="post" />
+				</form>
+			</p>
+		[% END %]
+		[% FOREACH comment IN location.comments.reverse %]
+			<div class="comment">
+				<div class="comment_text">[% comment.text | html %]</div>
+				<div class="comment_info">posted by [% comment.user_name %] at [% date.format(comment.datetime,'%d-%m-%Y %H:%M:%S') %]</div>
+			</div>
+		[% END %]
+[% END %]

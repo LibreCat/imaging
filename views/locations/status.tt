@@ -1,0 +1,45 @@
+[% PROCESS inc/errors_messages.tt %]
+[% IF location %]
+    <h1>Wijzig status [% location.item("_id") %]</h1>
+	[% IF location.status == "registering" %]
+		<div class="error">
+		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
+		naar status 'registered'.
+		</div>
+	[% ELSE %]
+		<form method="post">
+			<table id="table-locations" class="left">
+				<tr>
+					<td colspan="2">
+						<input type="button" value="terug" onclick="window.location.href='/locations/edit/[% location.item("_id") %]'"/>
+					</td>
+				</tr>
+				<tr>
+					<th>huidige status</th>
+					<td>[% settings.human_readable.${location.status} || location.status %]</td>
+				</tr>
+				<tr>
+                    <th>nieuwe status</th>
+                    <td>
+						<select name="status_to">
+						[% FOREACH status IN settings.status.change.qa_control.item(location.status) %]
+							<option value="[% status %]" [% IF params.status_to == status %]selected="selected"[% END %]>[% settings.human_readable.${status} || status %]</option>
+						[% END %]
+						</select>
+					</td>
+                </tr>
+				<tr>
+					<th>commentaar</th>
+					<td>
+						<textarea name="comments" rows="10" cols="50">[% params.comments %]</textarea>
+					</td>
+				</tr>
+				<tr>
+                    <td colspan="2">
+                        <input type="submit" name="submit" id="submit" value="wijzig">
+                    </td>
+                </tr>
+			</table>
+		</form>
+	[% END %]
+[% END %]

@@ -30,7 +30,7 @@ hook before => sub {
 		}elsif(!$auth->can('manage_accounts','edit')){
 			request->path_info('/access_denied');
 			my $params = params;
-			$params->{text} = "user has not the right to edit user information";
+			$params->{text} = "U beschikt niet over de nodige rechten om gebruikersinformatie aan te passen";
 		}
 	}
 };	
@@ -55,12 +55,12 @@ any('/users/add',sub{
             $params->{password1} eq $params->{password2}
 			)
 		){
-			push @errors,"passwords are not equal";
+			push @errors,"paswoorden komen niet met elkaar overeen";
 		}
 		if(scalar(@errors)==0){
 			my $user = dbi_handle->quick_select('users',{ login => $params->{login} });
 			if($user){
-				push @errors,"user with login $params->{login} already exists";
+				push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";
 			}else{
 				my $roles = join('',@{ $params->{roles} });
 				dbi_handle->quick_insert('users',{
@@ -116,7 +116,7 @@ any('/user/:id/edit',sub{
 					$params->{password1} eq $params->{password2}
 					)
 				){
-					push @errors,"passwords are not equal";
+					push @errors,"paswoorden komen niet met elkaar overeen";
 				}else{
 					$new->{password} = md5_hex($params->{password1});
 				}
@@ -170,7 +170,7 @@ sub check_params_new_user {
 	my @keys = qw(name login);
     foreach my $key(@keys){
         if(!is_string($params->{$key})){
-            push @errors,"$key must be supplied"
+            push @errors,"$key is niet opgegeven"
         }
     }
     @keys = qw(roles);
@@ -181,7 +181,7 @@ sub check_params_new_user {
 			$params->{$key} = [];
 		}
         if(!(scalar(@{ $params->{$key} }) > 0)){
-            push @errors,"$key must be supplied"
+            push @errors,"$key is niet opgegeven"
         }
     }
 	if(scalar(@errors)==0){
@@ -189,9 +189,9 @@ sub check_params_new_user {
 		if($is_scanner){
 			my $profile;
 			if(!is_string($params->{profile_id})){
-				push @errors,"no profile given for scanner";
+				push @errors,"geen profiel opgegeven, hoewel rol van scanner";
 			}elsif(!($profile = profiles->get($params->{profile_id}))){
-				push @errors,"profile given does not exist";
+				push @errors,"opgegeven profiel bestaat niet";
 			}
 		}
 	}

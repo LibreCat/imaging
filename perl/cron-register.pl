@@ -233,8 +233,8 @@ sub marcxml2baginfo {
 sub str_clean {
 	my $str = shift;
 	$str =~ s/\n//gom;
-	$str =~ s/^\s//go;
-	$str =~ s/\s$//go;
+	$str =~ s/^\s+//go;
+	$str =~ s/\s+$//go;
 	$str =~ s/\s\s+/ /go;
 	$str;
 }

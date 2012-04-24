@@ -65,6 +65,8 @@ plugins:
       permissions:
        projects: 
         operations: ["edit"]
+       locations:
+        operations: ["comment"]
      scanner:
       permissions:
        directories: 
@@ -126,3 +128,32 @@ mounts:
    ready: "01_ready"
    processed: "02_processed"
    reprocessing: "03_reprocessing"
+status:
+ change:
+  all:
+   incoming: ["incoming_error","incoming_ok"]
+   incoming_error: ["incoming_ok"]
+   incoming_ok: ["incoming_error","registering"]
+   registering: ["registered"]
+   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done"]
+   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_done"]
+   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_done"]
+   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_done"]
+   qa_control_done: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done","archived"]
+  qa_control:
+   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done"]
+   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_done"]
+   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_done"]
+   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_done"]
+   qa_control_done: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","archived"]
+human_readable:
+ incoming: "aangeboden scan"
+ incoming_error: "automatische check gefaald"
+ incoming_ok: "automatische check successvol"
+ registering: "registratie bezig"
+ registered: "registratie voltooid"
+ reprocess_scans: "terug naar scanner"
+ reprocess_metadata: "terug naar catalografie"
+ reprocess_derivatives: "afgeleiden foutief"
+ qa_control_done: "qa controle succesvol"
+ archived: "gearchiveerd"

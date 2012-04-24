@@ -71,7 +71,10 @@
 			<td>[% location.item("user_name") || "-" %]</td>
 			<td>[% location.item("project_name") || "-" %]</td>
 			<td>[% location.item("project_name_subproject") %]</td>
-			<td>[% location.item("status") %]</td>
+			<td>
+				[% status = location.item("status") %]
+				[% settings.human_readable.${status} || status %]
+			</td>
 			<td>
 				<input type="checkbox" disabled="disabled" [% IF location.item("done") %] checked="checked"[% END %] />
 			</td>

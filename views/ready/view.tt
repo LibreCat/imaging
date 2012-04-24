@@ -7,7 +7,7 @@
         <tr>
             <th>status</th>
             <td>
-                [% location.status %]
+                [% settings.human_readable.${location.status} || location.status %]
             </td>
         </tr>
         <tr>

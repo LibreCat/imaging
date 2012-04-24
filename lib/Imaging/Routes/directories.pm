@@ -32,7 +32,7 @@ hook before => sub {
 		}elsif(!$auth->can('directories','edit')){
 			request->path_info('/access_denied');
             my $params = params;
-            $params->{text} = "user has not the right to edit the directories";
+            $params->{text} = "u mist de nodige rechten om de scandirectories aan te passen";
 		}
 	}
 };
@@ -89,7 +89,7 @@ any('/directories/:id/edit',sub {
 	$user or return not_found();	
 	if($user->{roles} !~ /scanner/o){
 		return forward("/access_denied",{
-			text => "Only directories for users with role 'scanner' can be created"
+			text => "Enkel gebruikers die beschikken over de rol 'scanner' kunnen een scandirectory krijgen"
         });
 	}
 
@@ -109,7 +109,7 @@ any('/directories/:id/edit',sub {
 			try{
 				my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
 				mkpath($path);
-                push @messages,"directory '$_' is ok now";
+                push @messages,"directory '$_' is ok nu";
 			}catch{
 				push @errors,$_;
 			};
@@ -117,9 +117,9 @@ any('/directories/:id/edit',sub {
 	}else{
 		foreach(qw(ready reprocessing)){
 			if(!-d $user->{$_}){
-				push @errors,"directory '$_' does not exist ($user->{$_})";
+				push @errors,"directory '$_' bestaat niet ($user->{$_})";
 			}elsif(!-w $user->{$_}){
-				push @errors,"directory '$_' is not writable ($user->{$_})";
+				push @errors,"systeem kan niet schrijven naar directory '$_' ($user->{$_})";
 			}
 		}
 	}

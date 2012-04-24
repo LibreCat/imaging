@@ -13,6 +13,20 @@ use Try::Tiny;
 use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
 
+use Clone qw(clone);
+use DateTime;
+use DateTime::TimeZone;
+use DateTime::Format::Strptime;
+use Digest::MD5 qw(md5_hex);
+
+sub formatted_date {
+    my $time = shift || time;
+    DateTime::Format::Strptime::strftime(
+        '%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+    );
+}
+
+
 sub core {
     state $core = store("core");
 }
@@ -25,9 +39,71 @@ sub locations {
 sub projects {
     state $projects = core()->bag("projects");
 }
+sub index_logs {
+    state $index = store("index_log")->bag("log_locations");
+}
 sub dbi_handle {
     state $dbi_handle = database;
 }
+sub status2index {
+    my $location = shift;
+    my $doc;
+    my $index_log = index_logs();
+	my $owner = dbi_handle->quick_select("users",{ id => $location->{user_id} });
+
+    foreach my $history(@{ $location->{status_history} || [] }){
+        $doc = clone($history);
+        $doc->{datetime} = formatted_date($doc->{datetime});
+        $doc->{location_id} = $location->{_id};
+        $doc->{owner} = $owner->{login};
+        my $blob = join('',map { $doc->{$_} } sort keys %$doc);
+        $doc->{_id} = md5_hex($blob);
+        $index_log->add($doc);
+    }
+	$index_log->commit;
+    $doc;
+}
+sub location2index {
+    my $location = shift;
+
+    my $doc = clone($location);
+    my @deletes = qw(metadata comments);
+    delete $doc->{$_} foreach(@deletes);
+
+    for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
+        my $item = $doc->{status_history}->[$i];
+        $doc->{status_history}->[$i] = $item->{user_name}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
+    }
+
+    my $project;
+    if($location->{project_id} && ($project = projects()->get($location->{project_id}))){
+        foreach my $key(keys %$project){
+            next if $key eq "list";
+            my $subkey = "project_$key";
+            $subkey =~ s/_{2,}/_/go;
+            $doc->{$subkey} = $project->{$key};
+        }
+    }
+
+    if($location->{user_id}){
+		my $user = dbi_handle->quick_select("users",{ id => $location->{user_id} });
+        if($user){
+            $doc->{user_name} = $user->{name};
+            $doc->{user_login} = $user->{login};
+            $doc->{user_roles} = [split(',',$user->{roles})];
+        }
+    }
+
+    foreach my $key(keys %$doc){
+        next if $key !~ /datetime/o;
+        $doc->{$key} = formatted_date($doc->{$key});
+    }
+
+    indexer->add($doc);
+	indexer->commit;
+    $doc;
+}
+
 hook before => sub {
     if(request->path =~ /^\/locations/o){
 		if(!authd){
@@ -95,21 +171,7 @@ any('/locations/view/:_id',sub {
     if($location->{project_id}){
         $project = projects->get($location->{project_id});
     }
-	#comment - start
-	if(is_string($params->{comment})){
-		if($auth->can('locations','comment')){
-			push @{ $location->{comments} ||= [] },{
-				datetime => time,
-				text => $params->{comment},
-				user_name => session('user')->{login}
-			};
-			locations->add($location);
-		}else{
-			#complain
-			push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
-		}
-	}
-	#comment - end
+
     template('locations/view',{
         location => $location,
         auth => $auth,
@@ -157,6 +219,118 @@ any('/locations/edit/:_id',sub{
         user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
     });
 
+});
+any('/locations/view/:_id/comments',,sub{
+    my $params = params;
+    my $auth = auth;
+    my $config = config;
+    my @errors = ();
+    my @messages = ();
+    my $location = locations->get($params->{_id});
+    $location or return not_found();
+
+	my $project;
+    if($location->{project_id}){
+        $project = projects->get($location->{project_id});
+    }
+
+	#comment - start
+    if(is_string($params->{comment})){
+        if($auth->can('locations','comment')){
+            push @{ $location->{comments} ||= [] },{
+                datetime => time,
+                text => $params->{comment},
+                user_name => session('user')->{login}
+            };
+            locations->add($location);
+        }else{
+            #complain
+            push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
+        }
+    }
+    #comment - end
+
+	template('locations/comments',{
+        location => $location,
+        auth => $auth,
+        errors => \@errors,
+        mount_conf => mount_conf(),
+        project => $project,
+        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
+    });	
+
+});
+any('/locations/edit/:_id/status',sub{
+    my $params = params;
+    my $auth = auth;
+	my $config = config;
+    my @errors = ();
+    my @messages = ();
+    my $location = locations->get($params->{_id});
+    $location or return not_found();
+
+    if(!($auth->asa('admin') || $auth->can('locations','edit'))){
+        return forward('/access_denied',{
+            text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
+        });
+    }
+
+    my $project;
+    if($location->{project_id}){
+        $project = projects->get($location->{project_id});
+    }
+
+	#edit status - begin
+	if($params->{submit}){
+		my $comments = $params->{comments} // "";
+		my $status_from = $location->{status};
+		my @status_to_allowed = @{ $config->{status}->{change}->{qa_control}->{$status_from} || [] };
+		my $status_to = $params->{status_to};
+		if(!is_string($status_to)){
+			push @errors,"gelieve de nieuwe status op te geven";
+		}else{
+			my $index = first_index { $_ eq $status_to } @status_to_allowed;
+			if($index >= 0){
+				#wijzig status
+				$location->{status} = $status_to;
+				#voeg toe aan status history	
+				push @{ $location->{status_history} ||= [] },{
+					user_name => session('user')->{login},
+                    status => $status_to,
+                    datetime => time,
+                    comments => $comments
+				};
+				#neem op in comments
+				my $text = "wijzing status $status_from naar $status_to";
+				$text .= ":$comments" if $comments;
+				push @{ $location->{comments} ||= [] },{
+					datetime => time,
+					text => $text,
+					user_name => session('user')->{login}
+				};
+				locations->add($location);
+				#locations
+				location2index($location);
+				#log
+				status2index($location);
+				#redirect
+				return redirect("/locations/edit/$location->{_id}");
+			}else{
+				push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
+			}
+		}
+	}	
+	#edit status - einde
+
+	template('locations/status',{
+        location => $location,
+        auth => $auth,
+        errors => \@errors,
+        messages => \@messages,
+        mount_conf => mount_conf(),
+        project => $project,
+        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
+    });
 });
 
 sub edit_location {
@@ -288,5 +462,6 @@ sub edit_location {
 	}
 	return $location,\@errors,\@messages;
 }
+
 
 true;

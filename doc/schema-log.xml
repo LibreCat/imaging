@@ -482,6 +482,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <field name="comments" type="lupetext" indexed="true" stored="true" />
     <field name="datetime" type="date" indexed="true" stored="true" />
 	<field name="user_name" type="string" indexed="true" stored="true" />
+	<field name="owner" type="string" indexed="true" stored="true" />
 
     <!--DEFAULT-->
     <field name="text" type="lupetext" indexed="true" stored="false" multiValued="true"/>
@@ -509,6 +510,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<copyField source="status" dest="text" />
     <copyField source="datetime" dest="text" />
 	<copyField source="user_name" dest="text" />
+	<copyField source="owner" dest="text" />
 
    <!-- Above, multiple source fields are copied to the [text] field. 
 	  Another way to map multiple source fields to the same 

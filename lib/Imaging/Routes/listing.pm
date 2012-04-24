@@ -35,7 +35,7 @@ any('/ready/:user_login',sub{
     $user or return not_found();
     if(!(auth->asa('admin') || $user->{id} eq session('user')->{id})){
         return forward('/access_denied',{ 
-			text => "no access to directory ready of user $params->{user_login}"
+			text => "U mist de nodige rechten om de scandirectory van $params->{user_login} te bekijken"
 		});
     }
 	
@@ -85,7 +85,7 @@ any('/ready/:user_login/:location_id',sub{
 	if($status eq "registering"){
 		
 		forward('/access_denied',{
-			text => "This directory is registered, and will be moved to 'processed' in any time."
+			text => "Het systeem is bezig met het registreren van deze map. Hij zal binnenkort verplaatst worden naar 02_processed, en zal de status 'registered' krijgen"
       	});
 
 	}elsif($status ne "incoming" && $status ne "incoming_error" && $status ne "incoming_ok"){

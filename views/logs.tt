@@ -63,7 +63,7 @@
             </td>
 			<td>[% log.user_name %]</td>
 			<td>[% log.owner %]</td>
-			<td>[% log.status %]</td>
+			<td>[% settings.human_readable.${log.status} || log.status %]</td>
             <td>[% log.comments || "-" %]</td>
 		</tr>
 	[% END %]

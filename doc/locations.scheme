@@ -12,10 +12,10 @@ locations:
 								- 'registered'
 								- 'derivatives_created'
 								- 'reprocess_scans'
+                                - 'reprocess_derivatives'
 								- 'reprocess_metadata'
 								- 'qa_control_done'
 								- 'archived'
-								- 'published'
 	files:						[file1,file2..]
 	check_log:					["cannot ready $file1"..]
 	status_history:				[

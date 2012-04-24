@@ -20,7 +20,7 @@
 			</td>
 			<td>[% directory.record.files.size || "wait.." %]</td>
 			<td>
-				[% directory.record.status || "wait.." %]
+				[% settings.human_readable.${directory.record.status} || directory.record.status || "wait.." %]
 			</td>
 		</tr>
 	[% END %]

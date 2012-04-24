@@ -38,9 +38,9 @@ any('/logs',sub {
         limit => $num
     );
 	if($sort && $sort =~ /^\w+\s(?:asc|desc)$/o){
-		$opts{sort} = $sort;
+		$opts{sort} = [$sort,"location_id desc"];
 	}else{
-		$opts{sort} = "datetime desc";
+		$opts{sort} = ["datetime desc","location_id desc"];
 	}
     my($result,$error);
     try {

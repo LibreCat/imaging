@@ -34,7 +34,7 @@ hook before => sub {
 		}elsif($subpath =~ /(?:add|edit|delete)/o && !$auth->can('projects','edit')){
 			request->path_info('/access_denied');
             my $params = params;
-			$params->{text} = "user has not the right to edit user information"
+			$params->{text} = "U beschikt niet over de nodige rechten om projectinformatie aan te passen"
 		}
 	}
 };
@@ -76,7 +76,7 @@ any('/projects/add',sub{
 		my @keys = qw(name name_subproject description date_start query);
 		foreach my $key(@keys){
 			if(!is_string($params->{$key})){
-				push @errors,"$key must be supplied";
+				push @errors,"$key is niet opgegeven";
 			}
 		}
 		#check empty array
@@ -88,7 +88,7 @@ any('/projects/add',sub{
 				$params->{$key} = [];
 			}
 			if(scalar( @{ $params->{$key} } ) == 0){
-				push @errors,"$key need to be supplied (one or more)";
+				push @errors,"$key is niet opgegegeven (een of meerdere)";
 			}
 		}
 		#check format
@@ -155,7 +155,7 @@ any('/project/:_id/edit',sub{
 			my @keys = qw(name name_subproject description date_start query);
 			foreach my $key(@keys){
 				if(!is_string($params->{$key})){
-					push @errors,"$key must be supplied";
+					push @errors,"$key is niet opgegeven";
 				}
 			}
 			#check empty array
@@ -167,7 +167,7 @@ any('/project/:_id/edit',sub{
 					$params->{$key} = [];
 				}
 				if(scalar( @{ $params->{$key} } ) == 0){
-					push @errors,"$key need to be supplied (one or more)";
+					push @errors,"$key is niet opgegeven (een of meerdere)";
 				}
 			}
 			#check format
@@ -180,7 +180,7 @@ any('/project/:_id/edit',sub{
 					}catch{
 						say $_;
 						$success = 0;
-						$error = "invalid start date (day-month-year)";
+						$error = "startdatum is ongeldig (dag-maand-jaar)";
 					};
 					return $success,$error;
 				}
@@ -226,11 +226,11 @@ any('/project/:_id/delete',sub{
 
     #check project exists
     if(!is_string($params->{_id})){
-		push @errors,"identifier must be supplied";
+		push @errors,"identifier is niet opgegeven";
     }else{
 		$project = projects->get($params->{_id});
 		if(!$project){
-			push @errors,"project '$params->{_id}' does not exist";
+			push @errors,"project '$params->{_id}' bestaat niet";
 		}
 	}
 	#delete?
