@@ -7,6 +7,12 @@
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
 		naar status 'registered'.
 		</div>
+	[% ELSIF location.busy && location.busy_reason == "move" %]
+        <div class="error">
+        opgelet: een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
+        kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
+        Commentaar kan wel nog worden toegevoegd.
+        </div>
 	[% END %]
 		<input type="button" value="terug" onclick="window.location.href='/locations/view/[% location.item("_id") %]'" />	
 		[% IF auth.can('locations','comment') %]

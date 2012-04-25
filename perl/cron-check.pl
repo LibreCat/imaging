@@ -95,7 +95,15 @@ $locations->each(sub{
 
 	my $location = shift;
 	#nieuwe of slechte directories moeten sowieso opnieuw gecheckt worden
-	if ($location->{status} && ($location->{status} eq "incoming" || $location->{status} eq "incoming_error")){
+	if (
+		$location->{status} && 
+		(
+			$location->{status} eq "incoming" || 
+			$location->{status} eq "incoming_error" ||
+			$location->{status} eq "reprocess_scans"
+		)
+
+	){
 		push @location_ids,$location->{_id};
 	}
 	#incoming_ok enkel indien er iets aan bestandslijst gewijzigd is

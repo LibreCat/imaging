@@ -18,6 +18,7 @@ use DateTime;
 use DateTime::TimeZone;
 use DateTime::Format::Strptime;
 use Digest::MD5 qw(md5_hex);
+use File::Basename;
 
 sub formatted_date {
     my $time = shift || time;
@@ -173,7 +174,7 @@ any('/locations/view/:_id',sub {
     }
 
     template('locations/view',{
-        location => $location,
+		location => $location,
         auth => $auth,
         errors => \@errors,
         mount_conf => mount_conf(),
@@ -201,12 +202,14 @@ any('/locations/edit/:_id',sub{
         $project = projects->get($location->{project_id});
     }
 	#edit - start 	
-	my($errs,$msgs);
-	($location,$errs,$msgs) = edit_location($location);
-	push @errors,@$errs;
-	push @messages,@$msgs;
-	if(scalar(@$errs)==0){
-		locations->add($location);
+	if(!$location->{busy}){
+		my($errs,$msgs);
+		($location,$errs,$msgs) = edit_location($location);
+		push @errors,@$errs;
+		push @messages,@$msgs;
+		if(scalar(@$errs)==0){
+     	   locations->add($location);
+    	}
 	}
 	#edit - end	
     template('locations/edit',{
@@ -266,6 +269,7 @@ any('/locations/edit/:_id/status',sub{
 	my $config = config;
     my @errors = ();
     my @messages = ();
+	my $mount_conf = mount_conf;
     my $location = locations->get($params->{_id});
     $location or return not_found();
 
@@ -281,10 +285,10 @@ any('/locations/edit/:_id/status',sub{
     }
 
 	#edit status - begin
-	if($params->{submit}){
+	if($params->{submit} && !$location->{busy}){
 		my $comments = $params->{comments} // "";
 		my $status_from = $location->{status};
-		my @status_to_allowed = @{ $config->{status}->{change}->{qa_control}->{$status_from} || [] };
+		my @status_to_allowed = @{ $config->{status}->{change}->{qa_control}->{$status_from}->{'values'} || [] };
 		my $status_to = $params->{status_to};
 		if(!is_string($status_to)){
 			push @errors,"gelieve de nieuwe status op te geven";
@@ -313,13 +317,22 @@ any('/locations/edit/:_id/status',sub{
 				location2index($location);
 				#log
 				status2index($location);
+
+				if($status_to eq "reprocess_scans"){
+					$location->{busy} = 1;
+                    $location->{busy_reason} = "move";
+					my $owner = dbi_handle->quick_select("users",{ id => $location->{user_id} });
+					$location->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".basename($location->{path});
+					say $location->{newpath};
+                    locations->add($location);
+				}
 				#redirect
 				return redirect("/locations/edit/$location->{_id}");
 			}else{
 				push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
 			}
 		}
-	}	
+	}
 	#edit status - einde
 
 	template('locations/status',{

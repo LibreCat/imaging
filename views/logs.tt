@@ -64,7 +64,13 @@
 			<td>[% log.user_name %]</td>
 			<td>[% log.owner %]</td>
 			<td>[% settings.human_readable.${log.status} || log.status %]</td>
-            <td>[% log.comments || "-" %]</td>
+            <td>
+				[% IF log.comments.length > 30 %]
+					[% log.comments.substr(0,30) _ ".." %]
+				[% ELSE %]
+					[% log.comments || "-" %]
+				[% END %]
+			</td>
 		</tr>
 	[% END %]
 	</table>

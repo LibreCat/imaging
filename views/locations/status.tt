@@ -6,8 +6,24 @@
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
 		naar status 'registered'.
 		</div>
+	[% ELSIF location.busy && location.busy_reason == "move" %]
+        <div class="error">
+        opgelet: een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
+        kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
+        Commentaar kan wel nog worden toegevoegd.
+        </div>
 	[% ELSE %]
-		<form method="post">
+		<script type="text/javascript">
+			function check_form(){
+				var select_status_to = document.getElementById("status_to");
+				var option_status_to = select_status_to.options[select_status_to.selectedIndex];
+				if(option_status_to.getAttribute("message")){
+					return confirm(option_status_to.getAttribute("message"));
+				}
+				return true;
+			}
+		</script>
+		<form method="post" onsubmit="return check_form();">
 			<table id="table-locations" class="left">
 				<tr>
 					<td colspan="2">
@@ -21,9 +37,14 @@
 				<tr>
                     <th>nieuwe status</th>
                     <td>
-						<select name="status_to">
-						[% FOREACH status IN settings.status.change.qa_control.item(location.status) %]
-							<option value="[% status %]" [% IF params.status_to == status %]selected="selected"[% END %]>[% settings.human_readable.${status} || status %]</option>
+						<select name="status_to" id="status_to">
+						[% status_conf = settings.status.change.qa_control.item(location.status) %]
+						[% FOREACH status IN status_conf.item("values") %]
+							[% message = status_conf.messages.${status} IF status_conf.messages.${status} %]
+							<option value="[% status %]" [% IF params.status_to == status %]selected="selected"[% END %] message="[% message %]">[% settings.human_readable.${status} || status %]</option>
+						[% END %]
+						[% IF status_conf.item("values").size == 0 %]
+							<option value="">-- wijziging niet mogelijk --</option>
 						[% END %]
 						</select>
 					</td>

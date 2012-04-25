@@ -33,15 +33,23 @@
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
 		naar status 'registered'.
 		</div>
+	[% ELSIF location.busy && location.busy_reason == "move" %]
+        <div class="error">
+        opgelet: een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
+        kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
+        Commentaar kan wel nog worden toegevoegd.
+        </div>
 	[% ELSE %]
 	<table id="table-locations" class="left">
 		<tr>
-			<td colspan="2">
-					<input type="button" value="terug" onclick="window.location.href='/locations/view/[% location.item("_id") %]'"/>
-					<input type="button" value="terug naar scanner" onclick="window.location.href='/locations/edit/[% location.item("_id") %]/status?status_to=reprocess_scans'"/>
-					<input type="button" value="foutieve afgeleiden" onclick="window.location.href='/locations/edit/[% location.item("_id") %]/status?status_to=reprocess_derivatives'" />
-					<input type="button" value="terug naar catalografie" onclick="window.location.href='/locations/edit/[% location.item("_id") %]/status?status_to=reprocess_metadata'" />
-                    <input type="button" value="goedgekeurd" onclick="window.location.href='/locations/edit/[% location.item("_id") %]/status?status_to=qa_control_done'" />
+			<td>
+				<input type="button" value="terug" onclick="window.location.href='/locations/view/[% location.item("_id") %]'"/>
+			</td>
+			<td>
+				[% status_conf = settings.status.change.qa_control.item(location.status) %]
+				[% FOREACH status IN status_conf.values %]
+						<input type="button" value="[% settings.human_readable.${status} %]" onclick="window.location.href='/locations/edit/[% location.item("_id") %]/status?status_to=[% status %]'"/>		
+				[% END %]
 			</td>
 		</tr>
 		<tr>

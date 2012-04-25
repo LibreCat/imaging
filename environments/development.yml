@@ -141,11 +141,24 @@ status:
    reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_done"]
    qa_control_done: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done","archived"]
   qa_control:
-   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done"]
-   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_done"]
-   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_done"]
-   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_done"]
-   qa_control_done: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","archived"]
+   registered: 
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+   reprocess_scans:
+    values: []
+   reprocess_metadata: 
+    values: ["registered","reprocess_scans","reprocess_derivatives","qa_control_done"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+   reprocess_derivatives: 
+    values: ["registered","reprocess_scans","reprocess_metadata","qa_control_done"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+   qa_control_done: 
+    values: ["registered","reprocess_scans","reprocess_metadata","reprocess_derivatives","archived"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
 human_readable:
  incoming: "aangeboden scan"
  incoming_error: "automatische check gefaald"
