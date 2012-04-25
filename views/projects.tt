@@ -1,4 +1,5 @@
 [% USE date %]
+[% USE POSIX %]
 <h1>Lijst van projecten</h1>
 <div class="paging">
 [% IF projects && projects.size > 0 && page_info.pages_in_set.size > 1 %]
@@ -51,7 +52,7 @@
 			<td>[% project.item("name_subproject") %]</td>
 			<td>[% project.item("list").size || 0 %]</td>
 			<td>[% project.item("done") || 0 %]</td>
-			<td>[% date.format(project.datetime_last_modified,format => '%d-%m-%Y') %]</td>
+			<td>[% date.format(POSIX.floor(project.datetime_last_modified),format => '%d-%m-%Y') %]</td>
 			<td>[% project.date_start %]</td>
 			<td>
 				[% IF auth.can('projects','edit') %]

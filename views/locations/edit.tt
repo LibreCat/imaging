@@ -1,5 +1,6 @@
 [% PROCESS inc/errors_messages.tt %]
 [% USE date %]
+[% USE POSIX %]
 [% USE SizePretty %]
 [% IF location %]
 	[% USE ToJSON %]
@@ -144,7 +145,7 @@
 						<tr>
 							<td>[% status_entry.user_name %]</td>
 							<td>[% status_entry.status %]</td>
-							<td>[% date.format(status_entry.datetime,'%d-%m-%Y %H:%M:%S') %]</td>
+							<td>[% date.format(POSIX.floor(status_entry.datetime),'%d-%m-%Y %H:%M:%S') %]</td>
                             <td>[% status_entry.comments || "-"%]</td>
 						</tr>
 					[% END %]

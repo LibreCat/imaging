@@ -1,4 +1,5 @@
 [% USE date %]
+[% USE POSIX %]
 <h1>Scandirectory Status - [% mount_conf.subdirectories.reprocessing %]/[% session.user.login %]</h1>
 [% IF locations && locations.size > 0 %]
 	<table id="table-projects" class="left">
@@ -19,7 +20,7 @@
 					File error:[% error.info %]
 				[% END %]
 			</td>
-			<td>[% date.format(location.datetime_last_modified,format => '%d-%m-%Y') %]</td>
+			<td>[% date.format(POSIX.floor(location.datetime_last_modified),format => '%d-%m-%Y') %]</td>
 			<td>[% location.files.size || 0 %]</td>
 			<td>
 				<!--

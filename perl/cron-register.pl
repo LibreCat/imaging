@@ -20,6 +20,7 @@ use WebService::Solr;
 use Digest::MD5 qw(md5_hex);
 use Catmandu::Importer::MARC;
 use Catmandu::Fix;
+use Time::HiRes;
 
 #variabelen
 sub store_opts {
@@ -81,9 +82,9 @@ sub users_get {
 }
 
 sub formatted_date {
-	my $time = shift || time;
+	my $time = shift || Time::HiRes::time;
 	DateTime::Format::Strptime::strftime(
-		'%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+		'%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
 	);
 }
 sub status2index {
@@ -330,7 +331,7 @@ foreach my $project_id(@project_ids){
 	$uniq{$_} = 1 foreach(@list);
 	@list = keys %uniq;
 	$project->{list} = \@list;
-	$project->{datetime_last_modified} = time;
+	$project->{datetime_last_modified} = Time::HiRes::time;
 	$project->{locked} = 1;
 
 	projects()->add($project);
@@ -426,7 +427,7 @@ foreach my $id (@incoming_ok){
 	push @{ $location->{status_history} },{
 		user_name =>"-",
 		status => "registering",
-		datetime => time,
+		datetime => Time::HiRes::time,
 		comments => ""
 	};
 
@@ -480,7 +481,7 @@ foreach my $id (@incoming_ok){
     push @{ $location->{status_history} },{
         user_name =>"-",
         status => "registered",
-        datetime => time,
+        datetime => Time::HiRes::time,
         comments => ""
     };
 	

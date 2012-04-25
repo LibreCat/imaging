@@ -19,14 +19,15 @@ use DBI;
 use DateTime;
 use DateTime::TimeZone;
 use DateTime::Format::Strptime;
+use Time::HiRes;
 use Array::Diff;
 use File::Find;
 our($a,$b);
 
 sub formatted_date {
-	my $time = shift || time;
+	my $time = shift || Time::HiRes::time;
 	DateTime::Format::Strptime::strftime(
-		'%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+		'%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
 	);
 }
 
@@ -68,13 +69,13 @@ while(my $user = $sth_each->fetchrow_hashref()){
 				status_history => [{
 					user_name => $user->{login},
 					status => "incoming",
-					datetime => time,
+					datetime => Time::HiRes::time,
 					comments => ""
 				}],
 				check_log => [],
 				files => [],
 				user_id => $user->{id},
-				datetime_last_modified => time,
+				datetime_last_modified => Time::HiRes::time,
 				project_id => undef,
 				metadata => [],
 				comments => []
@@ -192,7 +193,7 @@ foreach my $location_id(@location_ids){
 		$location->{status_history}->[1] = {
 			user_name =>"-",
 			status => "incoming_error",
-			datetime => time,
+			datetime => Time::HiRes::time,
 			comments => ""
 		};
 	}else{
@@ -200,7 +201,7 @@ foreach my $location_id(@location_ids){
 		$location->{status_history}->[1] = {
 			user_name =>"-",
 			status => "incoming_ok",
-			datetime => time,
+			datetime => Time::HiRes::time,
 			comments => ""
 		};
 		#verplaats maar pas 's nachts!

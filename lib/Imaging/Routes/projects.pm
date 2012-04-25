@@ -8,6 +8,7 @@ use Catmandu::Util qw(:is);
 use Data::Pageset;
 use URI::Escape qw(uri_escape);
 use DateTime::Format::Strptime;
+use Time::HiRes;
 use Try::Tiny;
 use List::MoreUtils qw(first_index);
 
@@ -119,7 +120,7 @@ any('/projects/add',sub{
 				name_subproject => $params->{name_subproject},
 				description => $params->{description},
 				date_start => $params->{date_start},
-				datetime_last_modified => time,
+				datetime_last_modified => Time::HiRes::time,
 				query => $params->{query},
 				locked => 0,
 				list => []
@@ -198,7 +199,7 @@ any('/project/:_id/edit',sub{
 					name_subproject => $params->{name_subproject},
 					description => $params->{description},
 					date_start => $params->{date_start},
-					datetime_last_modified => time,
+					datetime_last_modified => Time::HiRes::time,
 					query => $params->{query}
 				};
 				$project = { %$project,%$new };

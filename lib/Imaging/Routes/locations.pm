@@ -17,13 +17,14 @@ use Clone qw(clone);
 use DateTime;
 use DateTime::TimeZone;
 use DateTime::Format::Strptime;
+use Time::HiRes;
 use Digest::MD5 qw(md5_hex);
 use File::Basename qw();
 
 sub formatted_date {
-    my $time = shift || time;
+    my $time = shift || Time::HiRes::time;
     DateTime::Format::Strptime::strftime(
-        '%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+        '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
     );
 }
 
@@ -241,7 +242,7 @@ any('/locations/view/:_id/comments',,sub{
     if(is_string($params->{comment})){
         if($auth->can('locations','comment')){
             push @{ $location->{comments} ||= [] },{
-                datetime => time,
+                datetime => Time::HiRes::time,
                 text => $params->{comment},
                 user_name => session('user')->{login}
             };
@@ -301,14 +302,14 @@ any('/locations/edit/:_id/status',sub{
 				push @{ $location->{status_history} ||= [] },{
 					user_name => session('user')->{login},
                     status => $status_to,
-                    datetime => time,
+                    datetime => Time::HiRes::time,
                     comments => $comments
 				};
 				#neem op in comments
 				my $text = "wijzing status $status_from naar $status_to";
 				$text .= ":$comments" if $comments;
 				push @{ $location->{comments} ||= [] },{
-					datetime => time,
+					datetime => Time::HiRes::time,
 					text => $text,
 					user_name => session('user')->{login}
 				};

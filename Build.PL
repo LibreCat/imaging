@@ -29,7 +29,8 @@ my $requires = {
 	'Array::Diff' => 0,		
 	'Image::ExifTool' => 0,
 	'enum' => 0,
-	'Time::Seconds' => 0
+	'Time::Seconds' => 0,
+	'Template::Plugin::POSIX' => 0
 };
 my $recommends = {
 	'Starman' => 0,
