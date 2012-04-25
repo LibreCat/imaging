@@ -18,7 +18,7 @@ use DateTime;
 use DateTime::TimeZone;
 use DateTime::Format::Strptime;
 use Digest::MD5 qw(md5_hex);
-use File::Basename;
+use File::Basename qw();
 
 sub formatted_date {
     my $time = shift || time;
@@ -322,7 +322,7 @@ any('/locations/edit/:_id/status',sub{
 					$location->{busy} = 1;
                     $location->{busy_reason} = "move";
 					my $owner = dbi_handle->quick_select("users",{ id => $location->{user_id} });
-					$location->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".basename($location->{path});
+					$location->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".File::Basename::basename($location->{path});
 					say $location->{newpath};
                     locations->add($location);
 				}
