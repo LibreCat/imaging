@@ -32,12 +32,16 @@
                         <a href="/directories">directories per scanner</a>
                     </li>
 					[% END %]
-                    [% IF session.user.roles.grep('scanner').size > 0 %]
+					[% IF auth.asa('scanner') %]
                     <li>
                         <a href="/ready/[% session.user.login %]">ready</a>
                     </li>
                     <li>
                         <a href="/reprocessing/[% session.user.login %]">reprocessing</a>
+                    </li>
+					[% ELSIF auth.asa('qa_manager') %]
+					<li>
+                        <a href="/qa_control">qa_controle</a>
                     </li>
                     [% END %]
 					[% IF session.user.id %]

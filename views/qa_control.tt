@@ -1,0 +1,107 @@
+[% PROCESS inc/reload.tt %]
+[% USE date %]
+<h1>QA controle</h1>
+<div class="paging">
+[% IF locations && locations.size > 0 %]
+
+    [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
+    <a href="/qa_control?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">first</a>
+    [% END %]
+
+    [% IF page_info.previous_page %]
+    <a href="/qa_control?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >previous</a>
+    [% END %]
+
+    [% FOREACH page IN page_info.pages_in_set %]
+        [% IF page == page_info.current_page %]
+        <span class="current">[% page %]</span>
+        [% ELSE %]
+        <a href="/qa_control?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">[% page %]</a>
+        [% END %]
+    [% END %]
+
+    [% IF page_info.next_page %]
+    <a href="/qa_control?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >next</a>
+    [% END %]
+
+    [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
+    <a href="/qa_control?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">last</a>
+    [% END %]
+
+[% END %]
+</div>
+<form method="GET" id="query-form">
+    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" />
+    <input type="submit" value="search" />
+    [% IF locations.size > 0 %]
+    <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
+        <option value="">--sort results--</option>
+    [% FOREACH key IN ["_id","user_name","status","datetime_last_modified"] %]
+        <option value="[% key %] asc" [% IF params.item("sort") == ( key _ " asc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] ascending</option>
+        <option value="[% key %] desc" [% IF params.item("sort") == ( key _ " desc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] descending</option>
+    [% END %]
+    </select>
+    [% END %]
+</form>
+[% IF locations && locations.size > 0 %]
+	<table id="table-locations" class="left">
+        [% IF params.q && params.q != "*" %]
+        <tr>
+            <td colspan="7" style="text-align:left">
+            lijst is gefilterd op <b>[% params.q | html %]</b>
+            </td>
+        </tr>
+        [% END %]
+		<tr>
+			<td colspan="7">
+				[% facet_status = facet_status.hash %]
+				
+				<input type="button" value="alles ([% page_info.total_entries %])" onclick="window.location.href='/qa_control'"/>
+				<input type="button" value="registered ([% facet_status.registerd || 0 %])" onclick="window.location.href='/qa_control'"/>
+			</td>
+		</tr>
+		<tr>
+			<th>naam</th>
+			<th>aantal bestanden</th>
+			<th>aangeboden</th>
+			<th>laatste wijziging</th>
+			<th>eigenaar</th>
+			<th>status</th>
+			<th>log</th>
+		</tr>
+	[% FOREACH location IN locations %]
+		<tr>
+			<td>
+                <a href="/locations/view/[% location.item("_id") %]">
+                [% location.item("_id") %]
+                </a>
+            </td>
+			<td>[% location.item("files").size || 0 %]</td>
+			<td>
+				[% parts = location.item("status_history").0.split('\$\$') %]
+				[% matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))Z') %]
+                [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
+			</td>
+			<td>
+                [% matches = location.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))Z') %]
+                [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
+            </td>
+			<td>[% location.item("user_name") || "-" %]</td>
+			<td>
+				[% status = location.item("status") %]
+				[% settings.human_readable.${status} || status %]
+			</td>
+            <td>
+				[% SET q = "location_id:\"" _ location.item("_id") _ "\"" %]
+				<a href="/logs?q=[% q | url %]">view</a>
+			</td>
+		</tr>
+	[% END %]
+	</table>
+[% ELSE %]
+	<table id="table-locations"> 
+		<tr>
+            <td>geen te controleren scans gevonden voor <b>[% params.q || "*" %]</b></td>
+        </tr>
+	</table>
+[% END %]
