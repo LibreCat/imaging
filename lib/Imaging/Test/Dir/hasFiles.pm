@@ -17,6 +17,9 @@ has patterns => (
 		[];
 	}
 );
+sub is_fatal {
+    1;
+};
 sub test {
 	my $self = shift;
 	my $topdir = $self->dir();

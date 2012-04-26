@@ -5,11 +5,11 @@
 [% IF projects && projects.size > 0 && page_info.pages_in_set.size > 1 %]
 
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/projects?page=[% page_info.first_page %]&amp;num=[% params.num %]">first</a>
+    <a href="/projects?page=[% page_info.first_page %]&amp;num=[% params.num %]">eerste</a>
     [% END %]
 
     [% IF page_info.previous_page %]
-    <a href="/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >previous</a>
+    <a href="/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >vorige</a>
     [% END %]
 
     [% FOREACH page IN page_info.pages_in_set %]
@@ -21,11 +21,11 @@
     [% END %]
 
     [% IF page_info.next_page %]
-    <a href="/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]" >next</a>
+    <a href="/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]" >volgende</a>
     [% END %]
 
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/projects?page=[% page_info.last_page %]&amp;num=[% params.num %]">last</a>
+    <a href="/projects?page=[% page_info.last_page %]&amp;num=[% params.num %]">laatste</a>
     [% END %]
 
 [% END %]
@@ -38,13 +38,13 @@
 [% IF projects && projects.size > 0 %]
 	<table id="table-projects" class="left">
 		<tr>
-			<th>name</th>
-			<th>subproject</th>
-			<th>total</th>
-			<th>done</th>
-			<th>last modified</th>
-			<th>start</th>
-			<th>actions</th>
+			<th>naam</th>
+			<th>deelproject</th>
+			<th>totaal</th>
+			<th>gedaan</th>
+			<th>laatst gewijzigd</th>
+			<th>start datum</th>
+			<th>acties</th>
 		</tr>
 	[% FOREACH project IN projects %]
 		<tr>

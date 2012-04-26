@@ -474,9 +474,11 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 			- 'derivatives_created'
 			- 'reprocess_scans'
 			- 'reprocess_metadata'
-			- 'qa_control_done'
+			- 'qa_control_ok'
 			- 'archived'
+			- 'archived_ok'
 			- 'published'
+			- 'published_ok'
 	-->
     <field name="status" type="string" indexed="true" stored="true" />
     <field name="comments" type="lupetext" indexed="true" stored="true" />

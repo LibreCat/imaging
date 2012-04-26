@@ -163,6 +163,9 @@ foreach my $location_id(@location_ids){
 
 	$location->{check_log} = [];
 	my @files = ();
+	#acceptatie valt niet af te leiden uit het bestaan van foutboodschappen, want niet alle testen zijn 'fatal'
+	my $accepted = 1;
+
 	foreach my $test(@{ $profile->{packages} }){
 
 		$timing->{$test->{class}} ||= [];
@@ -183,12 +186,15 @@ foreach my $location_id(@location_ids){
 				push @files,$stats->{path};
 			}
 		}
-		if(!$success && $test->{on_error} eq "stop"){
-			last;
+		if(!$success){
+			if($ref->is_fatal || $test->{on_error} eq "stop"){
+				$accepted = 0;
+				last;
+			}
 		}
 	}
 
-	if(scalar(@{ $location->{check_log} }) > 0){
+	if(!$accepted){
 		$location->{status} = "incoming_error";
 		$location->{status_history}->[1] = {
 			user_name =>"-",

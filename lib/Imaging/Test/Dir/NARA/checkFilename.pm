@@ -7,6 +7,9 @@ has _re_filename => (
 		qr/^([\w_\-]+)_(\d{4})_(\d{4})_(MA|ST)\.([a-zA-Z]+)$/;
 	}
 );
+sub is_fatal {
+    1;
+};
 sub test {
 	my $self = shift;
 	my $topdir = $self->dir();

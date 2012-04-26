@@ -63,7 +63,7 @@ any('/qa_control',sub {
     my $offset = ($page - 1)*$num;
     my $sort = $params->{sort};
 
-	my @states = qw(registered derivatives_created reprocess_scans reprocess_metadata reprocess_derivatives);
+	my @states = qw(registered derivatives_created reprocess_scans reprocess_metadata reprocess_derivatives archived);
 	my $fq = join(' OR ',map {
 		"status:$_"
 	} @states);

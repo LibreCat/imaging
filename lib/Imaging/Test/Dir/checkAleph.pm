@@ -20,6 +20,9 @@ has _solr => (
 		WebService::Solr->new($url,{ default_params => {wt => "json"} });
 	}
 );
+sub is_fatal {
+	0;
+};
 
 sub test {
 	my $self = shift;

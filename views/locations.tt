@@ -5,11 +5,11 @@
 [% IF locations && locations.size > 0 %]
 
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/locations?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">first</a>
+    <a href="/locations?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a>
     [% END %]
 
     [% IF page_info.previous_page %]
-    <a href="/locations?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >previous</a>
+    <a href="/locations?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >vorige</a>
     [% END %]
 
     [% FOREACH page IN page_info.pages_in_set %]
@@ -21,11 +21,11 @@
     [% END %]
 
     [% IF page_info.next_page %]
-    <a href="/locations?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >next</a>
+    <a href="/locations?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >volgende</a>
     [% END %]
 
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/locations?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">last</a>
+    <a href="/locations?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">laatste</a>
     [% END %]
 
 [% END %]
@@ -37,8 +37,8 @@
     <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
         <option value="">--sort results--</option>
     [% FOREACH key IN ["_id","user_name","status","datetime_last_modified"] %]
-        <option value="[% key %] asc" [% IF params.item("sort") == ( key _ " asc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] ascending</option>
-        <option value="[% key %] desc" [% IF params.item("sort") == ( key _ " desc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] descending</option>
+        <option value="[% key %] asc" [% IF params.item("sort") == ( key _ " asc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] oplopend</option>
+        <option value="[% key %] desc" [% IF params.item("sort") == ( key _ " desc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] aflopend</option>
     [% END %]
     </select>
     [% END %]

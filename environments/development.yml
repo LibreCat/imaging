@@ -135,30 +135,41 @@ status:
    incoming_error: ["incoming_ok"]
    incoming_ok: ["incoming_error","registering"]
    registering: ["registered"]
-   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done"]
-   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_done"]
-   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_done"]
-   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_done"]
-   qa_control_done: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done","archived"]
+   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_ok"]
+   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_ok"]
+   qa_control_ok: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived"]
+   archived: ["archived_ok"]
+   archived_ok: ["published"]
+   published: ["published_ok"]
   qa_control:
    registered: 
-    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_done"]
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_scans:
     values: []
    reprocess_metadata: 
-    values: ["registered","reprocess_scans","reprocess_derivatives","qa_control_done"]
+    values: ["registered","reprocess_scans","reprocess_derivatives","qa_control_ok"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_derivatives: 
-    values: ["registered","reprocess_scans","reprocess_metadata","qa_control_done"]
+    values: ["registered","reprocess_scans","reprocess_metadata","qa_control_ok"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
-   qa_control_done: 
-    values: ["registered","reprocess_scans","reprocess_metadata","reprocess_derivatives","archived"]
+   qa_control_ok: 
+    values: ["registered","reprocess_scans","reprocess_metadata","reprocess_derivatives"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+   archived:
+    values: ["archived_ok","qa_control_ok"]
+   archived_ok:
+    values: ["archived","qa_control_ok"]
+   published:
+    values: ["published_ok","qa_control_ok"]
+   published_ok:
+    values: ["published","qa_control_ok"]
 human_readable:
  incoming: "aangeboden scan"
  incoming_error: "automatische check gefaald"
@@ -168,5 +179,5 @@ human_readable:
  reprocess_scans: "terug naar scanner"
  reprocess_metadata: "terug naar catalografie"
  reprocess_derivatives: "afgeleiden foutief"
- qa_control_done: "qa controle succesvol"
+ qa_control_ok: "qa controle succesvol"
  archived: "gearchiveerd"

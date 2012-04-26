@@ -72,5 +72,6 @@ has valid_patterns => (
 );
 
 requires 'test';
+requires 'is_fatal';
 
 1;

@@ -37,7 +37,8 @@
                         <a href="/ready/[% session.user.login %]">ready</a>
                     </li>
                     <li>
-                        <a href="/reprocessing/[% session.user.login %]">reprocessing</a>
+						[% q = "status:reprocess_scans" _ " AND user_name:" _ session.user.login  %]
+                        <a href="/locations?q=[% q | url %]">reprocessing</a>
                     </li>
 					[% ELSIF auth.asa('qa_manager') %]
 					<li>

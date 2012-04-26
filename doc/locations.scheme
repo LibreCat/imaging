@@ -14,8 +14,11 @@ locations:
 								- 'reprocess_scans'
                                 - 'reprocess_derivatives'
 								- 'reprocess_metadata'
-								- 'qa_control_done'
-								- 'archived'
+								- 'qa_control_ok' (systeem weet nu dat het mag exporteren naar grep)
+								- 'archived' (systeem heeft export uitgevoerd en denkt dat het ok is)
+ 								- 'archived_ok' (qa_manager is van oordeel dat het object goed is geëxporteerd -> indien niet, dan moet hij/zij de status opnieuw instellen op 'qa_control_ok')
+								- 'published'
+								- 'published_ok'
 	files:						[file1,file2..]
 	check_log:					["cannot ready $file1"..]
 	status_history:				[
