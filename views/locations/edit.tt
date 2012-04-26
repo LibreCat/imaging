@@ -113,18 +113,17 @@
 						<th>size</th>
 						<th>last modified</th>
 					</tr>
-				[% FOREACH file IN location.files.sort %]
+				[% FOREACH file IN location.files %]
 					<tr>
-						[% TRY %]
-							[% USE File(file) %]
-							<td>[% File.name %]</td>
-							<td>[% File.size.size_pretty %]</td>
-							<td>[% date.format(File.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
-						[% CATCH %]
-							<td>[% file %]!error!</td>
-							<td></td>
-							<td></td>
-						[% END %]
+						[% IF !file.error %]
+                            <td>[% file.name %]</td>
+                            <td>[% file.size.size_pretty %]</td>
+                            <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
+                        [% ELSE %]
+                            <td>[% file.path %]!error!</td>
+                            <td></td>
+                            <td></td>
+                        [% END %]
 					</tr>
 				[% END %]
 				</table>

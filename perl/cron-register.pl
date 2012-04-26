@@ -23,6 +23,27 @@ use Catmandu::Fix;
 use Time::HiRes;
 
 #variabelen
+sub file_info {
+    my $path = shift;
+    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
+    if($dev){
+        return {
+            name => basename($path),
+            path => $path,
+            atime => $atime,
+            mtime => $mtime,
+            ctime => $ctime,
+            size => $size,
+            mode => $mode
+        };
+    }else{
+        return {
+            name => basename($path),
+            path => $path,
+            error => $!
+        }
+    }
+}
 sub store_opts {
 	state $opts = {
 		data_source => "dbi:mysql:database=imaging",
@@ -112,6 +133,8 @@ sub location2index {
 	my $doc = clone($location);
 	my @deletes = qw(metadata comments busy busy_reason);
 	delete $doc->{$_} foreach(@deletes);
+
+	$doc->{files} = [ map { $_->{path} } @{ $location->{files} || [] } ];
 
 	for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
 		my $item = $doc->{status_history}->[$i];
@@ -275,16 +298,16 @@ sub marc_datafield_array {
 }
 
 #stap 1: gooi records waarvan de directory niet meer bestaat (door naamwijziging in het systeem)
-say "\ndeleting bad locations from database\n";
-my @bad_locations = ();
-locations()->each(sub{
-    my $location = shift;
-    push @bad_locations,$location->{_id} if !(-d $location->{path});
-});
-foreach my $id(@bad_locations){
-    say "location $id deleted from database";
-    locations()->delete($id);
-}
+#say "\ndeleting bad locations from database\n";
+#my @bad_locations = ();
+#locations()->each(sub{
+#    my $location = shift;
+#    push @bad_locations,$location->{_id} if !(-d $location->{path});
+#});
+#foreach my $id(@bad_locations){
+#    say "location $id deleted from database";
+#    locations()->delete($id);
+#}
 
 
 #stap 2: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
@@ -444,7 +467,7 @@ foreach my $id (@incoming_ok){
 		
 	#verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
 	unlink($location->{path}."/manifest.txt") if -f $location->{path}."/manifest.txt";
-	my $index = first_index { $_ eq $location->{path}."/manifest.txt" } @{ $location->{files} };
+	my $index = first_index { $_ eq $location->{path}."/manifest.txt" } map { $_->{path} } @{ $location->{files} };
 	splice(@{ $location->{files} },$index,1) if $index >= 0;
 
 	say "\tcreating new manifest.txt";
@@ -454,15 +477,15 @@ foreach my $id (@incoming_ok){
 	open MANIFEST,">".$location->{path}."/manifest.txt" or die($!);
 	foreach my $file(@{ $location->{files} }){
 		local(*FILE);
-		open FILE,$file or die($!);
+		open FILE,$file->{path} or die($!);
 		my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-		say MANIFEST "$md5sum_file ".basename($file);
+		say MANIFEST "$md5sum_file ".basename($file->{path});
 		close FILE;
 	}
 	close MANIFEST;
 
 	#voeg manifest toe aan de lijst
-	push @{ $location->{files} },$location->{path}."/manifest.txt";
+	push @{ $location->{files} },file_info($location->{path}."/manifest.txt");
 	
 
 	#verplaats	
@@ -473,7 +496,13 @@ foreach my $id (@incoming_ok){
 	move($oldpath,$newpath);
 	$location->{path} = $newpath;
 	foreach my $file(@{ $location->{files} }){
-		$file =~ s/^$oldpath/$newpath/;
+		$file->{path} =~ s/^$oldpath/$newpath/;
+	}
+
+	#update file info
+	foreach my $file(@{ $location->{files} }){
+		my $new_stats = file_info($file->{path});
+		$file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
 	}
 	
 	#status 'registered'

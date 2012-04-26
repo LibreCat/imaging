@@ -15,6 +15,27 @@ use Try::Tiny;
 use DBI;
 
 #variabelen
+sub file_info {
+    my $path = shift;
+    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
+    if($dev){
+        return {
+            name => basename($path),
+            path => $path,
+            atime => $atime,
+            mtime => $mtime,
+            ctime => $ctime,
+            size => $size,
+            mode => $mode
+        };
+    }else{
+        return {
+            name => basename($path),
+            path => $path,
+            error => $!
+        }
+    }
+}
 sub store_opts {
 	state $opts = {
 		data_source => "dbi:mysql:database=imaging",
@@ -55,8 +76,14 @@ foreach my $id(@ids_to_be_moved){
     	say "\tmoved from $oldpath to $newpath";
 		$location->{path} = $newpath;
 		foreach my $file(@{ $location->{files} }){
-			$file =~ s/^$oldpath/$newpath/;
+			$file->{path} =~ s/^$oldpath/$newpath/;
 		}
+
+		#update file info
+    	foreach my $file(@{ $location->{files} }){
+        	my $new_stats = file_info($file->{path});
+        	$file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
+    	}
 
 		my @deletes = qw(busy busy_reason newpath);
 		delete $location->{$_} foreach(@deletes);

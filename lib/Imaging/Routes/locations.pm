@@ -69,8 +69,10 @@ sub location2index {
     my $location = shift;
 
     my $doc = clone($location);
-    my @deletes = qw(metadata comments);
+    my @deletes = qw(metadata comments busy busy_reason);
     delete $doc->{$_} foreach(@deletes);
+
+    $doc->{files} = [ map { $_->{path} } @{ $location->{files} || [] } ];
 
     for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
         my $item = $doc->{status_history}->[$i];

@@ -5,7 +5,7 @@ locations:
 	project_id:					EE-999-01-ekrljz
 	path:						/data/imaging/directories/01_ready/geert/BHSL-PAP-0061-BIS-1
 	status:
-								- 'incoming'
+								- 'incoming' || 'incoming_back'
 								- 'incoming_error'
 								- 'incoming_ok'
 								- 'registering'

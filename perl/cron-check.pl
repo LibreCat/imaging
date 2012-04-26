@@ -30,6 +30,27 @@ sub formatted_date {
 		'%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
 	);
 }
+sub file_info {
+	my $path = shift;
+	my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
+	if($dev){
+		return {
+			name => basename($path),
+			path => $path,
+			atime => $atime,
+			mtime => $mtime,
+			ctime => $ctime,
+			size => $size,
+			mode => $mode
+		};
+	}else{
+		return {
+			name => basename($path),
+            path => $path,
+			error => $!
+		}
+	}
+}
 
 my %opts = (
 	data_source => "dbi:mysql:database=imaging",
@@ -55,12 +76,13 @@ my $sth_get = $users->prepare("select * from users where id = ?");
 $sth_each->execute() or die($sth_each->errstr());
 while(my $user = $sth_each->fetchrow_hashref()){
 	my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
-	open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d |" or die($!);
+	open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
 	while(my $dir = <CMD>){
 		chomp($dir);    
 		my $basename = basename($dir);
 		my $location = $locations->get($basename);
 		if(!$location){
+			say "adding new record $basename";
 			$locations->add({
 				_id => $basename,
 				name => undef,
@@ -80,6 +102,36 @@ while(my $user = $sth_each->fetchrow_hashref()){
 				metadata => [],
 				comments => []
 			});
+		}else{
+			#het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
+			if("$location->{user_id}" eq "$user->{id}" && $location->{status} eq "reprocess_scans"){
+				say "ah you little bastard, you came back?";
+				#03_reprocessing => 01_ready, maar laat de oude map in 03_reprocessing staan (verantwoordelijkheid van de scanners)
+
+				#pas paden aan
+				my $oldpath = $location->{path};
+				foreach my $file(@{ $location->{files} }){
+					$file->{path} =~ s/^$oldpath/$dir/;
+				}
+				$location->{path} = $dir;
+
+				#update file info
+				foreach my $file(@{ $location->{files} }){
+					my $new_stats = file_info($file->{path});
+					$file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
+				}
+
+				#status op 'incoming_back'
+				$location->{status} = "incoming_back";
+				push @{ $location->{status_history} },{
+                    user_name => $user->{login},
+                    status => "incoming_back",
+                    datetime => Time::HiRes::time,
+                    comments => ""
+                };
+
+				$locations->add($location);
+			}
 		}
 	}
 	close CMD;   
@@ -101,7 +153,7 @@ $locations->each(sub{
 		(
 			$location->{status} eq "incoming" || 
 			$location->{status} eq "incoming_error" ||
-			$location->{status} eq "reprocess_scans"
+			$location->{status} eq "incoming_back"
 		)
 
 	){
@@ -117,8 +169,13 @@ $locations->each(sub{
 			push @$new,$path;
 			},
 			no_chdir => 1
-			},$location->{path});
-		my $old = $location->{files} || [];
+		},$location->{path});
+		my $old = do {
+			my @list = map { 
+				$_->{path};
+			} @{ $location->{files} ||= [] };
+			\@list;
+		};
 
 		my $diff = Array::Diff->diff($old,$new);
 		if( $diff->count != 0 ){	
@@ -183,7 +240,7 @@ foreach my $location_id(@location_ids){
 		push @{ $location->{check_log} }, @$errors if !$success;
 		unless(scalar(@files)){
 			foreach my $stats(@{ $ref->file_info() }){
-				push @files,$stats->{path};
+				push @files,file_info($stats->{path});
 			}
 		}
 		if(!$success){
@@ -195,24 +252,46 @@ foreach my $location_id(@location_ids){
 	}
 
 	if(!$accepted){
-		$location->{status} = "incoming_error";
-		$location->{status_history}->[1] = {
-			user_name =>"-",
-			status => "incoming_error",
-			datetime => Time::HiRes::time,
-			comments => ""
-		};
-	}else{
-		$location->{status} = "incoming_ok";
-		$location->{status_history}->[1] = {
-			user_name =>"-",
-			status => "incoming_ok",
-			datetime => Time::HiRes::time,
-			comments => ""
-		};
-		#verplaats maar pas 's nachts!
-	}
+		if($location->{status} eq "incoming_back"){
+			
+			push @{$location->{status_history}},{
+                user_name =>"-",
+                status => "incoming_error",
+                datetime => Time::HiRes::time,
+                comments => ""
+            };			
+			
+		}else{
+			$location->{status_history}->[1] = {
+				user_name =>"-",
+				status => "incoming_error",
+				datetime => Time::HiRes::time,
+				comments => ""
+			};
+		}
 
+		$location->{status} = "incoming_error";
+	}else{
+		if($location->{status} eq "incoming_back"){
+
+			push @{$location->{status_history}},{
+                user_name =>"-",
+                status => "incoming_ok",
+                datetime => Time::HiRes::time,
+                comments => ""
+            };
+
+        }else{
+			$location->{status_history}->[1] = {
+				user_name =>"-",
+				status => "incoming_ok",
+				datetime => Time::HiRes::time,
+				comments => ""
+			};
+			#verplaats maar pas 's nachts!
+		}
+		$location->{status} = "incoming_ok";
+	}
 	$location->{files} = \@files;
 	$locations->add($location);
 }

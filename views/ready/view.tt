@@ -24,7 +24,7 @@
 						/mnt/data01/01_ready/geert/BHSL-PAP-000/test/manifest.txt
 						wordt test/manifest.txt
 					-->
-					<td>[% file.replace(location.path _ "/","") %]</td>	
+					<td>[% file.path.replace(location.path _ "/","") %]</td>	
 				</tr>
 				[% END %]
 				</table>
