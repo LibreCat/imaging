@@ -99,11 +99,11 @@
 			<td>[% location.item("files").size || 0 %]</td>
 			<td>
 				[% parts = location.item("status_history").0.split('\$\$') %]
-				[% matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))Z') %]
+				[% matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') %]
                 [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
 			</td>
 			<td>
-                [% matches = location.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))Z') %]
+                [% matches = location.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') %]
                 [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
             </td>
 			<td>[% location.item("user_name") || "-" %]</td>

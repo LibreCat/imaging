@@ -1,45 +1,60 @@
-[% USE date %]
-[% USE POSIX %]
-<h1>Scandirectory Status - [% mount_conf.subdirectories.ready %]/[% session.user.login %]</h1>
-[% IF directory_ready.directories && directory_ready.directories.size > 0 %]
-	<table id="table-projects" class="left">
-		<tr>
-			<th>name</th>
-			<th>date</th>
-			<th>num files</th>
-			<th>status</th>
-			<th>actions</th>
-		</tr>
-	[% FOREACH directory IN directory.directories %]
-		<tr>
-			<td>
-				[% TRY %]
-					[% USE File(directory.item("path")) %]
-					[% File.name %]
-				[% CATCH File %]
-					File error:[% error.info %]
-				[% END %]
-			</td>
-			<td>[% date.format(POSIX.floor(directory.datetime_last_modified),format => '%d-%m-%Y') %]</td>
-			<td>[% directory.files.size || 0 %]</td>
-			<td>
-				<!--
-					/ready/<dir>/status geeft errors/meldingen over map én file-niveau
-				-->
-				<a href="/ready/[% directory.name %]/status">
-					[% directory.status %]
-				</a>
-			</td>
-			<td>
-				<a href="/ready/[% directory.name %]/recheck">recheck</a>
-			</td>
-		</tr>
+<h1>Status werklijsten</h1>
+<table id="table-status" class="left">
+	<tr>
+		<th>status</th>
+		<th>aantal</th>
+	</tr>
+	[% FOREACH user_login IN stats.ready.keys.sort %]
+	<tr>
+		<td>
+			[% settings.mounts.directories.subdirectories.ready _ "/" _ user_login %]	
+		</td>
+		<td>
+			[% IF stats.ready.${user_login} > 0 %]
+				<a href="/ready/[% user_login %]">[% stats.ready.${user_login} %]</a>
+			[% ELSE %]
+				[% stats.ready.${user_login} %]
+			[% END %]
+		</td>
+	</tr>
 	[% END %]
-	</table>
-[% ELSE %]
-	<table id="table-ready"> 
-		<tr>
-            <th>no scandirectories found yet</th>
-        </tr>
-	</table>
-[% END %]
+	[% FOREACH user_login IN stats.reprocessing.keys.sort %]
+    <tr>
+        <td>
+            [% settings.mounts.directories.subdirectories.reprocessing _ "/" _ user_login %]   
+        </td>
+        <td>
+			[% IF stats.reprocessing.${user_login} > 0 %]
+				[% q = "status:reprocess_scans AND user_login:" _ user_login %]
+                <a href="/locations?q=[% q | url %]">[% stats.reprocessing.${user_login} %]</a>
+            [% ELSE %]
+                [% stats.reprocessing.${user_login} %]
+            [% END %]
+        </td>
+    </tr>
+    [% END %]
+	<tr>
+		<td>Afgeleiden maken</td>
+		<td>[% num_reprocess_derivatives || 0 %]</td>
+	</tr>
+	<tr>
+		<td>Catalografie</td>
+		<td>[% num_reprocess_metadata || 0 %]</td>
+	</tr>
+    <tr>
+        <td>QA Controle</td>
+        <td>[% num_qa_control || 0 %]</td>
+    </tr>
+    <tr>
+        <td>Publicatie</td>
+        <td>[% num_publishing || 0 %]</td>
+    </tr>
+    <tr>
+        <td>Archivering</td>
+        <td>[% num_archiving || 0 %]</td>
+    </tr>
+    <tr>
+        <td>Done</td>
+        <td>[% num_done || 0 %]</td>
+    </tr>
+</table>

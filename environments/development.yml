@@ -120,6 +120,7 @@ app:
       values: ["open","closed","ugent"]
     - key: "DC-Subject"
 default_app: "/projects"
+refresh_rate: 5
 all: {}
 mounts:
  directories:
@@ -128,6 +129,10 @@ mounts:
    ready: "01_ready"
    processed: "02_processed"
    reprocessing: "03_reprocessing"
+  network_directories:
+   processed:
+    windows: "I:\\"
+    samba: "smb://localhost/02_processed"
 status:
  change:
   all:

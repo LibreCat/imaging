@@ -77,9 +77,25 @@
             <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">technisch</th>
         </tr>
         <tr>
-            <th>bestanden ([% location.files.size || 0 %])</th>
+			[% states_processed = ["registered","reprocess_metadata","reprocess_derivatives"] %]
+			[% do_open = 0 %]
+			[% IF auth.asa("qa_manager") && states_processed.grep(location.status).size > 0 %]
+				[% dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ location.item("_id") %]
+				[% dir_processed_samba = settings.mounts.directories.network_directories.processed.samba _ "/" _ location.item("_id") %]
+				[% do_open = 1 %]
+			[% END %]
+            <th>bestanden</th>
             <td>
 				<table style="width:100%">
+					<tr>
+                        <td colspan="3">
+                            aantal: [% location.files.size || 0 %]&nbsp;
+                            [% IF do_open %]
+                                <a href="[% dir_processed_windows %]">open map</a>&nbsp;(windows)&nbsp;
+                                <a href="[% dir_processed_samba %]">open map</a>&nbsp;(samba)
+                            [% END %]
+                        </td>
+                    </tr>
 					<tr>
 						<th>naam</th>
 						<th>grootte</th>
@@ -88,7 +104,16 @@
 				[% FOREACH file IN location.files %]
 					<tr>
 						[% IF !file.error %]
-							<td>[% file.name %]</td>
+							<td>
+							[% IF do_open %]
+								[% link = "file://" _ dir_processed_windows _ "/" _ file.name %]
+								<a href="[% link | url %]">[% file.name %]</a>&nbsp;
+								[% link = dir_processed_samba _ "/" _ file.name %]
+								(<a href="[% link | url %]">via samba</a>)
+							[% ELSE %]
+								[% file.name %]
+							[% END %]
+							</td>
                             <td>[% file.size.size_pretty %]</td>
                             <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
 						[% ELSE %]
@@ -109,7 +134,7 @@
 					<tr>
 						<th>gebruiker</th>
 						<th>status</th>
-						<th>datum</th>
+						<th>tijd</th>
 						<th>commentaar</th>
 					</tr>
 					[% FOREACH status_entry IN location.item("status_history") %]

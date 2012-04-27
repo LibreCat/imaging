@@ -53,7 +53,7 @@
 	[% FOREACH log IN logs %]
 		<tr>
 			<td>
-				[% matches = log.datetime.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))Z') %]
+				[% matches = log.datetime.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') %]
 				[% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
 			</td>
 			<td>
