@@ -51,8 +51,8 @@
             <td>
                 <select name="profile_id" id="profile_id">
 					<option value="">--select profile--</option>
-                [% FOREACH profile IN profiles %]
-                    <option value="[% profile.item("_id") %]" [% IF user.item("profile_id") == profile.item("_id") %]selected="selected"[% END %]>[% profile.item("_id") %]</option>
+                [% FOREACH profile_id IN settings.profiles.keys.sort %]
+                    <option value="[% profile_id %]" [% IF user.item("profile_id") == profile_id %]selected="selected"[% END %]>[% profile_id %]</option>
                 [% END %]
                 </select>
             </td>

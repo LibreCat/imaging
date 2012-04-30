@@ -14,12 +14,6 @@ use Try::Tiny;
 sub dbi_handle {
     state $dbi_handle = database;
 }
-sub core {
-    state $core = store("core");
-}
-sub profiles {
-    state $profiles = core()->bag("profiles");
-}
 hook before => sub {
     if(request->path    =~  /^\/user/o){
         my  $auth   =   auth;
@@ -51,22 +45,22 @@ any('/users/add',sub{
         my($success,$errs)=check_params_new_user();
         push    @errors,@$errs;
         if(!(
-                            is_string($params->{password1}) &&  is_string($params->{password2}) &&
-                                                $params->{password1}    eq  $params->{password2}
+            is_string($params->{password1}) &&  is_string($params->{password2}) &&
+            $params->{password1} eq  $params->{password2}
             )
         ){
-            push    @errors,"paswoorden komen   niet    met elkaar  overeen";
+            push @errors,"paswoorden komen niet met elkaar overeen";
         }
         if(scalar(@errors)==0){
-            my  $user   =   dbi_handle->quick_select('users',{  login   =>  $params->{login}    });
+            my $user = dbi_handle->quick_select('users',{ login => $params->{login} });
             if($user){
-                push    @errors,"er bestaat reeds   een gebruiker   met als login   $params->{login}";
+                push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";
             }else{
-                my  $roles  =   join('',@{  $params->{roles}    });
+                my $roles = join('',@{$params->{roles}});
                 dbi_handle->quick_insert('users',{
                     login   =>  $params->{login},
                     name    =>  $params->{name},
-                    roles   =>  join(', ',@{    $params->{roles}    }),
+                    roles   =>  join(', ',@{$params->{roles}}),
                     password    =>  md5_hex($params->{password1}),
                     profile_id  =>  $params->{profile_id}
                 });
@@ -75,34 +69,33 @@ any('/users/add',sub{
         }
     }
     
-                template('users/add',{
-                                errors  =>  \@errors,
-        messages    =>  \@messages,
-        auth    =>  auth(),
-        profiles    =>  profiles()->to_array
-                });
+    template('users/add',{
+        errors => \@errors,
+        messages => \@messages,
+        auth => auth()
+    });
 
 });
 any('/user/:id/edit',sub{
 
-                my  $params =   params;
-                my  $user   =   dbi_handle()->quick_select('users',{    id  =>  $params->{id}   });
-    $user   or  return  not_found();
+    my $params = params;
+    my $user = dbi_handle()->quick_select('users',{    id  =>  $params->{id}   });
+    $user or return  not_found();
 
-    if($user->{login}   eq  "admin"){
-                                return  forward("/access_denied",{
-            text    =>  "user   has not the right   to  edit    user    information"
-                                });
-                }
+    if($user->{login} eq "admin"){
+        return  forward("/access_denied",{
+            text =>  "user has not the right to edit user information"
+        });
+    }
 
-                my(@errors,@messages);
+    my(@errors,@messages);
 
-                if($params->{submit}){
+    if($params->{submit}){
         my($success,$errs)=check_params_new_user();
-                                push    @errors,@$errs;     
-                                if(scalar(@errors)==0){
-            my  $roles  =   join(', ',@{    $params->{roles}    });
-            my  $new    =   {
+        push    @errors,@$errs;     
+        if(scalar(@errors)==0){
+            my $roles = join(', ',@{$params->{roles}});
+            my $new = {
                 roles   =>  $roles,
                 login   =>  $params->{login},
                 name    =>  $params->{name}
@@ -116,82 +109,79 @@ any('/user/:id/edit',sub{
                     $params->{password1}    eq  $params->{password2}
                     )
                 ){
-                    push    @errors,"paswoorden komen   niet    met elkaar  overeen";
+                    push  @errors,"paswoorden komen niet met elkaar overeen";
                 }else{
-                    $new->{password}    =   md5_hex($params->{password1});
+                    $new->{password} = md5_hex($params->{password1});
                 }
             }
             if(scalar(@errors)==0){
-                $user   =   {   %$user,%$new    };
-                                                    dbi_handle->quick_update('users',{  id  =>  $params->{id}   },$user);
+                $user = { %$user,%$new };
+                dbi_handle->quick_update('users',{id => $params->{id}},$user);
                 redirect(uri_for("/users"));
             }
-                                }
-                }
-                template('user/edit',{  
-        user    =>  $user,
-        errors  =>  \@errors,
-        messages    =>  \@messages, 
-        auth    =>  auth(),
-        profiles    =>  profiles()->to_array
+        }
+    }
+    template('user/edit',{  
+        user => $user,
+        errors => \@errors,
+        messages => \@messages, 
+        auth => auth()
     });
 });
 any('/user/:id/delete',sub{
+    my $params = params;
+    my $user = dbi_handle->quick_select('users',{id => $params->{id}});
+    $user or return not_found();
 
-                my  $params =   params;
-    my  $user   =   dbi_handle->quick_select('users',{  id  =>  $params->{id}   });
-    $user   or  return  not_found();
+    my(@errors,@messages);
 
-                my(@errors,@messages);
-
-    if($user->{login}   eq  "admin"){
-        return  forward("/access_denied",{
-            text    =>  "user   has not the right   to  edit    user    information"
-                                });
+    if($user->{login} eq "admin"){
+        return forward("/access_denied",{
+            text =>  "user has not the right to edit user information"
+        });
     }
-                if($params->{submit}){
-                                dbi_handle->quick_delete('users',{
-                                                id  =>  $params->{id}
-                                });
+    if($params->{submit}){
+        dbi_handle->quick_delete('users',{
+            id  =>  $params->{id}
+        });
         redirect(uri_for("/users"));
-                }
+    }
 
-                template('user/delete',{
-                                errors  =>  \@errors,
-                                messages    =>  \@messages,
-        user    =>  $user,
-        auth    =>  auth()
-                });
-
+    template('user/delete',{
+        errors => \@errors,
+        messages => \@messages,
+        user => $user,
+        auth => auth()
+    });
 });
-sub check_params_new_user   {
-    my  $params =   params;
+sub check_params_new_user {
+    my $params = params;
     my(@errors);
-    my  @keys   =   qw(name login);
-                foreach my  $key(@keys){
-                                if(!is_string($params->{$key})){
-                                                push    @errors,"$key   is  niet    opgegeven"
-                                }
-                }
-                @keys   =   qw(roles);
-                foreach my  $key(@keys){
+    my @keys  = qw(name login);
+    foreach my $key(@keys){
+        if(!is_string($params->{$key})){
+            push @errors,"$key is niet opgegeven"
+        }
+    }
+    @keys = qw(roles);
+    foreach my $key(@keys){
         if(is_string($params->{$key})){
             $params->{$key} =   [$params->{$key}];
         }elsif(!is_array_ref($params->{$key})){
             $params->{$key} =   [];
         }
-                                if(!(scalar(@{  $params->{$key} })  >   0)){
-                                                push    @errors,"$key   is  niet    opgegeven"
-                                }
-                }
+        if(!(scalar(@{$params->{$key}}) > 0)){
+            push @errors,"$key is niet opgegeven"
+        }
+    }
     if(scalar(@errors)==0){
-        my  $is_scanner =   scalar(grep {   $_  =~  /scanner/o  }   @{$params->{roles}})    >   0;
+        my $is_scanner = scalar(grep { $_  =~ /scanner/o } @{$params->{roles}}) > 0;
         if($is_scanner){
             my  $profile;
             if(!is_string($params->{profile_id})){
                 push    @errors,"geen   profiel opgegeven,  hoewel  rol van scanner";
-            }elsif(!($profile   =   profiles->get($params->{profile_id}))){
-                push    @errors,"opgegeven  profiel bestaat niet";
+            }elsif(!($profile = config->{profiles}->{ $params->{profile_id} })){
+                push @errors,"opgegeven profiel bestaat niet";
             }
         }
     }

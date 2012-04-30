@@ -10,7 +10,7 @@ use Try::Tiny;
 use URI::Escape qw(uri_escape);
 
 sub indexer {
-    state $index = store("index_log")->bag("log_locations");
+    state $index = store("index_log")->bag;
 }
 hook before => sub {
     if(request->path =~ /^\/logs/o){

@@ -15,7 +15,7 @@ sub core {
     state $core = store("core");
 }
 sub indexer {
-    state $index = store("index")->bag("locations");
+    state $index = store("index")->bag;
 }
 sub locations {
     state $locations = core()->bag("locations");

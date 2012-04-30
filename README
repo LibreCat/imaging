@@ -1,5 +1,26 @@
-installeer Module::Build:
+rpm:
+    clamav
+    clamav-db
+    clamd 
+    ftp 
+    perl-CPAN 
+    imagemagick 
+    kakadu_ugent
+    peepshow-solr 
+    jre.noarch 
+    jdk.noarch 
+    expat 
+    expat-devel 
+    libxml2-devel 
+    mysql 
+    mysql-server 
+    mysql-devel
+    perl-ClamAV-Client
+
+perl:
 	perl -MCPAN -e 'install Module::Build'
+    perl -MCPAN -e 'install LWP'
+    perl -MCPAN -e 'install App::cpanminus'
 
 clone Catmandu:
 	git clone git://github.com/LibreCat/Catmandu.git
@@ -13,35 +34,85 @@ clone Imaging:
 	perl Build.PL
     ./Build installdeps (doe GEEN 'install'!)
 
-mysql:
+.bashrc:
+    voeg toe aan elke .bashrc die commands uitvoert:
+
+        export PERL5LIB=$PERL5LIB:/opt/Catmandu/lib:/opt/Imaging/lib
+
+mysql: (zie ook 'configuratie Imaging')
+
  create database imaging;
  create user 'imaging'@'localhost' identified by 'imaging';
  grant all privileges on imaging.* to 'imaging'@'localhost';
 
-clamav: (viruscan)	
-	clamav
-	clamav-devel
-	perl-ClamAV-Client
+configuratie Imaging:
+    acties:
+        vim Imaging/environments/development.yml
 
-configuratie mappen:
-	vim Imaging/environments/development.yml
-	mounts->directories->path: basis-locatie waar 01_ready,02_processed en 03_reprocessing komt
-	mounts->directories->subdirectories->ready: '01_ready' (effectieve naam van de map)
-									   ->processed: '02_processed'
-									   ->reprocessing: '03_reprocessing'
+    structuur:
 
-solr:
-    download laatste van http://lucene.apache.org/solr/
-    extract to Solr/
-    cp Imaging/doc/schema.xml Solr/solr/conf/
-    rm -rf Solr/solr/data/*
-    cd Solr/
-    java -jar start.jar
+        mounts:
+            directories 
+                #basislocatie voor mappenstructuur
+                path: "/mnt/data01"
+                subdirectories:
+                    #naam van de map 'ready' onder /mnt/data
+                    ready: "01_ready"
+                    processed: "02_processed"
+                    reprocessing: "03_processed"
+        store:
+            #core: hoofddatabank (met daarin tabellen 'locations', 'projects' en 'users')
+            core:
+                package: "Catmandu::Store::DBI"
+                options:
+                    data_source: "dbi:mysql:database=imaging"
+                    username: "imaging"
+                    password: "imaging"
+            #index: indexeert tabel 'locations', na join met 'projects'
+            index:
+                package: "Catmandu::Store::Solr"
+                options:
+                    url: "http://localhost:8983/solr/core0"
+            #index_log: indexeert status_history van 'locations'
+            index_log:
+                package: "Catmandu::Store::Solr"
+                options:
+                    url: "http://localhost:8983/solr/core1"
+        index:
+            #meercat index (staat op andere machine)
+            meercat:
+                url: "http://localhost:4000/solr"
+            
 
-	pas configuratie aan:
-    vim environments/development.yml
-    zoek naar store->index->url en pas url aan naar solr-base-url
+peepshow-solr:
+    acties: 
+        service peepshow-solr stop
+        rm -rf /var/data/peepshow-solr/core0/* /var/data/peepshow-solr/core1/*
+        cp Imaging/doc/schema-locations.xml /etc/peepshow-solr/core0/conf/schema.xml
+        cp Imaging/doc/schema-log.xml /etc/peepshow-solr/core1/conf/schema.xml
+        service peepshow-solr start
 
-run 'cronjob':
-    cd Image/test
-    ./cron.pl
+cronjobs:
+    acties:
+
+        cp /opt/Imaging/cron.d/* /etc/cron.d
+
+    uitleg:
+
+        cron.d/ cron-instelling
+        bash/   bash-scripts (roepen script op in perl/ en schrijven output weg naar logbestand)
+
+            imaging-check.sh    roept perl/cron-check.pl op
+            imaging-register.sh roept perl/cron-register.pl
+            imaging-move.sh     roept perl/cron-move.pl op
+                
+        perl/   perl-scripts
+
+            cron-check.pl: doet regelmatige controle op alles dat binnenkomt via 01_ready
+            cron-register.pl: registreert mappen, indexeert, koppelt mappen aan projecten en logt gegevens
+            cron-move.pl: verplaats mappen indien record uit tabel 'locations' dat aangeeft
+
+init-scripts:
+    cp init.d/imaging-redhat /etc/init.d/imaging
+    chmod +x /etc/init.d/imaging
+    service imaging start

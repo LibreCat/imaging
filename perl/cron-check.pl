@@ -1,8 +1,4 @@
 #!/usr/bin/env perl
-use lib qw(
-    /home/nicolas/Catmandu/lib
-    /home/nicolas/Imaging/lib
-);
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
 use Catmandu::Store::Solr;
@@ -12,7 +8,6 @@ use File::Basename;
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
-use open qw(:std :utf8);
 use YAML;
 use Try::Tiny;
 use DBI;
@@ -52,17 +47,19 @@ sub file_info {
     }
 }
 
+
+my $config_file = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"environments")."/development.yml";
+my $config = YAML::LoadFile($config_file);
 my %opts = (
-    data_source => "dbi:mysql:database=imaging",
-    username => "imaging",
-    password => "imaging"
+    data_source => $config->{store}->{core}->{options}->{data_source},
+    username => $config->{store}->{core}->{options}->{username},
+    password => $config->{store}->{core}->{options}->{password}
 );
+
 my $store = Catmandu::Store::DBI->new(%opts);
 my $locations = $store->bag("locations");
-my $profiles = $store->bag("profiles");
-my $conf_file = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"environments")."/development.yml";
-my $conf = YAML::LoadFile($conf_file);
-my $mount_conf = $conf->{mounts}->{directories};
+my $profiles = $config->{profiles} || {};
+my $mount_conf = $config->{mounts}->{directories};
 
 my $users = DBI->connect($opts{data_source}, $opts{username}, $opts{password}, {
     AutoCommit => 1,
@@ -186,12 +183,6 @@ $locations->each(sub{
 
 });
 
-#test timing
-use Time::HiRes;
-my $timing = {};
-my $num_checked = 0;
-my $totalsum = 0;
-
 foreach my $location_id(@location_ids){
     my $location = $locations->get($location_id);
 
@@ -209,14 +200,11 @@ foreach my $location_id(@location_ids){
         say STDERR "no profile defined for $user->{login}";
         next;
     }
-    my $profile = $profiles->get($user->{profile_id});
+    my $profile = $profiles->{ $user->{profile_id} };
     if(!$profile){
-        say STDERR "strange, profile_id is defined in table users, but no profile could be fetched from table profiles";
+        say STDERR "strange, profile_id is defined in table users, but no profile could be found";
         next;
     }
-
-    #test timing
-    $num_checked++;
 
     $location->{check_log} = [];
     my @files = ();
@@ -225,17 +213,9 @@ foreach my $location_id(@location_ids){
 
     foreach my $test(@{ $profile->{packages} }){
 
-        $timing->{$test->{class}} ||= [];
-        my $time_start = Time::HiRes::time;
-
         my $ref = get_package($test->{class},$test->{args});
         $ref->dir($location->{path});        
         my($success,$errors) = $ref->test();
-
-        #test timing
-        my $time_end = Time::HiRes::time;
-        push @{ $timing->{$test->{class}} } , $time_end - $time_start;
-        $totalsum += $time_end - $time_start;
 
         push @{ $location->{check_log} }, @$errors if !$success;
         unless(scalar(@files)){
@@ -295,15 +275,3 @@ foreach my $location_id(@location_ids){
     $location->{files} = \@files;
     $locations->add($location);
 }
-
-#test timing
-say "timing reports:";
-use List::Util qw(reduce);
-use Time::Seconds;
-foreach my $timing_key(sort keys %$timing){
-    my $times = $timing->{$timing_key};
-    my $sum = reduce { $a + $b } @{ $timing->{$timing_key} };
-    my $average = $sum / scalar(@{ $timing->{$timing_key} });
-    say "$timing_key => ".Time::Seconds->new($average)->pretty;
-}
-say "\ntotal average per directory:".Time::Seconds->new($totalsum / $num_checked);

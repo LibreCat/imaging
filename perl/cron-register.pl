@@ -8,7 +8,6 @@ use File::Basename;
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
-use open qw(:std :utf8);
 use YAML;
 use Try::Tiny;
 use DBI;
@@ -48,11 +47,21 @@ sub file_info {
         }
     }
 }
+sub config {
+    state $config = do {
+        my $config_file = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"environments")."/development.yml";
+        YAML::LoadFile($config_file);
+    };
+}
 sub store_opts {
-    state $opts = {
-        data_source => "dbi:mysql:database=imaging",
-        username => "imaging",
-        password => "imaging"
+    state $opts = do {
+        my $config = config;
+        my %opts = (
+            data_source => $config->{store}->{core}->{options}->{data_source},
+            username => $config->{store}->{core}->{options}->{username},
+            password => $config->{store}->{core}->{options}->{password}
+        );
+        \%opts;
     };
 }
 sub store {
@@ -64,23 +73,21 @@ sub projects {
 sub locations {
     state $locations = store()->bag("locations");
 }
-sub profiles {
-    state $profiles = store()->bag("profiles");
-}
 sub meercat {
     state $meercat = WebService::Solr->new(
-        "http://localhost:4000/solr",{default_params => {wt => 'json'}}
+        config->{'index'}->{meercat}->{url},
+        {default_params => {wt => 'json'}}
     );
 }
 sub index_locations {
     state $index_locations = Catmandu::Store::Solr->new(
-        url => "http://localhost:8983/solr/core0"
-    )->bag("locations");
+        %{ config->{store}->{'index'}->{options} }
+    )->bag();
 }
 sub index_log {
     state $index_log = Catmandu::Store::Solr->new(
-        url => "http://localhost:8983/solr/core1"
-    )->bag("log_locations");
+        %{ config->{store}->{'index_log'}->{options} }
+    )->bag();
 }
 sub mount_conf {
     state $mount_conf = do {

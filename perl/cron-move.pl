@@ -9,7 +9,6 @@ use File::Copy qw(copy move);
 use File::Path qw(mkpath);
 use Cwd qw(abs_path);
 use File::Spec;
-use open qw(:std :utf8);
 use YAML;
 use Try::Tiny;
 use DBI;
@@ -36,11 +35,21 @@ sub file_info {
         }
     }
 }
+sub config {
+    state $config = do {
+        my $config_file = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"environments")."/development.yml";
+        YAML::LoadFile($config_file);
+    };
+}
 sub store_opts {
-    state $opts = {
-        data_source => "dbi:mysql:database=imaging",
-        username => "imaging",
-        password => "imaging"
+    state $opts = do {
+        my $config = config;
+        my %opts = (
+            data_source => $config->{store}->{core}->{options}->{data_source},
+            username => $config->{store}->{core}->{options}->{username},
+            password => $config->{store}->{core}->{options}->{password}
+        );
+        \%opts;
     };
 }
 sub store {

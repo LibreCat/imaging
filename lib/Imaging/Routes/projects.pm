@@ -19,7 +19,7 @@ sub indexer {
     state $indexer = store("index");
 }   
 sub index_locations {
-    state $index_locations = indexer->bag("locations");
+    state $index_locations = indexer->bag;
 }
 sub projects {
     state $projects = core()->bag("projects");

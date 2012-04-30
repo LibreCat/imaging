@@ -46,13 +46,3 @@ users:
 	roles:						scanner
 	profile_id:					NARA
 	password:					MD5("geert")
-
-profiles:
-	_id:						NARA
-	packages:					[{
-									class:"Imaging::Test::Dir::scan"
-									args:{},
-									on_error:"stop"
-								},..
-
-								]

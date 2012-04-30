@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#/usr/bin/env perl
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
 use Catmandu::Store::Solr;
@@ -20,12 +20,12 @@ sub locations {
 sub index_locations {
 	state $index_locations = Catmandu::Store::Solr->new(
         url => "http://localhost:8983/solr/core0"
-    )->bag("locations");
+    )->bag;
 }
 sub index_log {
 	state $index_log = Catmandu::Store::Solr->new(
         url => "http://localhost:8983/solr/core1"
-    )->bag("log_locations");
+    )->bag;
 }
 locations->delete_all();
 index_locations->delete_all();

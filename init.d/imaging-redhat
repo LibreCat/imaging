@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# imaging
+#
+# chkconfig:   345 85 15
+# description: imaging script
+#
+
+. /etc/rc.d/init.d/functions
+
+export PATH="$PATH:/usr/local/bin"
+export PERL5LIB="/opt/Catmandu/lib"
+imaging_home="/opt/Imaging"
+pidfile="/var/run/imaging.pid"
+imaging_error="/var/log/Imaging/error.log"
+imaging_log="/var/log/Imaging/access.log"
+dirname_error=`dirname $imaging_error`
+test -d $dirname_error || mkdir -p $dirname_error || exit 1
+dirname_log=`dirname $imaging_log`
+test -d $dirname_log || mkdir -p $dirname_log || exit 1
+plackup_opts="-s Starman -E development bin/app.pl --access-log $imaging_log"
+
+RET=0
+
+pid_exists (){
+        pid=$(get_pid)
+        re=0
+        if [ -z $pid ];then
+                re=1
+        else
+                kill -0 $pid &> /dev/null
+                re=$?
+        fi
+        echo $re
+}
+get_pid () {
+        cat $pidfile 2> /dev/null
+}
+
+case "$1" in
+  start)
+        echo "starting imaging"
+    RET=$(pid_exists)
+    if [ "$RET" -eq "0" ];then
+            echo "imaging already running"
+                exit 0;
+        fi
+        cd $imaging_home
+    plackup $plackup_opts 1> /dev/null 2> $imaging_error &
+    RET=$?
+        PID=$!
+    if [ "$RET" -eq "0" ];then
+        echo $PID > $pidfile
+    echo "imaging started"
+    else
+        echo "imaging could not be started"
+    fi
+  ;;
+  stop)
+        echo "shutting down imaging"
+        RET=$(pid_exists)
+    if [ ! "$RET" -eq "0" ];then
+                echo "imaging already stopped"
+                exit 0
+        fi
+    RET=$?
+        p=$(get_pid)
+        kill -15 $p
+        rm -f $pidfile
+  ;;
+  status)
+        RET=$(pid_exists)
+        if [ "$RET" -eq "0" ];then
+                echo "imaging is running"
+        else
+                echo "imaging is not running"
+        fi
+  ;;
+  restart)
+        $0 stop
+        echo "waiting for master to finish off the workers.."
+        sleep 2
+        $0 start
+  ;;
+  *)
+    echo "Usage: $N {start|stop|status|restart}" >&2
+    exit 1
+  ;;
+esac
+
+exit $RET

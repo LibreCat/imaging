@@ -3,8 +3,8 @@ use Moo;
 use Digest::MD5 qw(md5_hex);
 
 has name_manifest => (
-	is => 'rw',
-	default => sub{ "manifest.txt"; }
+    is => 'rw',
+    default => sub{ "manifest.txt"; }
 );
 has is_optional => (
     is => 'ro',
@@ -14,25 +14,25 @@ sub is_fatal {
     1;
 };
 sub test {
-	my $self = shift;
-	my $topdir = $self->dir();
-	my $file_info = $self->file_info();
-	my(@errors) = ();
+    my $self = shift;
+    my $topdir = $self->dir();
+    my $file_info = $self->file_info();
+    my(@errors) = ();
 
     #find manifest
-	my $path_manifest;
-	foreach my $stats(@$file_info){
-		if($stats->{basename} eq $self->name_manifest()){
-			$path_manifest = $stats->{path};
-			last;
-		}
-	}
-	if(!defined($path_manifest)){
+    my $path_manifest;
+    foreach my $stats(@$file_info){
+        if($stats->{basename} eq $self->name_manifest()){
+            $path_manifest = $stats->{path};
+            last;
+        }
+    }
+    if(!defined($path_manifest)){
 
-		push @errors,$self->name_manifest()." could not be found in $topdir" if !$self->is_optional();
+        push @errors,$self->name_manifest()." could not be found in $topdir" if !$self->is_optional();
 
-	}else{
-		
+    }else{
+        
         #open manifest: <md5sum> <file>
         my $dirname_manifest = abs_path(dirname($path_manifest));
 
@@ -67,8 +67,8 @@ sub test {
 
     }
 
-	scalar(@errors) == 0,\@errors;
-}	
+    scalar(@errors) == 0,\@errors;
+}   
 
 with qw(Imaging::Test::Dir);
 

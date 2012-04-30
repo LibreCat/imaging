@@ -14,23 +14,7 @@ sub core {
     state $core = store("core");
 }
 sub indexer {
-    state $index = store("index")->bag("locations");
-}
-sub facet_status {
-    my(%opts) = @_;
-    $opts{q} ||= "*:*";
-    $opts{fq} ||= "*:*";
-    $opts{q} = "($opts{q}) AND _bag:locations";
-    $opts{fq} = "($opts{fq}) AND _bag:locations";
-    my $index = indexer->store->solr;
-    my $facet_status;
-    try{
-        my $res = $index->search($opts{q},{ fq => $opts{fq}, rows => 0,facet => "true","facet.field" => "status" });
-        $facet_status = $res->facet_counts->{facet_fields}->{status} || [];
-    }catch{
-        $facet_status = [];
-    };
-    $facet_status;
+    state $index = store("index")->bag;
 }
 sub locations {
     state $locations = core()->bag("locations");
@@ -72,7 +56,9 @@ any('/qa_control',sub {
         query => $q,
         fq => $fq,
         start => $offset,
-        limit => $num
+        limit => $num,
+        facet => "true",
+        "facet.field" => "status"
     );
     $opts{sort} = $sort if $sort && $sort =~ /^\w+\s(?:asc|desc)$/o;
     my @errors = ();
@@ -94,7 +80,7 @@ any('/qa_control',sub {
             locations => $result->hits,
             page_info => $page_info,
             auth => auth(),
-            facet_status => facet_status($q,$fq),
+            facet_status => $result->{facets}->{facet_counts}->{status} || [],
             mount_conf => mount_conf()
         });
     }else{

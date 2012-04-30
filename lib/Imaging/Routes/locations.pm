@@ -33,7 +33,7 @@ sub core {
     state $core = store("core");
 }
 sub indexer {
-    state $index = store("index")->bag("locations");
+    state $index = store("index")->bag;
 }
 sub locations {
     state $locations = core()->bag("locations");
@@ -42,7 +42,7 @@ sub projects {
     state $projects = core()->bag("projects");
 }
 sub index_logs {
-    state $index = store("index_log")->bag("log_locations");
+    state $index = store("index_log")->bag;
 }
 sub dbi_handle {
     state $dbi_handle = database;
@@ -330,7 +330,7 @@ any('/locations/edit/:_id/status',sub{
                     locations->add($location);
                 }
                 #redirect
-                return redirect("/locations/edit/$location->{_id}");
+                return redirect("/locations/view/$location->{_id}");
             }else{
                 push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
             }
