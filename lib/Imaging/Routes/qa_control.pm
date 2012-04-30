@@ -17,20 +17,20 @@ sub indexer {
     state $index = store("index")->bag("locations");
 }
 sub facet_status {
-	my(%opts) = @_;
-	$opts{q} ||= "*:*";
-	$opts{fq} ||= "*:*";
-	$opts{q} = "($opts{q}) AND _bag:locations";
-	$opts{fq} = "($opts{fq}) AND _bag:locations";
-	my $index = indexer->store->solr;
-	my $facet_status;
-	try{
-		my $res = $index->search($opts{q},{ fq => $opts{fq}, rows => 0,facet => "true","facet.field" => "status" });
-		$facet_status = $res->facet_counts->{facet_fields}->{status} || [];
-	}catch{
-		$facet_status = [];
-	};
-	$facet_status;
+    my(%opts) = @_;
+    $opts{q} ||= "*:*";
+    $opts{fq} ||= "*:*";
+    $opts{q} = "($opts{q}) AND _bag:locations";
+    $opts{fq} = "($opts{fq}) AND _bag:locations";
+    my $index = indexer->store->solr;
+    my $facet_status;
+    try{
+        my $res = $index->search($opts{q},{ fq => $opts{fq}, rows => 0,facet => "true","facet.field" => "status" });
+        $facet_status = $res->facet_counts->{facet_fields}->{status} || [];
+    }catch{
+        $facet_status = [];
+    };
+    $facet_status;
 }
 sub locations {
     state $locations = core()->bag("locations");
@@ -38,21 +38,21 @@ sub locations {
 
 hook before => sub {
     if(request->path =~ /^\/qa_control/o){
-		if(!authd){
-			my $service = uri_escape(uri_for(request->path));
-			return redirect(uri_for("/login")."?service=$service");
-		}
-	}
+        if(!authd){
+            my $service = uri_escape(uri_for(request->path));
+            return redirect(uri_for("/login")."?service=$service");
+        }
+    }
 };
 any('/qa_control',sub {
 
-	if(!(auth->asa('admin') || auth->asa('qa_manager'))){
-		return forward('/access_denied',{
-        	text => "U mist de nodige gebruikersrechten om deze pagina te kunnen zien"
-    	});
-  	}
+    if(!(auth->asa('admin') || auth->asa('qa_manager'))){
+        return forward('/access_denied',{
+            text => "U mist de nodige gebruikersrechten om deze pagina te kunnen zien"
+        });
+    }
 
-	my $params = params;
+    my $params = params;
     my $indexer = indexer();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
 
@@ -63,24 +63,24 @@ any('/qa_control',sub {
     my $offset = ($page - 1)*$num;
     my $sort = $params->{sort};
 
-	my @states = qw(registered derivatives_created reprocess_scans reprocess_metadata reprocess_derivatives archived);
-	my $fq = join(' OR ',map {
-		"status:$_"
-	} @states);
-	say $fq;
+    my @states = qw(registered derivatives_created reprocess_scans reprocess_metadata reprocess_derivatives archived);
+    my $fq = join(' OR ',map {
+        "status:$_"
+    } @states);
+    say $fq;
     my %opts = (
         query => $q,
-		fq => $fq,
+        fq => $fq,
         start => $offset,
         limit => $num
     );
     $opts{sort} = $sort if $sort && $sort =~ /^\w+\s(?:asc|desc)$/o;
-	my @errors = ();
+    my @errors = ();
     my($result);
     try {
         $result= indexer->search(%opts);
     }catch{
-		push @errors,"ongeldige zoekvraag";
+        push @errors,"ongeldige zoekvraag";
     };
     if(scalar(@errors)==0){
         my $page_info = Data::Pageset->new({
@@ -94,7 +94,7 @@ any('/qa_control',sub {
             locations => $result->hits,
             page_info => $page_info,
             auth => auth(),
-			facet_status => facet_status($q,$fq),
+            facet_status => facet_status($q,$fq),
             mount_conf => mount_conf()
         });
     }else{

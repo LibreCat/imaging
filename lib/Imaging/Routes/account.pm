@@ -12,18 +12,18 @@ sub dbi_handle {
     state $dbi_handle = database;
 }
 hook before => sub {
-	if(request->path =~ /^\/account/o){
-		my $auth = auth;
-		my $authd = authd;
-		if(!$authd){
-			my $service = uri_escape(uri_for(request->path));
-			return redirect(uri_for("/login")."?service=$service");
-		}
-	}
-};	
+    if(request->path =~ /^\/account/o){
+        my $auth = auth;
+        my $authd = authd;
+        if(!$authd){
+            my $service = uri_escape(uri_for(request->path));
+            return redirect(uri_for("/login")."?service=$service");
+        }
+    }
+};  
 any('/account',sub{
-	my $user = dbi_handle()->quick_select('users',{ id => session('user')->{id} });
-	template('account',{ user => $user, auth => auth() });
+    my $user = dbi_handle()->quick_select('users',{ id => session('user')->{id} });
+    template('account',{ user => $user, auth => auth() });
 });
 
 true;

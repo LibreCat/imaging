@@ -16,38 +16,38 @@ sub dbi_handle {
     state $dbi_handle = database;
 }
 sub core {
-	state $core = store("core");
+    state $core = store("core");
 }
 sub locations {
-	state $locations = core()->bag("locations");
+    state $locations = core()->bag("locations");
 }
 
 hook before => sub {
     if(request->path =~ /^\/directories/o){
-		my $auth = auth;
-		my $authd = authd;
-		if(!$authd){
-			my $service = uri_escape(uri_for(request->path));
-			return redirect(uri_for("/login")."?service=$service");
-		}elsif(!$auth->can('directories','edit')){
-			request->path_info('/access_denied');
+        my $auth = auth;
+        my $authd = authd;
+        if(!$authd){
+            my $service = uri_escape(uri_for(request->path));
+            return redirect(uri_for("/login")."?service=$service");
+        }elsif(!$auth->can('directories','edit')){
+            request->path_info('/access_denied');
             my $params = params;
             $params->{text} = "u mist de nodige rechten om de scandirectories aan te passen";
-		}
-	}
+        }
+    }
 };
 any('/directories',sub {
-	my $config = config;
-	my $params = params;
-	my(@errors)=();
+    my $config = config;
+    my $params = params;
+    my(@errors)=();
 
-	my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
+    my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
     $params->{page} = $page;
     my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
     $params->{num} = $num;
     my $offset = ($page - 1)*$num;
 
-	my @users = dbi_handle->quick_select('users',{
+    my @users = dbi_handle->quick_select('users',{
         roles => { like => '%scanner%'  }   
     },{ 
         order_by => 'id'
@@ -62,74 +62,74 @@ any('/directories',sub {
         'pages_per_set'       => 8,
         'mode'                => 'fixed'
     });
-	#sanity check on mount
-	my($success,$errs) = sanity_check();
-	push @errors,@$errs if !$success;
+    #sanity check on mount
+    my($success,$errs) = sanity_check();
+    push @errors,@$errs if !$success;
 
-	my $mount = mount();
+    my $mount = mount();
     my $subdirectories = subdirectories();
 
-	foreach my $user(@users){
+    foreach my $user(@users){
         $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
         $user->{reprocessing} = "$mount/".$subdirectories->{reprocessing}."/".$user->{login};
-	}
-	#template
+    }
+    #template
     template('directories',{
         users => \@users,
-		errors => \@errors,
-		page_info => $page_info,
-		auth => auth()
+        errors => \@errors,
+        page_info => $page_info,
+        auth => auth()
     });
 });
 any('/directories/:id/edit',sub {
     my $config = config;
     my $params = params;
-	my(@errors,@messages);
+    my(@errors,@messages);
     my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
-	$user or return not_found();	
-	if($user->{roles} !~ /scanner/o){
-		return forward("/access_denied",{
-			text => "Enkel gebruikers die beschikken over de rol 'scanner' kunnen een scandirectory krijgen"
+    $user or return not_found();    
+    if($user->{roles} !~ /scanner/o){
+        return forward("/access_denied",{
+            text => "Enkel gebruikers die beschikken over de rol 'scanner' kunnen een scandirectory krijgen"
         });
-	}
+    }
 
-	#sanity check on mount
+    #sanity check on mount
     my($success,$errs) = sanity_check();
     push @errors,@$errs if !$success;
 
-	my $mount = mount();
+    my $mount = mount();
     my $subdirectories = subdirectories();
 
-	#check directories of scanner
+    #check directories of scanner
     $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
     $user->{reprocessing} = "$mount/".$subdirectories->{reprocessing}."/".$user->{login};
 
-	if($params->{submit} && scalar(@errors)==0){
-		foreach(qw(ready reprocessing)){
-			try{
-				my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
-				mkpath($path);
+    if($params->{submit} && scalar(@errors)==0){
+        foreach(qw(ready reprocessing)){
+            try{
+                my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
+                mkpath($path);
                 push @messages,"directory '$_' is ok nu";
-			}catch{
-				push @errors,$_;
-			};
-		}
-	}else{
-		foreach(qw(ready reprocessing)){
-			if(!-d $user->{$_}){
-				push @errors,"directory '$_' bestaat niet ($user->{$_})";
-			}elsif(!-w $user->{$_}){
-				push @errors,"systeem kan niet schrijven naar directory '$_' ($user->{$_})";
-			}
-		}
-	}
+            }catch{
+                push @errors,$_;
+            };
+        }
+    }else{
+        foreach(qw(ready reprocessing)){
+            if(!-d $user->{$_}){
+                push @errors,"directory '$_' bestaat niet ($user->{$_})";
+            }elsif(!-w $user->{$_}){
+                push @errors,"systeem kan niet schrijven naar directory '$_' ($user->{$_})";
+            }
+        }
+    }
 
-	template('directories/edit',{
-		errors => \@errors,
-		messages => \@messages,
-		user => $user,
-		auth => auth()
-	});
+    template('directories/edit',{
+        errors => \@errors,
+        messages => \@messages,
+        user => $user,
+        auth => auth()
+    });
 });
 
 true;

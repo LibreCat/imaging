@@ -14,14 +14,14 @@ sub indexer {
 }
 hook before => sub {
     if(request->path =~ /^\/logs/o){
-		if(!authd){
-			my $service = uri_escape(uri_for(request->path));
-			return redirect(uri_for("/login")."?service=$service");
-		}
-	}
+        if(!authd){
+            my $service = uri_escape(uri_for(request->path));
+            return redirect(uri_for("/login")."?service=$service");
+        }
+    }
 };
 any('/logs',sub {
-	my $params = params;
+    my $params = params;
     my $indexer = indexer();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
 
@@ -37,11 +37,11 @@ any('/logs',sub {
         start => $offset,
         limit => $num
     );
-	if($sort && $sort =~ /^\w+\s(?:asc|desc)$/o){
-		$opts{sort} = [$sort,"location_id desc"];
-	}else{
-		$opts{sort} = ["datetime desc","location_id desc"];
-	}
+    if($sort && $sort =~ /^\w+\s(?:asc|desc)$/o){
+        $opts{sort} = [$sort,"location_id desc"];
+    }else{
+        $opts{sort} = ["datetime desc","location_id desc"];
+    }
     my($result,$error);
     try {
         $result= indexer->search(%opts);
