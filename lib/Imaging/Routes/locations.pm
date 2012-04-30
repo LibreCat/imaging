@@ -65,10 +65,35 @@ sub status2index {
     $index_log->commit;
     $doc;
 }
+sub marcxml_flatten {
+    my $xml = shift;
+    my $ref = from_xml($xml,ForceArray => 1);
+    my @text = ();
+    foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
+        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+            next if !is_string($marc_subfield->{content});
+            push @text,$marc_subfield->{content};
+        }
+    }
+    foreach my $control_field(@{ $ref->{'marc:controlfield'} }){
+        next if !is_string($control_field->{content});
+        push @text,$control_field->{content};
+    }
+    return \@text;
+}
 sub location2index {
     my $location = shift;
 
     my $doc = clone($location);
+
+    my @metadata_ids = ();
+    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $location->{metadata} });
+    $doc->{metadata_id} = \@metadata_ids;
+
+    $doc->{text} = [];
+    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$location->{metadata}});
+
+
     my @deletes = qw(metadata comments busy busy_reason);
     delete $doc->{$_} foreach(@deletes);
 
@@ -102,7 +127,6 @@ sub location2index {
         next if $key !~ /datetime/o;
         $doc->{$key} = formatted_date($doc->{$key});
     }
-
     indexer->add($doc);
     indexer->commit;
     $doc;
@@ -211,7 +235,8 @@ any('/locations/edit/:_id',sub{
         push @errors,@$errs;
         push @messages,@$msgs;
         if(scalar(@$errs)==0){
-           locations->add($location);
+            locations->add($location);
+            location2index($location);
         }
     }
     #edit - end 
@@ -326,7 +351,6 @@ any('/locations/edit/:_id/status',sub{
                     $location->{busy_reason} = "move";
                     my $owner = dbi_handle->quick_select("users",{ id => $location->{user_id} });
                     $location->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".File::Basename::basename($location->{path});
-                    say $location->{newpath};
                     locations->add($location);
                 }
                 #redirect

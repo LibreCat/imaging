@@ -201,21 +201,21 @@ profiles:
      class: "Imaging::Test::Dir::checkPermissions"
      on_error: "continue"
    - args:
-     patterns:
-      - '^\./'
+      patterns:
+       - '^\./'
      class: "Imaging::Test::Dir::hasNoFiles"
      on_error: "continue"
    - args: {}
      class: "Imaging::Test::Dir::checkEmpty"
      on_error: "continue"
    - args:
-     valid_patterns:
-      - '^(?!manifest\.txt$)'
+      valid_patterns:
+       - '^(?!manifest\.txt$)'
      class: "Imaging::Test::Dir::checkTIFF"
      on_error: "continue"
    - args:
-     valid_patterns:
-      - '^(?!manifest\.txt$)'
+      valid_patterns:
+       - '^(?!manifest\.txt$)'
      class: "Imaging::Test::Dir::NARA::checkFilename"
      on_error: "continue"
    - args:

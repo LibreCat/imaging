@@ -79,7 +79,7 @@
         <tr>
 			[% states_processed = ["registered","reprocess_metadata","reprocess_derivatives"] %]
 			[% do_open = 0 %]
-			[% IF auth.asa("qa_manager") && states_processed.grep(location.status).size > 0 %]
+			[% IF ( auth.asa("qa_manager") || auth.asa("admin") ) && states_processed.grep(location.status).size > 0 %]
 				[% dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ location.item("_id") %]
 				[% dir_processed_samba = settings.mounts.directories.network_directories.processed.samba _ "/" _ location.item("_id") %]
 				[% do_open = 1 %]

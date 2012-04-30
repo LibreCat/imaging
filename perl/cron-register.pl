@@ -138,12 +138,31 @@ sub status2index {
     }
     $doc;
 }
+sub marcxml_flatten {
+    my $ref = shift;
+    my @text = ();
+    foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
+        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+            next if !is_string($marc_subfield->{content});
+            push @text,$marc_subfield->{content};
+        }
+    }
+    foreach my $control_field(@{ $ref->{'marc:controlfield'} }){
+        next if !is_string($control_field->{content});
+        push @text,$control_field->{content};
+    }
+    return \@text;
+}
 sub location2index {
     my $location = shift;       
 
     my $doc = clone($location);
     my @metadata_ids = ();
     push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $location->{metadata} }); 
+    
+    $doc->{text} = [];
+    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$location->{metadata}});
+
     my @deletes = qw(metadata comments busy busy_reason);
     delete $doc->{$_} foreach(@deletes);
     $doc->{metadata_id} = \@metadata_ids;
@@ -238,8 +257,6 @@ sub marcxml2baginfo {
 
     my $description = &marc_datafield($xpath,'245');
     push(@{$rec->{'DC-Description'}}, $description);
-
-    #push(@{$rec->{'DC-DateAccepted'}}, strftime("%Y-%m-%d",localtime));
 
     my $type = &marc_datafield($xpath,'920','a');
     push(@{$rec->{'DC-Type'}}, $marc_type_map->{$type} || $marc_type_map->{'-'});
