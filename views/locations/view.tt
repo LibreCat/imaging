@@ -107,9 +107,9 @@
 							<td>
 							[% IF do_open %]
 								[% link = "file://" _ dir_processed_windows _ "/" _ file.name %]
-								<a href="[% link | url %]">[% file.name %]</a>&nbsp;
+								<a href="[% link %]">[% file.name %]</a>&nbsp;
 								[% link = dir_processed_samba _ "/" _ file.name %]
-								(<a href="[% link | url %]">via samba</a>)
+								(<a href="[% link %]">via samba</a>)
 							[% ELSE %]
 								[% file.name %]
 							[% END %]

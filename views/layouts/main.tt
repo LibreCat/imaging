@@ -1,58 +1,61 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta http-equiv="Content-type" content="text/html; charset=[% settings.charset %]" />
-		<link rel="stylesheet" href="[% request.base_uri %]/css/master.css" type="text/css" media="screen" />
-		<script type="text/javascript" src="[% request.base_uri %]/js/jquery-1.7.1.min.js"></script>
-		<title>Imaging</title>
-	</head>
-	<body>
-		<div id="main">
-			[% PROCESS inc/user.tt %]
-			<div id="top">
-				<ul id="menu">
-					[% IF session.user.id %]
-					<li>
-						<a href="/projects">projecten</a>
-					</li>
-                    <li>
-                        <a href="/locations">scan opdrachten</a>
-                    </li>
-					<li>
-                        <a href="/logs">logs</a>
-                    </li>
-					[% END %]
-					[% IF auth.can('manage_accounts','edit') %]
-					<li>
-						<a href="/users">users</a>
-					</li>
-					[% END %]
-					[% IF auth.can('directories','edit') %]
-					<li>
-                        <a href="/directories">directories per scanner</a>
-                    </li>
-					[% END %]
-					[% IF auth.asa('scanner') %]
-                    <li>
-                        <a href="/ready/[% session.user.login %]">ready</a>
-                    </li>
-                    <li>
-						[% q = "status:reprocess_scans" _ " AND user_name:" _ session.user.login  %]
-                        <a href="/locations?q=[% q | url %]">reprocessing</a>
-                    </li>
-					[% ELSIF auth.asa('qa_manager') %]
-					<li>
-                        <a href="/qa_control">qa_controle</a>
-                    </li>
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=[% settings.charset %]" />
+        <link rel="stylesheet" href="[% request.base_uri %]/css/master.css" type="text/css" media="screen" />
+        <script type="text/javascript" src="[% request.base_uri %]/js/jquery-1.7.1.min.js"></script>
+        <title>Imaging</title>
+    </head>
+    <body>
+        <div id="main">
+            [% PROCESS inc/user.tt %]
+            <div id="top">
+                <ul id="menu">
+                    [% IF session.user.id %]
+                        <li>
+                            <a href="/projects">projecten</a>
+                        </li>
+                        <li>
+                            <a href="/locations">scan opdrachten</a>
+                        </li>
+                        <li>
+                            <a href="/logs">logs</a>
+                        </li>
+                        <li>
+                            <a href="/status">status</a>
+                        </li>
+                        
+                        [% IF auth.can('manage_accounts','edit') %]
+                            <li>
+                                <a href="/users">users</a>
+                            </li>
+                        [% END %]
+                        [% IF auth.can('directories','edit') %]
+                        <li>
+                            <a href="/directories">directories per scanner</a>
+                        </li>
+                        [% END %]
+                        [% IF auth.asa('scanner') %]
+                        <li>
+                            <a href="/ready/[% session.user.login %]">ready</a>
+                        </li>
+                        <li>
+                            [% q = "status:reprocess_scans" _ " AND user_name:" _ session.user.login  %]
+                            <a href="/locations?q=[% q | url %]">reprocessing</a>
+                        </li>
+                        [% ELSIF auth.asa('qa_manager') %]
+                        <li>
+                            <a href="/qa_control">qa_controle</a>
+                        </li>
+                        [% END %]
+
+                        <li>
+                            <a href="/logout">logout</a>
+                        </li>
                     [% END %]
-					[% IF session.user.id %]
-					<li>
-                        <a href="/logout">logout</a>
-                    </li>
-					[% END %]
-				</ul>
-			</div>
-			[% content %]
-		</div>
-	</body>
+                </ul>
+            </div>
+            [% content %]
+        </div>
+    </body>
 </html>

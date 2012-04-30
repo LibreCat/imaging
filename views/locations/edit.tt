@@ -119,7 +119,7 @@
                         <td colspan="3">
                             aantal: [% location.files.size || 0 %]&nbsp;
                             [% IF do_open %]
-                                <a href="[% dir_processed_windows %]">open map</a>&nbsp;(windows)&nbsp;
+                                <a href="[% "file://" _ dir_processed_windows %]">open map</a>&nbsp;(windows)&nbsp;
                                 <a href="[% dir_processed_samba %]">open map</a>&nbsp;(samba)
                             [% END %]
                         </td>
@@ -135,9 +135,9 @@
                             <td>
 							[% IF do_open %]
                                 [% link = "file://" _ dir_processed_windows _ "/" _ file.name %]
-                                <a href="[% link | url %]">[% file.name %]</a>&nbsp;
+                                <a href="[% link %]">[% file.name %]</a>&nbsp;
                                 [% link = dir_processed_samba _ "/" _ file.name %]
-                                (<a href="[% link | url %]">via samba</a>)
+                                (<a href="[% link %]">via samba</a>)
                             [% ELSE %]
                                 [% file.name %]
                             [% END %]
@@ -209,7 +209,7 @@
             <td>
                 <form method="post">
                     <input type="text" name="metadata_id" id="metadata_id" />
-                    <input type="submit" name="submit" value="save" />  
+                    <input type="submit" name="submit" value="bewaar" />  
                     <input type="hidden" name="action" value="edit_metadata_id" />
                 </form>
             </td>
@@ -223,10 +223,10 @@
 					<input type="text" name="metadata_id" id="metadata_id" value="[% metadata.source _ ":" _ metadata.fSYS %]" />
 					<input type="button" onclick="window.location.href='http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]'" value="bekijk record"/>
 					[% IF location.metadata.size == 1 %]
-					<input type="submit" name="submit" value="save" onclick="return confirm('Hiermee worden de marc en de baginfo overschreven. Bent u zeker?');" />	
+					<input type="submit" name="submit" value="bewaar" onclick="return confirm('Hiermee worden de marc en de baginfo overschreven. Bent u zeker?');" />	
 					<input type="hidden" name="action" value="edit_metadata_id" />
 					[% END %]
-					<input type="button" onclick="window.location.href='/locations/edit/[% location.item("_id") %]?action=delete_metadata_id&metadata_id=[% metadata.source _ ":" _ metadata.fSYS %]'" value="delete"/>
+					<input type="button" onclick="window.location.href='/locations/edit/[% location.item("_id") %]?action=delete_metadata_id&metadata_id=[% metadata.source _ ":" _ metadata.fSYS %]'" value="verwijder"/>
 				</form>
             </td>
         </tr>
@@ -264,7 +264,7 @@
 								[% END %]
 								</td>
 								<td>
-									<input type="button" onclick="$('#tr-baginfo-[% i %]').remove();return false;" value="verwijder"/>
+									<input type="button" onclick="$('#tr-baginfo-[% i %]').remove();$('#save-changes-baginfo').css('border','1px solid red');return false;" value="verwijder"/>
 								</td>
 							</tr>
 							[% i = i + 1 %]
@@ -272,7 +272,7 @@
 					[% END %]
 						<tr>
 							<td colspan="3">
-								<input type="submit" name="submit" value="save" />
+								<input type="submit" name="submit" value="bewaar wijzigingen" id="save-changes-baginfo" />
 								<input type="hidden" name="action" value="edit_baginfo" />
 							</td>
 						</tr>

@@ -26,12 +26,23 @@
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
     <a href="/logs?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">laatste</a>
     [% END %]
-
+    (
+    [% page = params.page || 1 %]
+    [% first = ( ( page - 1 ) * page_info.entries_per_page ) + 1 %]
+    Resultaten [% first %] tot [% first + logs.size - 1 %]
+    )
 [% END %]
 </div>
 <form method="GET" id="query-form">
     <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" />
     <input type="submit" value="search" />
+    [% SET numbers = [5,10,20,50,100] %]
+    <select name="num" id="num" onchange="document.getElementById('query-form').submit();">
+        <option value="">-- aantal per pagina --</option>
+    [% FOREACH number IN numbers %]
+        <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
+    [% END %]
+    </select>
 </form>
 [% IF logs && logs.size > 0 %]
 	<table id="table-logs" class="left">
