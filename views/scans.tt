@@ -2,42 +2,42 @@
 [% USE date %]
 <h1>Lijst van scanopdrachten</h1>
 <div class="paging">
-[% IF locations && locations.size > 0 %]
+[% IF scans && scans.size > 0 %]
 
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/locations?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a>
+    <a href="/scans?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a>
     [% END %]
 
     [% IF page_info.previous_page %]
-    <a href="/locations?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >vorige</a>
+    <a href="/scans?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >vorige</a>
     [% END %]
 
     [% FOREACH page IN page_info.pages_in_set %]
         [% IF page == page_info.current_page %]
         <span class="current">[% page %]</span>
         [% ELSE %]
-        <a href="/locations?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">[% page %]</a>
+        <a href="/scans?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">[% page %]</a>
         [% END %]
     [% END %]
 
     [% IF page_info.next_page %]
-    <a href="/locations?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >volgende</a>
+    <a href="/scans?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >volgende</a>
     [% END %]
 
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/locations?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">laatste</a>
+    <a href="/scans?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">laatste</a>
     [% END %]
     (
     [% page = params.page || 1 %]
     [% first = ( ( page - 1 ) * page_info.entries_per_page ) + 1 %]
-    Resultaten [% first %] tot [% first + locations.size - 1 %]
+    Resultaten [% first %] tot [% first + scans.size - 1 %]
     )
 [% END %]
 </div>
 <form method="GET" id="query-form">
     <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" />
     <input type="submit" value="search" />
-    [% IF locations.size > 0 %]
+    [% IF scans.size > 0 %]
         <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
             <option value="">--sorteer resultaten--</option>
         [% FOREACH key IN ["_id","user_name","status","datetime_last_modified"] %]
@@ -54,8 +54,8 @@
         </select>
     [% END %]
 </form>
-[% IF locations && locations.size > 0 %]
-	<table id="table-locations" class="left">
+[% IF scans && scans.size > 0 %]
+	<table id="table-scans" class="left">
         [% IF params.q && params.q != "*" %]
         <tr>
             <td colspan="7" style="text-align:left">
@@ -72,32 +72,32 @@
 			<th>klaar</th>
             <th>laatst gewijzigd</th>
 		</tr>
-	[% FOREACH location IN locations %]
+	[% FOREACH scan IN scans %]
 		<tr>
 			<td>
-                <a href="/locations/view/[% location.item("_id") %]">
-                [% location.item("_id") %]
+                <a href="/scans/view/[% scan.item("_id") %]">
+                [% scan.item("_id") %]
                 </a>
             </td>
-			<td>[% location.item("user_name") || "-" %]</td>
-			<td>[% location.item("project_name") || "-" %]</td>
-			<td>[% location.item("project_name_subproject") %]</td>
+			<td>[% scan.item("user_name") || "-" %]</td>
+			<td>[% scan.item("project_name") || "-" %]</td>
+			<td>[% scan.item("project_name_subproject") %]</td>
 			<td>
-				[% status = location.item("status") %]
+				[% status = scan.item("status") %]
 				[% settings.human_readable.${status} || status %]
 			</td>
 			<td>
-				<input type="checkbox" disabled="disabled" [% IF location.item("done") %] checked="checked"[% END %] />
+				<input type="checkbox" disabled="disabled" [% IF scan.item("done") %] checked="checked"[% END %] />
 			</td>
             <td>
-				[% matches = location.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') %]
+				[% matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') %]
                 [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
 			</td>
 		</tr>
 	[% END %]
 	</table>
 [% ELSE %]
-	<table id="table-locations"> 
+	<table id="table-scans"> 
 		<tr>
             <td>geen scans gevonden voor <b>[% params.q || "*" %]</b></td>
         </tr>

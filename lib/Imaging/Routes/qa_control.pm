@@ -16,8 +16,8 @@ sub core {
 sub indexer {
     state $index = store("index")->bag;
 }
-sub locations {
-    state $locations = core()->bag("locations");
+sub scans {
+    state $scans = core()->bag("scans");
 }
 
 hook before => sub {
@@ -77,7 +77,7 @@ any('/qa_control',sub {
             'mode'                => 'fixed'
         });
         template('qa_control',{
-            locations => $result->hits,
+            scans => $result->hits,
             page_info => $page_info,
             auth => auth(),
             facet_status => $result->{facets}->{facet_counts}->{status} || [],
@@ -85,7 +85,7 @@ any('/qa_control',sub {
         });
     }else{
         template('qa_control',{
-            locations => [],
+            scans => [],
             errors => \@errors,
             auth => auth(),
             mount_conf => mount_conf()

@@ -1,4 +1,4 @@
-package Imaging::Routes::locations;
+package Imaging::Routes::scans;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Imaging::Routes::Meercat;
@@ -35,8 +35,8 @@ sub core {
 sub indexer {
     state $index = store("index")->bag;
 }
-sub locations {
-    state $locations = core()->bag("locations");
+sub scans {
+    state $scans = core()->bag("scans");
 }
 sub projects {
     state $projects = core()->bag("projects");
@@ -48,15 +48,15 @@ sub dbi_handle {
     state $dbi_handle = database;
 }
 sub status2index {
-    my $location = shift;
+    my $scan = shift;
     my $doc;
     my $index_log = index_logs();
-    my $owner = dbi_handle->quick_select("users",{ id => $location->{user_id} });
+    my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
 
-    foreach my $history(@{ $location->{status_history} || [] }){
+    foreach my $history(@{ $scan->{status_history} || [] }){
         $doc = clone($history);
         $doc->{datetime} = formatted_date($doc->{datetime});
-        $doc->{location_id} = $location->{_id};
+        $doc->{scan_id} = $scan->{_id};
         $doc->{owner} = $owner->{login};
         my $blob = join('',map { $doc->{$_} } sort keys %$doc);
         $doc->{_id} = md5_hex($blob);
@@ -81,23 +81,23 @@ sub marcxml_flatten {
     }
     return \@text;
 }
-sub location2index {
-    my $location = shift;
+sub scan2index {
+    my $scan = shift;
 
-    my $doc = clone($location);
+    my $doc = clone($scan);
 
     my @metadata_ids = ();
-    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $location->{metadata} });
+    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $scan->{metadata} });
     $doc->{metadata_id} = \@metadata_ids;
 
     $doc->{text} = [];
-    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$location->{metadata}});
+    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
 
     my @deletes = qw(metadata comments busy busy_reason);
     delete $doc->{$_} foreach(@deletes);
 
-    $doc->{files} = [ map { $_->{path} } @{ $location->{files} || [] } ];
+    $doc->{files} = [ map { $_->{path} } @{ $scan->{files} || [] } ];
 
     for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
         my $item = $doc->{status_history}->[$i];
@@ -105,7 +105,7 @@ sub location2index {
     }
 
     my $project;
-    if($location->{project_id} && ($project = projects()->get($location->{project_id}))){
+    if($scan->{project_id} && ($project = projects()->get($scan->{project_id}))){
         foreach my $key(keys %$project){
             next if $key eq "list";
             my $subkey = "project_$key";
@@ -114,8 +114,8 @@ sub location2index {
         }
     }
 
-    if($location->{user_id}){
-        my $user = dbi_handle->quick_select("users",{ id => $location->{user_id} });
+    if($scan->{user_id}){
+        my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
         if($user){
             $doc->{user_name} = $user->{name};
             $doc->{user_login} = $user->{login};
@@ -133,14 +133,14 @@ sub location2index {
 }
 
 hook before => sub {
-    if(request->path =~ /^\/locations/o){
+    if(request->path =~ /^\/scans/o){
         if(!authd){
             my $service = uri_escape(uri_for(request->path));
             return redirect(uri_for("/login")."?service=$service");
         }
     }
 };
-any('/locations',sub {
+any('/scans',sub {
     my $params = params;
     my $indexer = indexer();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
@@ -173,107 +173,107 @@ any('/locations',sub {
             'pages_per_set'       => 8,
             'mode'                => 'fixed'
         });
-        template('locations',{
-            locations => $result->hits,
+        template('scans',{
+            scans => $result->hits,
             page_info => $page_info,
             auth => auth(),
             mount_conf => mount_conf()
         });
     }else{
-        template('locations',{
-            locations => [],
+        template('scans',{
+            scans => [],
             errors => \@errors,
             auth => auth(),
             mount_conf => mount_conf()
         });
     }
 });
-any('/locations/view/:_id',sub {
+any('/scans/view/:_id',sub {
     my $params = params;
     my @errors = ();
     my $auth = auth;
-    my $location = locations->get($params->{_id});
-    $location or return not_found();
+    my $scan = scans->get($params->{_id});
+    $scan or return not_found();
 
     my $project;
-    if($location->{project_id}){
-        $project = projects->get($location->{project_id});
+    if($scan->{project_id}){
+        $project = projects->get($scan->{project_id});
     }
 
-    template('locations/view',{
-        location => $location,
+    template('scans/view',{
+        scan => $scan,
         auth => $auth,
         errors => \@errors,
         mount_conf => mount_conf(),
         project => $project,
-        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
+        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
 
-any('/locations/edit/:_id',sub{
+any('/scans/edit/:_id',sub{
     my $params = params;
     my $auth = auth;
     my @errors = ();
     my @messages = ();
-    my $location = locations->get($params->{_id});
-    $location or return not_found();
+    my $scan = scans->get($params->{_id});
+    $scan or return not_found();
 
-    if(!($auth->asa('admin') || $auth->can('locations','edit'))){
+    if(!($auth->asa('admin') || $auth->can('scans','edit'))){
         return forward('/access_denied',{
             text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
         });
     }
 
     my $project;
-    if($location->{project_id}){
-        $project = projects->get($location->{project_id});
+    if($scan->{project_id}){
+        $project = projects->get($scan->{project_id});
     }
     #edit - start   
-    if(!$location->{busy}){
+    if(!$scan->{busy}){
         my($errs,$msgs);
-        ($location,$errs,$msgs) = edit_location($location);
+        ($scan,$errs,$msgs) = edit_scan($scan);
         push @errors,@$errs;
         push @messages,@$msgs;
         if(scalar(@$errs)==0){
-            locations->add($location);
-            location2index($location);
+            scans->add($scan);
+            scan2index($scan);
         }
     }
     #edit - end 
-    template('locations/edit',{
-        location => $location,
+    template('scans/edit',{
+        scan => $scan,
         auth => $auth,
         errors => \@errors,
         messages => \@messages,
         mount_conf => mount_conf(),
         project => $project,
-        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
+        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 
 });
-any('/locations/view/:_id/comments',,sub{
+any('/scans/view/:_id/comments',,sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
     my @errors = ();
     my @messages = ();
-    my $location = locations->get($params->{_id});
-    $location or return not_found();
+    my $scan = scans->get($params->{_id});
+    $scan or return not_found();
 
     my $project;
-    if($location->{project_id}){
-        $project = projects->get($location->{project_id});
+    if($scan->{project_id}){
+        $project = projects->get($scan->{project_id});
     }
 
     #comment - start
     if(is_string($params->{comment})){
-        if($auth->can('locations','comment')){
-            push @{ $location->{comments} ||= [] },{
+        if($auth->can('scans','comment')){
+            push @{ $scan->{comments} ||= [] },{
                 datetime => Time::HiRes::time,
                 text => $params->{comment},
                 user_name => session('user')->{login}
             };
-            locations->add($location);
+            scans->add($scan);
         }else{
             #complain
             push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
@@ -281,41 +281,41 @@ any('/locations/view/:_id/comments',,sub{
     }
     #comment - end
 
-    template('locations/comments',{
-        location => $location,
+    template('scans/comments',{
+        scan => $scan,
         auth => $auth,
         errors => \@errors,
         mount_conf => mount_conf(),
         project => $project,
-        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
+        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     }); 
 
 });
-any('/locations/edit/:_id/status',sub{
+any('/scans/edit/:_id/status',sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
     my @errors = ();
     my @messages = ();
     my $mount_conf = mount_conf;
-    my $location = locations->get($params->{_id});
-    $location or return not_found();
+    my $scan = scans->get($params->{_id});
+    $scan or return not_found();
 
-    if(!($auth->asa('admin') || $auth->can('locations','edit'))){
+    if(!($auth->asa('admin') || $auth->can('scans','edit'))){
         return forward('/access_denied',{
             text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
         });
     }
 
     my $project;
-    if($location->{project_id}){
-        $project = projects->get($location->{project_id});
+    if($scan->{project_id}){
+        $project = projects->get($scan->{project_id});
     }
 
     #edit status - begin
-    if($params->{submit} && !$location->{busy}){
+    if($params->{submit} && !$scan->{busy}){
         my $comments = $params->{comments} // "";
-        my $status_from = $location->{status};
+        my $status_from = $scan->{status};
         my @status_to_allowed = @{ $config->{status}->{change}->{qa_control}->{$status_from}->{'values'} || [] };
         my $status_to = $params->{status_to};
         if(!is_string($status_to)){
@@ -324,9 +324,9 @@ any('/locations/edit/:_id/status',sub{
             my $index = first_index { $_ eq $status_to } @status_to_allowed;
             if($index >= 0){
                 #wijzig status
-                $location->{status} = $status_to;
+                $scan->{status} = $status_to;
                 #voeg toe aan status history    
-                push @{ $location->{status_history} ||= [] },{
+                push @{ $scan->{status_history} ||= [] },{
                     user_name => session('user')->{login},
                     status => $status_to,
                     datetime => Time::HiRes::time,
@@ -335,26 +335,26 @@ any('/locations/edit/:_id/status',sub{
                 #neem op in comments
                 my $text = "wijzing status $status_from naar $status_to";
                 $text .= ":$comments" if $comments;
-                push @{ $location->{comments} ||= [] },{
+                push @{ $scan->{comments} ||= [] },{
                     datetime => Time::HiRes::time,
                     text => $text,
                     user_name => session('user')->{login}
                 };
-                locations->add($location);
-                #locations
-                location2index($location);
+                scans->add($scan);
+                #scan
+                scan2index($scan);
                 #log
-                status2index($location);
+                status2index($scan);
 
                 if($status_to eq "reprocess_scans"){
-                    $location->{busy} = 1;
-                    $location->{busy_reason} = "move";
-                    my $owner = dbi_handle->quick_select("users",{ id => $location->{user_id} });
-                    $location->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".File::Basename::basename($location->{path});
-                    locations->add($location);
+                    $scan->{busy} = 1;
+                    $scan->{busy_reason} = "move";
+                    my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+                    $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".File::Basename::basename($scan->{path});
+                    scans->add($scan);
                 }
                 #redirect
-                return redirect("/locations/view/$location->{_id}");
+                return redirect("/scans/view/$scan->{_id}");
             }else{
                 push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
             }
@@ -362,30 +362,30 @@ any('/locations/edit/:_id/status',sub{
     }
     #edit status - einde
 
-    template('locations/status',{
-        location => $location,
+    template('scans/status',{
+        scan => $scan,
         auth => $auth,
         errors => \@errors,
         messages => \@messages,
         mount_conf => mount_conf(),
         project => $project,
-        user => dbi_handle->quick_select('users',{ id => $location->{user_id} })
+        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
 
-sub edit_location {
-    my $location = shift;
+sub edit_scan {
+    my $scan = shift;
     my $params = params;
     my @errors = ();
     my @messages = ();
     my $action = $params->{action} || "";
 
-    $location->{metadata} ||= [];
+    $scan->{metadata} ||= [];
 
     #past metadata_id aan => verwacht dat er 0 of 1 element in 'metadata' zit
     if($action eq "edit_metadata_id"){
         
-        if(is_array_ref($location->{metadata}) && scalar(@{$location->{metadata}}) > 1){
+        if(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
 
             push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
 
@@ -416,7 +416,7 @@ sub edit_location {
                     push @errors,"query $params->{metadata_id_to} leverde geen resultaten op";
                 }else{
                     my $doc = $result->content->{response}->{docs}->[0];
-                    $location->{metadata} = [{
+                    $scan->{metadata} = [{
                         fSYS => $doc->{fSYS},#000000001
                         source => $doc->{source},#rug01
                         fXML => $doc->{fXML},
@@ -437,9 +437,9 @@ sub edit_location {
             }
         }
         if(scalar(@errors)==0){
-            my $index = first_index { $_->{source}.":".$_->{fSYS} eq $params->{metadata_id} } @{$location->{metadata}};
+            my $index = first_index { $_->{source}.":".$_->{fSYS} eq $params->{metadata_id} } @{$scan->{metadata}};
             if($index >= 0){
-                splice @{$location->{metadata}},$index,1;
+                splice @{$scan->{metadata}},$index,1;
                 push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
             }
         }
@@ -447,7 +447,7 @@ sub edit_location {
     #voeg dc-elementen toe
     elsif($action eq "add_baginfo_pair"){
 
-        if(is_array_ref($location->{metadata}) && scalar(@{$location->{metadata}}) > 1){
+        if(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
 
             push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
 
@@ -463,14 +463,14 @@ sub edit_location {
             if(scalar(@errors)==0){
                 my $key = $params->{key};
                 my $value = $params->{value};
-                $location->{metadata}->[0]->{baginfo}->{$key} ||= [];
-                push @{ $location->{metadata}->[0]->{baginfo}->{$key} },$value;
+                $scan->{metadata}->[0]->{baginfo}->{$key} ||= [];
+                push @{ $scan->{metadata}->[0]->{baginfo}->{$key} },$value;
                 push @messages,"baginfo werd aangepast";
             }
 
         }
     }elsif($action eq "edit_baginfo"){
-        if(is_array_ref($location->{metadata}) && scalar(@{$location->{metadata}}) > 1){
+        if(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
 
             push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
 
@@ -481,7 +481,7 @@ sub edit_location {
             my @conf_baginfo_keys = do {
                 my $config = config;
                 my @values = ();
-                push @values,$_->{key} foreach(@{$config->{app}->{location}->{edit}->{baginfo}});
+                push @values,$_->{key} foreach(@{$config->{app}->{scan}->{edit}->{baginfo}});
                 @values;
             };
 
@@ -495,12 +495,12 @@ sub edit_location {
                 }
             }
             if(scalar(@errors)==0){
-                $location->{metadata}->[0]->{baginfo} = $baginfo;
+                $scan->{metadata}->[0]->{baginfo} = $baginfo;
                 push @messages,"baginfo werd aangepast";
             }
         }
     }
-    return $location,\@errors,\@messages;
+    return $scan,\@errors,\@messages;
 }
 
 true;

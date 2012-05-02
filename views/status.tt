@@ -26,7 +26,7 @@
         <td>
 			[% IF stats.reprocessing.${user_login} > 0 %]
 				[% q = "status:reprocess_scans AND user_login:" _ user_login %]
-                <a href="/locations?q=[% q | url %]">[% stats.reprocessing.${user_login} %]</a>
+                <a href="/scans?q=[% q | url %]">[% stats.reprocessing.${user_login} %]</a>
             [% ELSE %]
                 [% stats.reprocessing.${user_login} %]
             [% END %]

@@ -2,39 +2,39 @@
 [% USE date %]
 [% USE POSIX %]
 [% USE SizePretty %]
-[% IF location %]
-    <h1>[% location.item("_id") %]</h1>
-	[% IF location.status == "registering" %]
+[% IF scan %]
+    <h1>[% scan.item("_id") %]</h1>
+	[% IF scan.status == "registering" %]
 		<div class="error">
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
 		naar status 'registered'.
 		</div>
-	[% ELSIF location.busy && location.busy_reason == "move" %]
+	[% ELSIF scan.busy && scan.busy_reason == "move" %]
 		<div class="error">
 		opgelet: een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
 		kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
 		Commentaar kan wel nog worden toegevoegd.
 		</div>
 	[% END %]
-	<table id="table-locations" class="left">
+	<table id="table-scans" class="left">
 		<tr>
         	<td colspan="2">
-				[% IF auth.can('locations','edit') %]
-				<input type="button" value="wijzig.." onclick="window.location.href='/locations/edit/[% location.item("_id") %]'">
+				[% IF auth.can('scans','edit') %]
+				<input type="button" value="wijzig.." onclick="window.location.href='/scans/edit/[% scan.item("_id") %]'">
 				[% END %]
-				<input type="button" value="bekijk notities.." onclick="window.location.href='/locations/view/[% location.item("_id") %]/comments'">
+				<input type="button" value="bekijk notities.." onclick="window.location.href='/scans/view/[% scan.item("_id") %]/comments'">
 			</td>
 		</tr>
 		<tr>
 			<th>naam</th>
-            <td>[% location.item("name") || "-" %]</td>
+            <td>[% scan.item("name") || "-" %]</td>
         </tr>
         <tr>
             <th>status</th>
             <td>
-                [% q = "status:\"" _ location.status _ "\"" %]
-                <a href="/locations?q=[% q | uri %]">
-                [% settings.human_readable.${location.status} || location.status %]
+                [% q = "status:\"" _ scan.status _ "\"" %]
+                <a href="/scans?q=[% q | uri %]">
+                [% settings.human_readable.${scan.status} || scan.status %]
                 </a>
             </td>
         </tr>
@@ -43,7 +43,7 @@
             <td>
                 [% IF project %]
                     [% q = "project_name:\"" _ project.name _ "\"" %]
-                    <a href="/locations?q=[% q | uri %]">
+                    <a href="/scans?q=[% q | uri %]">
                     [% project.name %]
                     </a>
                 [% ELSE %]
@@ -56,7 +56,7 @@
             <td>
                 [% IF project %]
                     [% q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" %]
-                    <a href="/locations?q=[% q | uri %]">
+                    <a href="/scans?q=[% q | uri %]">
                     [% project.name_subproject %]
                     </a>
                 [% ELSE %]
@@ -68,7 +68,7 @@
             <th>gebruiker</th>
             <td>
                 [% q = "user_id:\"" _ user.id _ "\"" %]
-                <a href="/locations?q=[% q | uri %]">
+                <a href="/scans?q=[% q | uri %]">
                 [% user.login %]
                 </a>
             </td>
@@ -79,9 +79,9 @@
         <tr>
 			[% states_processed = ["registered","reprocess_metadata","reprocess_derivatives"] %]
 			[% do_open = 0 %]
-			[% IF ( auth.asa("qa_manager") || auth.asa("admin") ) && states_processed.grep(location.status).size > 0 %]
-				[% dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ location.item("_id") %]
-				[% dir_processed_samba = settings.mounts.directories.network_directories.processed.samba _ "/" _ location.item("_id") %]
+			[% IF ( auth.asa("qa_manager") || auth.asa("admin") ) && states_processed.grep(scan.status).size > 0 %]
+				[% dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ scan.item("_id") %]
+				[% dir_processed_samba = settings.mounts.directories.network_directories.processed.samba _ "/" _ scan.item("_id") %]
 				[% do_open = 1 %]
 			[% END %]
             <th>bestanden</th>
@@ -89,7 +89,7 @@
 				<table style="width:100%">
 					<tr>
                         <td colspan="3">
-                            aantal: [% location.files.size || 0 %]&nbsp;
+                            aantal: [% scan.files.size || 0 %]&nbsp;
                             [% IF do_open %]
                                 <a href="[% dir_processed_windows %]">open map</a>&nbsp;(windows)&nbsp;
                                 <a href="[% dir_processed_samba %]">open map</a>&nbsp;(samba)
@@ -101,7 +101,7 @@
 						<th>grootte</th>
 						<th>laatst gewijzigd</th>
 					</tr>
-				[% FOREACH file IN location.files %]
+				[% FOREACH file IN scan.files %]
 					<tr>
 						[% IF !file.error %]
 							<td>
@@ -130,14 +130,14 @@
 			<th>status geschiedenis</th>
             <td>
 				<table style="width:100%">
-                [% IF location.item("status_history").size > 0 %]
+                [% IF scan.item("status_history").size > 0 %]
 					<tr>
 						<th>gebruiker</th>
 						<th>status</th>
 						<th>tijd</th>
 						<th>commentaar</th>
 					</tr>
-					[% FOREACH status_entry IN location.item("status_history") %]
+					[% FOREACH status_entry IN scan.item("status_history") %]
 						<tr>
 							<td>[% status_entry.user_name %]</td>
 							<td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
@@ -151,12 +151,12 @@
 				</table>
             </td>
 		</tr>
-		[% IF location.check_log.size > 0 %]
+		[% IF scan.check_log.size > 0 %]
         <tr>
             <th>check log</th>
             <td>
-                [% IF location.item("check_log").size > 0 %]
-                <textarea readonly="readonly" rows="20" cols="100">[% location.item("check_log").join("\n") %]</textarea>
+                [% IF scan.item("check_log").size > 0 %]
+                <textarea readonly="readonly" rows="20" cols="100">[% scan.item("check_log").join("\n") %]</textarea>
                 [% ELSE %]
                 -
                 [% END %]
@@ -166,16 +166,16 @@
 		<tr>
 			<th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">
 			metadata
-			[% IF location.metadata.size > 1 %]
+			[% IF scan.metadata.size > 1 %]
 				(!!meerdere records gevonden!!)
-			[% ELSIF location.metadata.size == 1 %]
+			[% ELSIF scan.metadata.size == 1 %]
 				(ok)
 			[% ELSE %]
 				(!!geen records gevonden!!)
 			[% END %]
 			</th>
 		</tr>
-		[% FOREACH metadata IN location.metadata %]
+		[% FOREACH metadata IN scan.metadata %]
 		<tr>
             <th>identifier</th>
             <td>

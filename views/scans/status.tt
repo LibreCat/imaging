@@ -1,12 +1,12 @@
 [% PROCESS inc/errors_messages.tt %]
-[% IF location %]
-    <h1>Wijzig status [% location.item("_id") %]</h1>
-	[% IF location.status == "registering" %]
+[% IF scan %]
+    <h1>Wijzig status [% scan.item("_id") %]</h1>
+	[% IF scan.status == "registering" %]
 		<div class="error">
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
 		naar status 'registered'.
 		</div>
-	[% ELSIF location.busy && location.busy_reason == "move" %]
+	[% ELSIF scan.busy && scan.busy_reason == "move" %]
         <div class="error">
         opgelet: een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
         kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
@@ -24,21 +24,21 @@
 			}
 		</script>
 		<form method="post" onsubmit="return check_form();">
-			<table id="table-locations" class="left">
+			<table id="table-scans" class="left">
 				<tr>
 					<td colspan="2">
-						<input type="button" value="terug" onclick="window.location.href='/locations/edit/[% location.item("_id") %]'"/>
+						<input type="button" value="terug" onclick="window.location.href='/scans/edit/[% scan.item("_id") %]'"/>
 					</td>
 				</tr>
 				<tr>
 					<th>huidige status</th>
-					<td>[% settings.human_readable.${location.status} || location.status %]</td>
+					<td>[% settings.human_readable.${scan.status} || scan.status %]</td>
 				</tr>
 				<tr>
                     <th>nieuwe status</th>
                     <td>
 						<select name="status_to" id="status_to">
-						[% status_conf = settings.status.change.qa_control.item(location.status) %]
+						[% status_conf = settings.status.change.qa_control.item(scan.status) %]
 						[% FOREACH status IN status_conf.item("values") %]
 							[% message = status_conf.messages.${status} IF status_conf.messages.${status} %]
 							<option value="[% status %]" [% IF params.status_to == status %]selected="selected"[% END %] message="[% message %]">[% settings.human_readable.${status} || status %]</option>

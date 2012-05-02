@@ -70,8 +70,8 @@ sub store {
 sub projects {
     state $projects = store()->bag("projects");
 }
-sub locations {
-    state $locations = store()->bag("locations");
+sub scans {
+    state $scans = store()->bag("scans");
 }
 sub meercat {
     state $meercat = WebService::Solr->new(
@@ -79,8 +79,8 @@ sub meercat {
         {default_params => {wt => 'json'}}
     );
 }
-sub index_locations {
-    state $index_locations = Catmandu::Store::Solr->new(
+sub index_scans {
+    state $index_scans = Catmandu::Store::Solr->new(
         %{ config->{store}->{'index'}->{options} }
     )->bag();
 }
@@ -120,17 +120,17 @@ sub formatted_date {
     );
 }
 sub status2index {
-    my $location = shift;
+    my $scan = shift;
     my $doc;
     my $index_log = index_log();
     my $users_get = users_get();
-    $users_get->execute( $location->{user_id} ) or die($users_get->errstr);
+    $users_get->execute( $scan->{user_id} ) or die($users_get->errstr);
     my $user = $users_get->fetchrow_hashref();
 
-    foreach my $history(@{ $location->{status_history} || [] }){
+    foreach my $history(@{ $scan->{status_history} || [] }){
         $doc = clone($history);
         $doc->{datetime} = formatted_date($doc->{datetime});
-        $doc->{location_id} = $location->{_id};
+        $doc->{scan_id} = $scan->{_id};
         $doc->{owner} = $user->{login};
         my $blob = join('',map { $doc->{$_} } sort keys %$doc);
         $doc->{_id} = md5_hex($blob);
@@ -139,7 +139,8 @@ sub status2index {
     $doc;
 }
 sub marcxml_flatten {
-    my $ref = shift;
+    my $xml = shift;
+    my $ref = xml_simple->XMLin($xml,ForceArray => 1);
     my @text = ();
     foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
         foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
@@ -153,21 +154,21 @@ sub marcxml_flatten {
     }
     return \@text;
 }
-sub location2index {
-    my $location = shift;       
+sub scan2index {
+    my $scan = shift;       
 
-    my $doc = clone($location);
+    my $doc = clone($scan);
     my @metadata_ids = ();
-    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $location->{metadata} }); 
+    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $scan->{metadata} }); 
     
     $doc->{text} = [];
-    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$location->{metadata}});
+    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
     my @deletes = qw(metadata comments busy busy_reason);
     delete $doc->{$_} foreach(@deletes);
     $doc->{metadata_id} = \@metadata_ids;
 
-    $doc->{files} = [ map { $_->{path} } @{ $location->{files} || [] } ];
+    $doc->{files} = [ map { $_->{path} } @{ $scan->{files} || [] } ];
 
     for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
         my $item = $doc->{status_history}->[$i];
@@ -175,7 +176,7 @@ sub location2index {
     }
 
     my $project;
-    if($location->{project_id} && ($project = projects()->get($location->{project_id}))){
+    if($scan->{project_id} && ($project = projects()->get($scan->{project_id}))){
         foreach my $key(keys %$project){
             next if $key eq "list";
             my $subkey = "project_$key";
@@ -184,9 +185,9 @@ sub location2index {
         }
     }
 
-    if($location->{user_id}){
+    if($scan->{user_id}){
         my $users_get = users_get();
-        $users_get->execute( $location->{user_id} ) or die($users_get->errstr);
+        $users_get->execute( $scan->{user_id} ) or die($users_get->errstr);
         my $user = $users_get->fetchrow_hashref();
         if($user){
             $doc->{user_name} = $user->{name};
@@ -200,7 +201,7 @@ sub location2index {
         $doc->{$key} = formatted_date($doc->{$key});
     }
 
-    index_locations()->add($doc);
+    index_scans()->add($doc);
     $doc;
 }
 
@@ -329,7 +330,7 @@ sub marc_datafield_array {
 }
 
 #stap 1: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
-say "\nupdating list locations for projects:\n";
+say "\nupdating list scans for projects:\n";
 my @project_ids = ();
 projects()->each(sub{ 
     push @project_ids,$_[0]->{_id}; 
@@ -390,8 +391,8 @@ foreach my $project_id(@project_ids){
     projects()->add($project);
 };
 
-#stap 2: ken locations toe aan projects
-say "\nassigning locations to projects\n";
+#stap 2: ken scans toe aan projects
+say "\nassigning scans to projects\n";
 projects()->each(sub{
     my $project = shift;
     if(!is_array_ref($project->{list})){
@@ -400,46 +401,46 @@ projects()->each(sub{
     }
     foreach my $item(@{ $project->{list} }){
         
-        my($location_name);
+        my($scan_name);
         my @ids = ();
 
         # name: liefst het plaatsnummer, en indien niet mogelijk het rug01-nummer
         if($item->{location}){
-            $location_name = $item->{location};
+            $scan_name = $item->{location};
         }else{
-            $location_name = $item->{source}.":".$item->{fSYS};
+            $scan_name = $item->{source}.":".$item->{fSYS};
         }
 
         # id: plaatsnummer of rug01 mogelijk (verschil met name: letters verwisseld, en bijkomende nummering mogelijk bij plaatsnummers)
         if($item->{location}){
-            my $location_id = $item->{location};
-            $location_id =~ s/[\.\/]/-/go;
+            my $scan_id = $item->{location};
+            $scan_id =~ s/[\.\/]/-/go;
             if(defined($item->{number})){
-                $location_id .= "-".$item->{number};        
+                $scan_id .= "-".$item->{number};        
             }
-            push @ids,$location_id;         
+            push @ids,$scan_id;         
 
         }
         push @ids,uc($item->{source})."-".$item->{fSYS};
 
         foreach my $id(@ids){
 
-            my $location = locations()->get($id);
+            my $scan = scans()->get($id);
 
             #directory nog niet aanwezig
-            if(!$location){
-                say "\tproject ".$project->{_id}.":location $id not found";
+            if(!$scan){
+                say "\tproject ".$project->{_id}.":scan $id not found";
                 next;
             }
 
-            #location toekennen aan project
-            if(!$location->{project_id}){
-                $location->{name} = $location_name;
-                $location->{project_id} = $project->{_id};
+            #scan toekennen aan project
+            if(!$scan->{project_id}){
+                $scan->{name} = $scan_name;
+                $scan->{project_id} = $project->{_id};
             }
 
-            say "\tproject ".$project->{_id}.":location $id assigned to project";
-            locations()->add($location);
+            say "\tproject ".$project->{_id}.":scan $id assigned to project";
+            scans()->add($scan);
 
             last;
         }
@@ -448,31 +449,31 @@ projects()->each(sub{
 
 #stap 3: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
 #wijziging/update moet gebeuren door qa_manager
-say "\nretrieving metadata for good locations:\n";
+say "\nretrieving metadata for good scans:\n";
 my @ids_ok_for_metadata = ();
-locations()->each(sub{
-    my $location = shift;
-    my $status = $location->{status};
-    my $metadata = $location->{metadata};
+scans()->each(sub{
+    my $scan = shift;
+    my $status = $scan->{status};
+    my $metadata = $scan->{metadata};
     if( $status ne "incoming" && $status ne "incoming_error" && !(is_array_ref($metadata) && scalar(@$metadata) > 0 )){
-        push @ids_ok_for_metadata,$location->{_id};
+        push @ids_ok_for_metadata,$scan->{_id};
     }
 });
 foreach my $id(@ids_ok_for_metadata){
-    my $location = locations()->get($id);
-    my $query = $location->{_id};
+    my $scan = scans()->get($id);
+    my $query = $scan->{_id};
     if($query !~ /^RUG01-/o){
         $query =~ s/^RUG01-/rug01:/o;
     }else{
-        $query = "location:$query";
+        $query = "scan:$query";
     }
     my $res = meercat()->search($query,{rows=>1000});
-    $location->{metadata} = [];
+    $scan->{metadata} = [];
     if($res->content->{response}->{numFound} > 0){
 
         my $docs = $res->content->{response}->{docs};
         foreach my $doc(@$docs){
-            push @{ $location->{metadata} },{
+            push @{ $scan->{metadata} },{
                 fSYS => $doc->{fSYS},#000000001
                 source => $doc->{source},#rug01
                 fXML => $doc->{fXML},
@@ -481,53 +482,53 @@ foreach my $id(@ids_ok_for_metadata){
         }
 
     }
-    my $num = scalar(@{$location->{metadata}});
-    say "\tlocation ".$location->{_id}." has $num metadata-records";
-    locations()->add($location);
+    my $num = scalar(@{$scan->{metadata}});
+    say "\tscan ".$scan->{_id}." has $num metadata-records";
+    scans()->add($scan);
 }
 
-#stap 4: registreer locations die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest indien nog niet aanwezig)
+#stap 4: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest indien nog niet aanwezig)
 my @incoming_ok = ();
-locations()->each(sub{
-    my $location = shift;
-    push @incoming_ok,$location->{_id} if $location->{status} eq "incoming_ok";
+scans()->each(sub{
+    my $scan = shift;
+    push @incoming_ok,$scan->{_id} if $scan->{status} eq "incoming_ok";
 });
 say "\nregistering incoming_ok\n";
 foreach my $id (@incoming_ok){
-    my $location = locations()->get($id);
-    say "\tlocation $id:";
+    my $scan = scans()->get($id);
+    say "\tscan $id:";
 
     #status 'registering'
-    $location->{status} = "registering";
-    push @{ $location->{status_history} },{
+    $scan->{status} = "registering";
+    push @{ $scan->{status_history} },{
         user_name =>"-",
         status => "registering",
         datetime => Time::HiRes::time,
         comments => ""
     };
 
-    #=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /locations is terug te vinden
+    #=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /scans is terug te vinden
     #=> daarom opnemen in databank én indexeren
-    locations->add($location);
-    location2index($location);
-    index_locations->commit();
+    scans->add($scan);
+    scan2index($scan);
+    index_scans->commit();
 
-    status2index($location);
+    status2index($scan);
     index_log->commit();
 
     #pas manifest -> maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)
         
     #verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
-    unlink($location->{path}."/manifest.txt") if -f $location->{path}."/manifest.txt";
-    my $index = first_index { $_ eq $location->{path}."/manifest.txt" } map { $_->{path} } @{ $location->{files} };
-    splice(@{ $location->{files} },$index,1) if $index >= 0;
+    unlink($scan->{path}."/manifest.txt") if -f $scan->{path}."/manifest.txt";
+    my $index = first_index { $_ eq $scan->{path}."/manifest.txt" } map { $_->{path} } @{ $scan->{files} };
+    splice(@{ $scan->{files} },$index,1) if $index >= 0;
 
     say "\tcreating new manifest.txt";
 
     #maak nieuwe manifest
     local(*MANIFEST);
-    open MANIFEST,">".$location->{path}."/manifest.txt" or die($!);
-    foreach my $file(@{ $location->{files} }){
+    open MANIFEST,">".$scan->{path}."/manifest.txt" or die($!);
+    foreach my $file(@{ $scan->{files} }){
         local(*FILE);
         open FILE,$file->{path} or die($!);
         my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
@@ -537,59 +538,59 @@ foreach my $id (@incoming_ok){
     close MANIFEST;
 
     #voeg manifest toe aan de lijst
-    push @{ $location->{files} },file_info($location->{path}."/manifest.txt");
+    push @{ $scan->{files} },file_info($scan->{path}."/manifest.txt");
     
 
     #verplaats  
-    my $oldpath = $location->{path};
+    my $oldpath = $scan->{path};
     my $mount_conf = mount_conf();
     my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".basename($oldpath);
     say "\tmoving from $oldpath to $newpath";
     move($oldpath,$newpath);
-    $location->{path} = $newpath;
-    foreach my $file(@{ $location->{files} }){
+    $scan->{path} = $newpath;
+    foreach my $file(@{ $scan->{files} }){
         $file->{path} =~ s/^$oldpath/$newpath/;
     }
 
     #update file info
-    foreach my $file(@{ $location->{files} }){
+    foreach my $file(@{ $scan->{files} }){
         my $new_stats = file_info($file->{path});
         $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
     }
     
     #status 'registered'
-    $location->{status} = "registered";
-    push @{ $location->{status_history} },{
+    $scan->{status} = "registered";
+    push @{ $scan->{status_history} },{
         user_name =>"-",
         status => "registered",
         datetime => Time::HiRes::time,
         comments => ""
     };
     
-    locations->add($location);
-    location2index($location);
-    index_locations->commit();
+    scans->add($scan);
+    scan2index($scan);
+    index_scans->commit();
 
-    status2index($location);
+    status2index($scan);
     index_log->commit();
 }
 
 #stap 5: indexeer
-say "\nindexing merge locations-projects-users\n";
-locations->each(sub{
-    my $location = shift;
-    my $doc = location2index($location);
-    say "\tlocation $location->{_id} added to index";
+say "\nindexing merge scans-projects-users\n";
+scans->each(sub{
+    my $scan = shift;
+    my $doc = scan2index($scan);
+    say "\tscan $scan->{_id} added to index";
 });
-index_locations->commit();
-index_locations->store->solr->optimize();
+index_scans->commit();
+index_scans->store->solr->optimize();
 
 #stap 6: indexeer logs
 say "\nlogging:\n";
-locations()->each(sub{
-    my $location = shift;
-    my $doc = status2index($location);
-    say "\tlocation $location->{_id} added to log (_id:$doc->{_id})" if $doc;
+scans()->each(sub{
+    my $scan = shift;
+    my $doc = status2index($scan);
+    say "\tscan $scan->{_id} added to log (_id:$doc->{_id})" if $doc;
 });
 index_log->commit();
 index_log->store->solr->optimize();

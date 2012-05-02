@@ -57,7 +57,7 @@ my %opts = (
 );
 
 my $store = Catmandu::Store::DBI->new(%opts);
-my $locations = $store->bag("locations");
+my $scans = $store->bag("scans");
 my $profiles = $config->{profiles} || {};
 my $mount_conf = $config->{mounts}->{directories};
 
@@ -67,7 +67,7 @@ my $users = DBI->connect($opts{data_source}, $opts{username}, $opts{password}, {
     mysql_auto_reconnect => 1
 });
 
-#stap 1: zoek locations van scanners
+#stap 1: zoek scans van scanners
 my $sth_each = $users->prepare("select * from users where roles like '%scanner'");
 my $sth_get = $users->prepare("select * from users where id = ?");
 $sth_each->execute() or die($sth_each->errstr());
@@ -77,10 +77,10 @@ while(my $user = $sth_each->fetchrow_hashref()){
     while(my $dir = <CMD>){
         chomp($dir);    
         my $basename = basename($dir);
-        my $location = $locations->get($basename);
-        if(!$location){
+        my $scan = $scans->get($basename);
+        if(!$scan){
             say "adding new record $basename";
-            $locations->add({
+            $scans->add({
                 _id => $basename,
                 name => undef,
                 path => $dir,
@@ -101,33 +101,33 @@ while(my $user = $sth_each->fetchrow_hashref()){
             });
         }else{
             #het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
-            if("$location->{user_id}" eq "$user->{id}" && $location->{status} eq "reprocess_scans"){
+            if("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
                 say "ah you little bastard, you came back?";
                 #03_reprocessing => 01_ready, maar laat de oude map in 03_reprocessing staan (verantwoordelijkheid van de scanners)
 
                 #pas paden aan
-                my $oldpath = $location->{path};
-                foreach my $file(@{ $location->{files} }){
+                my $oldpath = $scan->{path};
+                foreach my $file(@{ $scan->{files} }){
                     $file->{path} =~ s/^$oldpath/$dir/;
                 }
-                $location->{path} = $dir;
+                $scan->{path} = $dir;
 
                 #update file info
-                foreach my $file(@{ $location->{files} }){
+                foreach my $file(@{ $scan->{files} }){
                     my $new_stats = file_info($file->{path});
                     $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
                 }
 
                 #status op 'incoming_back'
-                $location->{status} = "incoming_back";
-                push @{ $location->{status_history} },{
+                $scan->{status} = "incoming_back";
+                push @{ $scan->{status_history} },{
                     user_name => $user->{login},
                     status => "incoming_back",
                     datetime => Time::HiRes::time,
                     comments => ""
                 };
 
-                $locations->add($location);
+                $scans->add($scan);
             }
         }
     }
@@ -139,62 +139,62 @@ sub get_package {
     my($class,$args)=@_;
     state $stash->{$class} ||= load_package($class)->new(%$args);
 }
-my @location_ids = ();
+my @scan_ids = ();
 
-$locations->each(sub{ 
+$scans->each(sub{ 
 
-    my $location = shift;
+    my $scan = shift;
     #nieuwe of slechte directories moeten sowieso opnieuw gecheckt worden
     if (
-        $location->{status} && 
+        $scan->{status} && 
         (
-            $location->{status} eq "incoming" || 
-            $location->{status} eq "incoming_error" ||
-            $location->{status} eq "incoming_back"
+            $scan->{status} eq "incoming" || 
+            $scan->{status} eq "incoming_error" ||
+            $scan->{status} eq "incoming_back"
         )
 
     ){
-        push @location_ids,$location->{_id};
+        push @scan_ids,$scan->{_id};
     }
     #incoming_ok enkel indien er iets aan bestandslijst gewijzigd is
-    elsif($location->{status} eq "incoming_ok"){
+    elsif($scan->{status} eq "incoming_ok"){
         my $new = [];
         find({          
             wanted => sub{
             my $path = abs_path($File::Find::name);
-            return if $path eq abs_path($location->{path});
+            return if $path eq abs_path($scan->{path});
             push @$new,$path;
             },
             no_chdir => 1
-        },$location->{path});
+        },$scan->{path});
         my $old = do {
             my @list = map { 
                 $_->{path};
-            } @{ $location->{files} ||= [] };
+            } @{ $scan->{files} ||= [] };
             \@list;
         };
 
         my $diff = Array::Diff->diff($old,$new);
         if( $diff->count != 0 ){    
-            say STDERR "something has changed to $location->{path}, lets check what it is";
-            push @location_ids,$location->{_id};
+            say STDERR "something has changed to $scan->{path}, lets check what it is";
+            push @scan_ids,$scan->{_id};
         }
     }
 
 });
 
-foreach my $location_id(@location_ids){
-    my $location = $locations->get($location_id);
+foreach my $scan_id(@scan_ids){
+    my $scan = $scans->get($scan_id);
 
     #directory is ondertussen riebedebie
-    if(!(-d $location->{path})){
-        say "$location->{path} is gone, deleting from database";
-        $locations->delete($location->{_id});
+    if(!(-d $scan->{path})){
+        say "$scan->{path} is gone, deleting from database";
+        $scans->delete($scan->{_id});
         next;
     }
 
-    say "checking $location_id at $location->{path}";
-    $sth_get->execute( $location->{user_id} ) or die($sth_get->errstr);
+    say "checking $scan_id at $scan->{path}";
+    $sth_get->execute( $scan->{user_id} ) or die($sth_get->errstr);
     my $user = $sth_get->fetchrow_hashref();
     if(!defined($user->{profile_id})){
         say STDERR "no profile defined for $user->{login}";
@@ -206,7 +206,7 @@ foreach my $location_id(@location_ids){
         next;
     }
 
-    $location->{check_log} = [];
+    $scan->{check_log} = [];
     my @files = ();
     #acceptatie valt niet af te leiden uit het bestaan van foutboodschappen, want niet alle testen zijn 'fatal'
     my $accepted = 1;
@@ -214,10 +214,10 @@ foreach my $location_id(@location_ids){
     foreach my $test(@{ $profile->{packages} }){
 
         my $ref = get_package($test->{class},$test->{args});
-        $ref->dir($location->{path});        
+        $ref->dir($scan->{path});        
         my($success,$errors) = $ref->test();
 
-        push @{ $location->{check_log} }, @$errors if !$success;
+        push @{ $scan->{check_log} }, @$errors if !$success;
         unless(scalar(@files)){
             foreach my $stats(@{ $ref->file_info() }){
                 push @files,file_info($stats->{path});
@@ -232,9 +232,9 @@ foreach my $location_id(@location_ids){
     }
 
     if(!$accepted){
-        if($location->{status} eq "incoming_back"){
+        if($scan->{status} eq "incoming_back"){
             
-            push @{$location->{status_history}},{
+            push @{$scan->{status_history}},{
                 user_name =>"-",
                 status => "incoming_error",
                 datetime => Time::HiRes::time,
@@ -242,7 +242,7 @@ foreach my $location_id(@location_ids){
             };          
             
         }else{
-            $location->{status_history}->[1] = {
+            $scan->{status_history}->[1] = {
                 user_name =>"-",
                 status => "incoming_error",
                 datetime => Time::HiRes::time,
@@ -250,11 +250,11 @@ foreach my $location_id(@location_ids){
             };
         }
 
-        $location->{status} = "incoming_error";
+        $scan->{status} = "incoming_error";
     }else{
-        if($location->{status} eq "incoming_back"){
+        if($scan->{status} eq "incoming_back"){
 
-            push @{$location->{status_history}},{
+            push @{$scan->{status_history}},{
                 user_name =>"-",
                 status => "incoming_ok",
                 datetime => Time::HiRes::time,
@@ -262,7 +262,7 @@ foreach my $location_id(@location_ids){
             };
 
         }else{
-            $location->{status_history}->[1] = {
+            $scan->{status_history}->[1] = {
                 user_name =>"-",
                 status => "incoming_ok",
                 datetime => Time::HiRes::time,
@@ -270,8 +270,8 @@ foreach my $location_id(@location_ids){
             };
             #verplaats maar pas 's nachts!
         }
-        $location->{status} = "incoming_ok";
+        $scan->{status} = "incoming_ok";
     }
-    $location->{files} = \@files;
-    $locations->add($location);
+    $scan->{files} = \@files;
+    $scans->add($scan);
 }

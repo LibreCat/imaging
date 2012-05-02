@@ -49,8 +49,8 @@ sub store {
 sub projects {
     state $projects = store()->bag("projects");
 }
-sub locations {
-    state $locations = store()->bag("locations");
+sub scans {
+    state $scans = store()->bag("scans");
 }
 sub meercat {
     state $meercat = WebService::Solr->new(
@@ -58,8 +58,8 @@ sub meercat {
         {default_params => {wt => 'json'}}
     );
 }
-sub index_locations {
-    state $index_locations = Catmandu::Store::Solr->new(
+sub index_scans {
+    state $index_scans = Catmandu::Store::Solr->new(
         %{ config->{store}->{'index'}->{options} }
     )->bag();
 }
@@ -102,21 +102,21 @@ sub marcxml_flatten {
     }
     return \@text;
 }
-sub location2index {
-    my $location = shift;       
+sub scan2index {
+    my $scan = shift;       
 
-    my $doc = clone($location);
+    my $doc = clone($scan);
     my @metadata_ids = ();
-    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $location->{metadata} }); 
+    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $scan->{metadata} }); 
     
     $doc->{text} = [];
-    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$location->{metadata}});
+    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
     my @deletes = qw(metadata comments busy busy_reason);
     delete $doc->{$_} foreach(@deletes);
     $doc->{metadata_id} = \@metadata_ids;
 
-    $doc->{files} = [ map { $_->{path} } @{ $location->{files} || [] } ];
+    $doc->{files} = [ map { $_->{path} } @{ $scan->{files} || [] } ];
 
     for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
         my $item = $doc->{status_history}->[$i];
@@ -124,7 +124,7 @@ sub location2index {
     }
 
     my $project;
-    if($location->{project_id} && ($project = projects()->get($location->{project_id}))){
+    if($scan->{project_id} && ($project = projects()->get($scan->{project_id}))){
         foreach my $key(keys %$project){
             next if $key eq "list";
             my $subkey = "project_$key";
@@ -133,9 +133,9 @@ sub location2index {
         }
     }
 
-    if($location->{user_id}){
+    if($scan->{user_id}){
         my $users_get = users_get();
-        $users_get->execute( $location->{user_id} ) or die($users_get->errstr);
+        $users_get->execute( $scan->{user_id} ) or die($users_get->errstr);
         my $user = $users_get->fetchrow_hashref();
         if($user){
             $doc->{user_name} = $user->{name};
@@ -148,14 +148,14 @@ sub location2index {
         next if $key !~ /datetime/o;
         $doc->{$key} = formatted_date($doc->{$key});
     }
-    index_locations()->add($doc);
+    index_scans()->add($doc);
     $doc;
 }
 
-locations->each(sub{
-    my $location = shift;
-    my $doc = location2index($location);
-    say "\tlocation $location->{_id} added to index";
+scans->each(sub{
+    my $scan = shift;
+    my $doc = scan2index($scan);
+    say "\tscan $scan->{_id} added to index";
 });
-index_locations->commit();
-index_locations->store->solr->optimize();
+index_scans->commit();
+index_scans->store->solr->optimize();

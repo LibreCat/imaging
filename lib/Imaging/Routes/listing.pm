@@ -16,8 +16,8 @@ sub dbi_handle {
 sub core {
     state $core = store("core");
 }
-sub locations {
-    state $locations = core()->bag("locations");
+sub scans {
+    state $scans = core()->bag("scans");
 }
 hook before => sub {
     if(request->path =~ /^\/ready/o){
@@ -54,7 +54,7 @@ any('/ready/:user_login',sub{
             next if !-d $path;
             my $obj = {
                 name => $file,
-                record => locations()->get($file)
+                record => scans()->get($file)
             };
             push @directories,$obj;
         }
@@ -67,7 +67,7 @@ any('/ready/:user_login',sub{
         });
     }
 });
-any('/ready/:user_login/:location_id',sub{
+any('/ready/:user_login/:scan_id',sub{
     my $params = params;
     my $user = dbi_handle->quick_select('users',{ login => $params->{user_login} });
     $user or return not_found();
@@ -78,10 +78,10 @@ any('/ready/:user_login/:location_id',sub{
     }
 
 
-    my $location = locations()->get($params->{location_id});
-    $location or return not_found();
+    my $scan = scans()->get($params->{scan_id});
+    $scan or return not_found();
 
-    my $status = $location->{status};
+    my $status = $scan->{status};
     if($status eq "registering"){
         
         forward('/access_denied',{
@@ -99,16 +99,16 @@ any('/ready/:user_login/:location_id',sub{
     my $subdirectories = subdirectories();
 
     #fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
-    if($location->{user_id} != $user->{id}){
-        my $other_user = dbi_handle->quick_select('users',{ id => $location->{user_id} });
-        push @errors,"$location->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
+    if($scan->{user_id} != $user->{id}){
+        my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
+        push @errors,"$scan->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
         push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
-        push @errors,"Uw map: $mount/".$subdirectories->{ready}."/".$user->{login}."/".$location->{_id};
+        push @errors,"Uw map: $mount/".$subdirectories->{ready}."/".$user->{login}."/".$scan->{_id};
 
     }
     
     template('ready/view',{
-        location => $location,
+        scan => $scan,
         errors => \@errors,
         auth => auth()
     });

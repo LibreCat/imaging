@@ -68,8 +68,8 @@
 				[% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
 			</td>
 			<td>
-                <a href="/locations/view/[% log.location_id %]">
-                [% log.location_id %]
+                <a href="/scans/view/[% log.scan_id %]">
+                [% log.scan_id %]
                 </a>
             </td>
 			<td>[% log.user_name %]</td>

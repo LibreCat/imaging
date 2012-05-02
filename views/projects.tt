@@ -59,7 +59,7 @@
 				<a href="/project/[% project.item("_id") %]/edit">aanpassen</a>
 				<a href="/project/[% project.item("_id") %]/delete">verwijder</a>&nbsp;
 				[% END %]
-                <a href="/locations?q=project_id:[% project.item("_id") %]">lijst</a>
+                <a href="/scans?q=project_id:[% project.item("_id") %]">lijst</a>
 			</td>
 		</tr>
 	[% END %]

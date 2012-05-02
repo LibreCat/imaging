@@ -1,20 +1,20 @@
 [% PROCESS inc/reload.tt %]
 [% PROCESS inc/errors_messages.tt %]
 [% USE date %]
-[% IF location %]
-    <h1>[% location.item("_id") %]</h1>
-	<table id="table-locations" class="left">
+[% IF scan %]
+    <h1>[% scan.item("_id") %]</h1>
+	<table id="table-scan" class="left">
         <tr>
             <th>status</th>
             <td>
-                [% settings.human_readable.${location.status} || location.status %]
+                [% settings.human_readable.${scan.status} || scan.status %]
             </td>
         </tr>
         <tr>
-            <th>files ([% location.files.size || 0 %])</th>
+            <th>files ([% scan.files.size || 0 %])</th>
             <td>
 				<table style="width:100%">
-				[% FOREACH file IN location.files %]
+				[% FOREACH file IN scan.files %]
 				<tr>
 					<!--
 						/mnt/data01/01_ready/geert/BHSL-PAP-000/BHSL-PAP-000_2012_0001_MA.tif
@@ -24,7 +24,7 @@
 						/mnt/data01/01_ready/geert/BHSL-PAP-000/test/manifest.txt
 						wordt test/manifest.txt
 					-->
-					<td>[% file.path.replace(location.path _ "/","") %]</td>	
+					<td>[% file.path.replace(scan.path _ "/","") %]</td>	
 				</tr>
 				[% END %]
 				</table>
@@ -33,8 +33,8 @@
         <tr>
             <th>check log</th>
             <td>
-                [% IF location.item("check_log").size > 0 %]
-                <textarea readonly="readonly" rows="20" cols="100">[% location.item("check_log").join("\n") %]</textarea>
+                [% IF scan.item("check_log").size > 0 %]
+                <textarea readonly="readonly" rows="20" cols="100">[% scan.item("check_log").join("\n") %]</textarea>
                 [% ELSE %]
                 -
                 [% END %]

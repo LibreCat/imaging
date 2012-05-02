@@ -72,4 +72,4 @@ register sanity_check => \&sanity_check;
 register not_found => \&not_found;
 register_plugin;
 
-__PACKAGE__;
+true;

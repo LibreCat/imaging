@@ -464,7 +464,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<!--
 		BHSL-PAP-0064-BIS-1
 	-->
-	<field name="location_id" type="string" indexed="true" stored="true" />
+	<field name="scan_id" type="string" indexed="true" stored="true" />
 	<!--
 		status:
 			- 'incoming'
@@ -508,7 +508,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 
     <!--identifiers-->
     <copyField source="_id" dest="text" />
-	<copyField source="location_id" dest="text" />
+	<copyField source="scan_id" dest="text" />
 	<copyField source="status" dest="text" />
     <copyField source="datetime" dest="text" />
 	<copyField source="user_name" dest="text" />

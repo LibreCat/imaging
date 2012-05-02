@@ -17,8 +17,8 @@ sub core {
 sub indexer {
     state $index = store("index")->bag;
 }
-sub locations {
-    state $locations = core()->bag("locations");
+sub scans {
+    state $scans = core()->bag("scans");
 }
 sub dbi_handle {
     state $dbi_handle = database;

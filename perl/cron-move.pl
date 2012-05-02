@@ -55,49 +55,49 @@ sub store_opts {
 sub store {
     state $store = Catmandu::Store::DBI->new(%{ store_opts() });
 }
-sub locations {
-    state $locations = store()->bag("locations");
+sub scans {
+    state $scans = store()->bag("scans");
 }
 
-my $locations = locations();
+my $scans = scans();
 
 my @ids_to_be_moved = ();
 
-$locations->each(sub{
-    my $location = shift;
+$scans->each(sub{
+    my $scan = shift;
     if(
-        $location->{status} eq "reprocess_scans" && 
-        $location->{busy} && $location->{busy_reason} eq "move"
-        && is_string($location->{newpath})
+        $scan->{status} eq "reprocess_scans" && 
+        $scan->{busy} && $scan->{busy_reason} eq "move"
+        && is_string($scan->{newpath})
     ){
-        push @ids_to_be_moved,$location->{_id};
+        push @ids_to_be_moved,$scan->{_id};
     }
 });
 foreach my $id(@ids_to_be_moved){
     say $id;
-    my $location = $locations->get($id);
+    my $scan = $scans->get($id);
     
-    my $newpath = $location->{newpath};
-    my $oldpath = $location->{path};
+    my $newpath = $scan->{newpath};
+    my $oldpath = $scan->{path};
 
     mkpath($newpath);
     if(move($oldpath,$newpath)){
         say "\tmoved from $oldpath to $newpath";
-        $location->{path} = $newpath;
-        foreach my $file(@{ $location->{files} }){
+        $scan->{path} = $newpath;
+        foreach my $file(@{ $scan->{files} }){
             $file->{path} =~ s/^$oldpath/$newpath/;
         }
 
         #update file info
-        foreach my $file(@{ $location->{files} }){
+        foreach my $file(@{ $scan->{files} }){
             my $new_stats = file_info($file->{path});
             $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
         }
 
         my @deletes = qw(busy busy_reason newpath);
-        delete $location->{$_} foreach(@deletes);
+        delete $scan->{$_} foreach(@deletes);
 
-        $locations->add($location); 
+        $scans->add($scan); 
     }else{
         say STDERR "unable to move $oldpath to $newpath:$!";
     }

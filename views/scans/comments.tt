@@ -1,22 +1,22 @@
 [% PROCESS inc/errors_messages.tt %]
 [% USE date %]
 [% USE POSIX %]
-[% IF location %]
-    <h1>Commentaar op [% location.item("_id") %]</h1>
-	[% IF location.status == "registering" %]
+[% IF scan %]
+    <h1>Commentaar op [% scan.item("_id") %]</h1>
+	[% IF scan.status == "registering" %]
 		<div class="error">
 		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
 		naar status 'registered'.
 		</div>
-	[% ELSIF location.busy && location.busy_reason == "move" %]
+	[% ELSIF scan.busy && scan.busy_reason == "move" %]
         <div class="error">
         opgelet: een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
         kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
         Commentaar kan wel nog worden toegevoegd.
         </div>
 	[% END %]
-		<input type="button" value="terug" onclick="window.location.href='/locations/view/[% location.item("_id") %]'" />	
-		[% IF auth.can('locations','comment') %]
+		<input type="button" value="terug" onclick="window.location.href='/scans/view/[% scan.item("_id") %]'" />	
+		[% IF auth.can('scans','comment') %]
 			<h3>voeg commentaar toe</h3>
 			<p>
 				<form method="post">
@@ -25,7 +25,7 @@
 				</form>
 			</p>
 		[% END %]
-		[% FOREACH comment IN location.comments.reverse %]
+		[% FOREACH comment IN scan.comments.reverse %]
 			<div class="comment">
 				<div class="comment_text">[% comment.text | html %]</div>
 				<div class="comment_info">posted by [% comment.user_name %] at [% date.format(POSIX.floor(comment.datetime),'%d-%m-%Y %H:%M:%S') %]</div>

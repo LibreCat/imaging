@@ -59,19 +59,19 @@ plugins:
         operations: ["edit"]
        projects:
         operations: ["edit"]
-       locations:
+       scans:
         operations: ["edit","comment"]
      collectie_beheerder:
       permissions:
        projects: 
         operations: ["edit"]
-       locations:
+       scans:
         operations: ["comment"]
      scanner:
       permissions:
        directories: 
         operations: ["view"]
-       locations:
+       scans:
         operations: ["comment"]
      it manager:
       permissions:
@@ -79,11 +79,11 @@ plugins:
         operations: ["edit"]
        directories:
         operations: ["edit"]
-       locations:
+       scans:
         operations: ["comment"]
      qa_manager:
       permissions:
-       locations:
+       scans:
         operations: ["edit","comment"]
      archivaris: {}
      catalograaf: {}
@@ -107,7 +107,7 @@ index:
  meercat: &meercatindex
   url: "http://localhost:4000/solr"
 app:
- location:
+ scan:
   edit:
    baginfo:
     - key: "DC-Title"

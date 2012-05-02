@@ -18,8 +18,8 @@ sub dbi_handle {
 sub core {
     state $core = store("core");
 }
-sub locations {
-    state $locations = core()->bag("locations");
+sub scans {
+    state $scans = core()->bag("scans");
 }
 
 hook before => sub {

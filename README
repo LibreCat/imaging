@@ -61,19 +61,19 @@ configuratie Imaging:
                     processed: "02_processed"
                     reprocessing: "03_processed"
         store:
-            #core: hoofddatabank (met daarin tabellen 'locations', 'projects' en 'users')
+            #core: hoofddatabank (met daarin tabellen 'scans', 'projects' en 'users')
             core:
                 package: "Catmandu::Store::DBI"
                 options:
                     data_source: "dbi:mysql:database=imaging"
                     username: "imaging"
                     password: "imaging"
-            #index: indexeert tabel 'locations', na join met 'projects'
+            #index: indexeert tabel 'scans', na join met 'projects'
             index:
                 package: "Catmandu::Store::Solr"
                 options:
                     url: "http://localhost:8983/solr/core0"
-            #index_log: indexeert status_history van 'locations'
+            #index_log: indexeert status_history van 'scans'
             index_log:
                 package: "Catmandu::Store::Solr"
                 options:
@@ -88,7 +88,7 @@ peepshow-solr:
     acties: 
         service peepshow-solr stop
         rm -rf /var/data/peepshow-solr/core0/* /var/data/peepshow-solr/core1/*
-        cp Imaging/doc/schema-locations.xml /etc/peepshow-solr/core0/conf/schema.xml
+        cp Imaging/doc/schema-scans.xml /etc/peepshow-solr/core0/conf/schema.xml
         cp Imaging/doc/schema-log.xml /etc/peepshow-solr/core1/conf/schema.xml
         service peepshow-solr start
 
@@ -110,7 +110,7 @@ cronjobs:
 
             cron-check.pl: doet regelmatige controle op alles dat binnenkomt via 01_ready
             cron-register.pl: registreert mappen, indexeert, koppelt mappen aan projecten en logt gegevens
-            cron-move.pl: verplaats mappen indien record uit tabel 'locations' dat aangeeft
+            cron-move.pl: verplaats mappen indien record uit tabel 'scans' dat aangeeft
 
 init-scripts:
     cp init.d/imaging-redhat /etc/init.d/imaging

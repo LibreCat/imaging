@@ -55,7 +55,7 @@
 			</td>
 			<td>
 				[% q = "status:reprocess_scans AND user_login:" _ user.login %]
-				<a href="/locations?q=[% q | url %]">
+				<a href="/scans?q=[% q | url %]">
 				[% user.item("reprocessing") || "-" %]
 				</a>
 				[% IF roles.grep('scanner').size > 0 %]

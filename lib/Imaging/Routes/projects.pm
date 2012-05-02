@@ -18,8 +18,8 @@ sub core {
 sub indexer {
     state $indexer = store("index");
 }   
-sub index_locations {
-    state $index_locations = indexer->bag;
+sub index_scans {
+    state $index_scans = indexer->bag;
 }
 sub projects {
     state $projects = core()->bag("projects");

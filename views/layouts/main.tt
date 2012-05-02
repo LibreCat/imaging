@@ -16,7 +16,7 @@
                             <a href="/projects">projecten</a>
                         </li>
                         <li>
-                            <a href="/locations">zoek</a>
+                            <a href="/scans">zoek</a>
                         </li>
                         <li>
                             <a href="/logs">logs</a>
@@ -41,7 +41,7 @@
                         </li>
                         <li>
                             [% q = "status:reprocess_scans" _ " AND user_name:" _ session.user.login  %]
-                            <a href="/locations?q=[% q | url %]">reprocessing</a>
+                            <a href="/scans?q=[% q | url %]">reprocessing</a>
                         </li>
                         [% ELSIF auth.asa('qa_manager') %]
                         <li>
