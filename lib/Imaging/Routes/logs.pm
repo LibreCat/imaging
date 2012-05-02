@@ -37,8 +37,19 @@ any('/logs',sub {
         start => $offset,
         limit => $num
     );
-    if($sort && $sort =~ /^\w+\s(?:asc|desc)$/o){
-        $opts{sort} = [$sort,"scan_id desc"];
+    if(is_string($sort)){
+        $opts{sort} = [ $sort ] if $sort =~ /^\w+\s(?:asc|desc)$/o;
+    }elsif(is_array_ref($sort)){
+        my $ok = 1;
+        foreach(@$sort){
+            if($_ !~ /^\w+\s(?:asc|desc)$/o){
+                $ok = 0;
+                last;
+            }
+        }
+        if($ok){
+            $opts{sort} = $sort;
+        }
     }else{
         $opts{sort} = ["datetime desc","scan_id desc"];
     }

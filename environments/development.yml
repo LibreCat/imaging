@@ -133,6 +133,9 @@ mounts:
    processed:
     windows: "I:\\"
     samba: "smb://localhost/02_processed"
+   ready:
+    windows: "J:\\"
+    samba: "smb://localhost/01_ready"
 status:
  change:
   all:
@@ -194,31 +197,30 @@ human_readable:
 profiles:
  NARA:
   packages:
-   - args: {}
-     class: "Imaging::Test::Dir::scan"
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
      on_error: "stop"
-   - args: {}
-     class: "Imaging::Test::Dir::checkPermissions"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
      on_error: "continue"
-   - args:
-      patterns:
-       - '^\./'
-     class: "Imaging::Test::Dir::hasNoFiles"
+   - class: "Imaging::Test::Dir::checkEmpty"
+     args: {}
      on_error: "continue"
-   - args: {}
-     class: "Imaging::Test::Dir::checkEmpty"
+   - class: "Imaging::Test::Dir::checkFilePattern"
+     args:
+      pattern: "(txt|tif)$"
      on_error: "continue"
-   - args:
+   - class: "Imaging::Test::Dir::checkTIFF"
+     args:
       valid_patterns:
        - '^(?!manifest\.txt$)'
-     class: "Imaging::Test::Dir::checkTIFF"
      on_error: "continue"
-   - args:
+   - class: "Imaging::Test::Dir::NARA::checkFilename"
+     args:
       valid_patterns:
        - '^(?!manifest\.txt$)'
-     class: "Imaging::Test::Dir::NARA::checkFilename"
      on_error: "continue"
-   - args:
+   - class: "Imaging::Test::Dir::checkAleph"
+     args:
       solr_args: *meercatindex
-     class: "Imaging::Test::Dir::checkAleph"
      on_error: "continue"

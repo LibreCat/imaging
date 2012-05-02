@@ -51,8 +51,27 @@ any('/projects',sub {
     $params->{num} = $num;
     my $offset = ($page - 1)*$num;
 
-    my $projects = projects->slice($offset,$num)->to_array();
+    my $projects = projects->to_array();
+
+    if(is_string($params->{'sort'}) && $params->{'sort'} =~ /^(\w+)\s(?:asc|desc)$/o){
+        my($sort_key,$sort_dir)=($1,$2);
+        if(is_string($projects->[0]->{$sort_key})){
+            our($a,$b); 
+            $projects = [ sort {
+                if(is_number($a->{$sort_key})){
+                    return ( $a->{$sort_key} <=> $b->{$sort_key} );       
+                }else{
+                    return ( $a->{$sort_key} cmp $b->{$sort_key} );
+                }
+            } @$projects ];
+        }
+        if($sort_dir eq "desc"){
+            $projects = [reverse(@$projects)];
+        }
+    }
     
+    $projects =  [splice(@$projects,$offset,$num)];
+
     my $page_info = Data::Pageset->new({
         'total_entries'       => projects->count,
         'entries_per_page'    => $num,
@@ -74,7 +93,7 @@ any('/projects/add',sub{
 
     if($params->{submit}){
         #check empty string
-        my @keys = qw(name name_subproject description date_start query);
+        my @keys = qw(name name_subproject description datetime_start query);
         foreach my $key(@keys){
             if(!is_string($params->{$key})){
                 push @errors,"$key is niet opgegeven";
@@ -94,7 +113,7 @@ any('/projects/add',sub{
         }
         #check format
         my %check = (
-            date_start => sub{
+            datetime_start => sub{
                 my $value = shift;
                 my($success,$error)=(1,undef);
                 try{
@@ -115,11 +134,15 @@ any('/projects/add',sub{
         }
         #insert
         if(scalar(@errors)==0){
+            $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
+            say to_dumper($params);
+            say "day:$1, month:$2, year:$3";
+            my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));
             my $project = projects->add({
                 name => $params->{name},
                 name_subproject => $params->{name_subproject},
                 description => $params->{description},
-                date_start => $params->{date_start},
+                datetime_start => $datetime->epoch,
                 datetime_last_modified => Time::HiRes::time,
                 query => $params->{query},
                 locked => 0,
@@ -153,7 +176,7 @@ any('/project/:_id/edit',sub{
     if($params->{submit}){
         if(!$project->{locked}){
             #check empty string
-            my @keys = qw(name name_subproject description date_start query);
+            my @keys = qw(name name_subproject description datetime_start query);
             foreach my $key(@keys){
                 if(!is_string($params->{$key})){
                     push @errors,"$key is niet opgegeven";
@@ -173,13 +196,13 @@ any('/project/:_id/edit',sub{
             }
             #check format
             my %check = (
-                date_start => sub{
+                datetime_start => sub{
                     my $value = shift;
                     my($success,$error)=(1,undef);
                     try{
-                        DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
+                        my $datetime = DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
+                        
                     }catch{
-                        say $_;
                         $success = 0;
                         $error = "startdatum is ongeldig (dag-maand-jaar)";
                     };
@@ -194,11 +217,13 @@ any('/project/:_id/edit',sub{
             }
             #insert
             if(scalar(@errors)==0){
+                $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
+                my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));
                 my $new = {
                     name => $params->{name},
                     name_subproject => $params->{name_subproject},
                     description => $params->{description},
-                    date_start => $params->{date_start},
+                    datetime_start => $datetime->epoch,
                     datetime_last_modified => Time::HiRes::time,
                     query => $params->{query}
                 };

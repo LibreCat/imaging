@@ -28,16 +28,20 @@ sub new {
 sub size_pretty {
 	my $size = shift;
 	my @sizes = ();
-	foreach my $currency(@$currencies){
-		my $q = $size / $currency->{size};
-		my $r = $size % $currency->{size};
-		$size = $r;
-		my $q_floored = floor($q);
-		if($q_floored >= 1){
-			push @sizes,"$q_floored ".$currency->{name}
-		}		
-	}
-	return join(' ',@sizes);
+    if($size > 0){
+        foreach my $currency(@$currencies){
+            my $q = $size / $currency->{size};
+            my $r = $size % $currency->{size};
+            $size = $r;
+            my $q_floored = floor($q);
+            if($q_floored >= 1){
+                push @sizes,"$q_floored ".$currency->{name}
+            }		
+        }
+        return join(' ',@sizes);
+    }else{
+        return "0B";
+    }
 }
 
 __PACKAGE__;

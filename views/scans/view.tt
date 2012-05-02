@@ -2,7 +2,7 @@
 [% USE date %]
 [% USE POSIX %]
 [% USE SizePretty %]
-[% IF scan %]
+[% IF scan %]   
     <h1>[% scan.item("_id") %]</h1>
 	[% IF scan.status == "registering" %]
 		<div class="error">

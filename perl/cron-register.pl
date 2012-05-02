@@ -89,6 +89,11 @@ sub index_log {
         %{ config->{store}->{'index_log'}->{options} }
     )->bag();
 }
+sub index_log {
+    state $index_log = Catmandu::Store::Solr->new(
+        %{ config->{store}->{'index_log'}->{options} }
+    )->bag();
+}
 sub mount_conf {
     state $mount_conf = do {
         my $dir = dirname(__FILE__);
@@ -465,7 +470,7 @@ foreach my $id(@ids_ok_for_metadata){
     if($query !~ /^RUG01-/o){
         $query =~ s/^RUG01-/rug01:/o;
     }else{
-        $query = "scan:$query";
+        $query = "location:$query";
     }
     my $res = meercat()->search($query,{rows=>1000});
     $scan->{metadata} = [];

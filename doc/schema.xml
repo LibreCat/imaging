@@ -504,7 +504,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="project_name" type="lupetext" indexed="true" stored="true" />
 	<field name="project_name_subproject" type="lupetext" indexed="true" stored="true" />
 	<field name="project_description" type="lupetext" indexed="true" stored="true" />
-    <field name="project_date_start" type="string" indexed="true" stored="true" />
+    <field name="project_datetime_start" type="string" indexed="true" stored="true" />
     <field name="project_query" type="lupetext" indexed="true" stored="true" />
 	<field name="project_total" type="int" indexed="true" stored="true" />
 	<field name="project_done" type="int" indexed="true" stored="true" />

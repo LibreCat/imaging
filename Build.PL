@@ -30,7 +30,8 @@ my $requires = {
 	'Image::ExifTool' => 0,
 	'enum' => 0,
 	'Time::Seconds' => 0,
-	'Template::Plugin::POSIX' => 0
+	'Template::Plugin::POSIX' => 0,
+    'File::MimeInfo' => 0
 };
 my $recommends = {
 	'Starman' => 0,

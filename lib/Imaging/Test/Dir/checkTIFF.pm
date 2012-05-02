@@ -20,7 +20,7 @@ sub test {
         if($exif->{Error}){
             push @errors,$stats->{path}." is not an image";
         }elsif(!(uc($exif->{FileType}) eq "TIFF" && $exif->{MIMEType} eq "image/tiff")){
-            push @errors,$stats->{path}." is not a tiff (filetype found:".$exif->{FileType}.")";    
+            push @errors,$stats->{path}." is not a tiff (filetype found:".mimetype($stats->{path}).")";    
         }
     }
     scalar(@errors) == 0,\@errors;

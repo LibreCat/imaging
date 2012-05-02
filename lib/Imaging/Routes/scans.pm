@@ -157,7 +157,20 @@ any('/scans',sub {
         start => $offset,
         limit => $num
     );
-    $opts{sort} = $sort if $sort && $sort =~ /^\w+\s(?:asc|desc)$/o;
+    if(is_string($sort)){
+        $opts{sort} = [ $sort ] if $sort =~ /^\w+\s(?:asc|desc)$/o;
+    }elsif(is_array_ref($sort)){
+        my $ok = 1;
+        foreach(@$sort){
+            if($_ !~ /^\w+\s(?:asc|desc)$/o){
+                $ok = 0;
+                last;
+            }
+        }
+        if($ok){
+            $opts{sort} = $sort;
+        }
+    }
     my @errors = ();
     my($result);
     try {
@@ -199,6 +212,12 @@ any('/scans/view/:_id',sub {
     if($scan->{project_id}){
         $project = projects->get($scan->{project_id});
     }
+    my $files = $scan->{files} || [];
+    our($a,$b);
+    $files = [sort {
+        $a->{name} cmp $b->{name};
+    } @$files];
+    $scan->{files} = $files;
 
     template('scans/view',{
         scan => $scan,
@@ -239,6 +258,14 @@ any('/scans/edit/:_id',sub{
             scan2index($scan);
         }
     }
+
+    my $files = $scan->{files} || [];
+    our($a,$b);
+    $files = [sort {
+        $a->{name} cmp $b->{name};
+    } @$files];
+    $scan->{files} = $files;
+
     #edit - end 
     template('scans/edit',{
         scan => $scan,

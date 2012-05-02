@@ -10,6 +10,8 @@
         });
     });
 </script>
+[% USE date %]
+[% USE POSIX %]
 <h1>Edit project</h1>
 <form method="post" accept-charset="UTF-8">
 	<table id="form-project-add" class="right">
@@ -34,7 +36,7 @@
 		<tr>
             <th>start project (dag-maand-jaar):</th>
             <td>
-                <input class="date" name="date_start" id="date_start" value="[% project.item("date_start") %]" />
+                <input class="date" name="datetime_start" id="datetime_start" value="[% date.format(POSIX.floor(project.datetime_start),format => '%d-%m-%Y') %]" />
             </td>
         </tr>
 		<tr>

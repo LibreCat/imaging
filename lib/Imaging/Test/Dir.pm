@@ -7,6 +7,7 @@ use File::Find;
 use File::Spec;
 use Cwd qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath);
 use Try::Tiny;
+use File::MimeInfo;
 
 sub import {
     Catmandu::Sane->import;
@@ -15,6 +16,7 @@ sub import {
     File::Find->import;
     Cwd->import(qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath));
     Try::Tiny->import;
+    File::MimeInfo->import;
 }
 sub _load_file_info {
     my $self = shift;

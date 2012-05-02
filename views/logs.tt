@@ -1,30 +1,44 @@
-[% PROCESS inc/reload.tt %]
 <h1>Laatste activiteiten</h1>
 <div class="paging">
 [% IF logs && logs.size > 0 %]
 
+    [% IF params.item("sort").list %]
+        [% sort = params.item("sort").list %]
+    [% ELSIF params.item("sort").size > 0 %]
+        [% sort = params.item("sort") %]
+    [% ELSE %]
+        [% sort = [] %]
+    [% END %]
+
+    [% sortlist = [] %]
+    [% FOREACH s IN sort %]
+        [% SET s = s | uri %]
+        [% sortlist.push("sort=" _ s) %]
+    [% END %]
+    [% sortlist = sortlist.join('&amp;') %]
+
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/logs?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a>
+    <a href="/logs?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;[% sortlist %]">eerste</a>
     [% END %]
 
     [% IF page_info.previous_page %]
-    <a href="/logs?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >vorige</a>
+    <a href="/logs?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;[% sortlist %]" >vorige</a>
     [% END %]
 
     [% FOREACH page IN page_info.pages_in_set %]
         [% IF page == page_info.current_page %]
         <span class="current">[% page %]</span>
         [% ELSE %]
-        <a href="/logs?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">[% page %]</a>
+        <a href="/logs?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;[% sortlist %]">[% page %]</a>
         [% END %]
     [% END %]
 
     [% IF page_info.next_page %]
-    <a href="/logs?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >volgende</a>
+    <a href="/logs?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;[% sortlist %]" >volgende</a>
     [% END %]
 
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/logs?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">laatste</a>
+    <a href="/logs?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;[% sortlist %]">laatste</a>
     [% END %]
     (
     [% page = params.page || 1 %]
@@ -36,12 +50,20 @@
 <form method="GET" id="query-form">
     <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" />
     <input type="submit" value="search" />
+    <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
+        <option value="">--sorteer resultaten--</option>
+        [% FOREACH key IN ["datetime","owner","status","owner","user_name"] %]
+        <option value="[% key %] asc" [% IF sort.grep(key _ " asc").size > 0 %]selected="selected"[% END %]>[% key.replace("_"," ") %] oplopend</option>
+        <option value="[% key %] desc" [% IF sort.grep(key _ " desc").size  > 0 %]selected="selected"[% END %]>[% key.replace("_"," ") %] aflopend</option>
+        [% END %]
+    </select>
+
     [% SET numbers = [5,10,20,50,100] %]
     <select name="num" id="num" onchange="document.getElementById('query-form').submit();">
         <option value="">-- aantal per pagina --</option>
-    [% FOREACH number IN numbers %]
+        [% FOREACH number IN numbers %]
         <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
-    [% END %]
+        [% END %]
     </select>
 </form>
 [% IF logs && logs.size > 0 %]

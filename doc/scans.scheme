@@ -34,7 +34,7 @@ projects:
 	name:						papyri	
 	name_subproject:			1ste batch
 	description:				'dit is de 1ste batch van ..'
-	date_start:					11-04-2012
+	datetime_start:					11-04-2012
 	query:						BHSL.PAP
 	total:						203 (totale lijst van objecten, zoals resultatenlijst van de query aangeeft) -> gecached resultaat ('s nachts gegenereerd)
 	done:						0 (aantal objecten die in alle platformen gepubliceerd is) -> gecached resultaat ('s nachts gegeneerd)

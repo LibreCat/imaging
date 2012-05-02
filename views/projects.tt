@@ -53,7 +53,7 @@
 			<td>[% project.item("list").size || 0 %]</td>
 			<td>[% project.item("done") || 0 %]</td>
 			<td>[% date.format(POSIX.floor(project.datetime_last_modified),format => '%d-%m-%Y') %]</td>
-			<td>[% project.date_start %]</td>
+			<td>[% date.format(POSIX.floor(project.datetime_start),format => '%d-%m-%Y') %]</td>
 			<td>
 				[% IF auth.can('projects','edit') %]
 				<a href="/project/[% project.item("_id") %]/edit">aanpassen</a>

@@ -81,3 +81,10 @@ div.comment_info {
 	font-size:9pt;
 	color:#888888;
 }
+th.sortable {
+    background-image: url("/images/bg.gif");
+    background-repeat: no-repeat;
+    background-position: center right;
+    padding-right:20px;
+}
+

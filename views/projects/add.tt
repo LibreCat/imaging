@@ -34,7 +34,7 @@
 		<tr>
             <th>start project (dag-maand-jaar):</th>
             <td>
-                <input class="date" name="date_start" id="date_start" value="[% params.item("date_start") %]" />
+                <input class="date" name="datetime_start" id="datetime_start" value="[% params.item("datetime_start") %]" />
             </td>
         </tr>
 		<tr>

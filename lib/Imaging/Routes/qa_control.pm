@@ -60,7 +60,20 @@ any('/qa_control',sub {
         facet => "true",
         "facet.field" => "status"
     );
-    $opts{sort} = $sort if $sort && $sort =~ /^\w+\s(?:asc|desc)$/o;
+    if(is_string($sort)){
+        $opts{sort} = [ $sort ] if $sort =~ /^\w+\s(?:asc|desc)$/o;
+    }elsif(is_array_ref($sort)){
+        my $ok = 1;
+        foreach(@$sort){
+            if($_ !~ /^\w+\s(?:asc|desc)$/o){
+                $ok = 0;
+                last;
+            }
+        }
+        if($ok){
+            $opts{sort} = $sort;
+        }
+    }
     my @errors = ();
     my($result);
     try {
