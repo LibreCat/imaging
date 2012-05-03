@@ -35,7 +35,7 @@ clone Imaging:
     ./Build installdeps (doe GEEN 'install'!)
 
 .bashrc:
-    voeg toe aan elke .bashrc die commands uitvoert:
+    voeg toe aan elke .bashrc die commands uitvoert (te wijzigen naar effectieve locatie van Catmandu en Imaging)
 
         export PERL5LIB=$PERL5LIB:/opt/Catmandu/lib:/opt/Imaging/lib
 
@@ -47,6 +47,7 @@ mysql: (zie ook 'configuratie Imaging')
 
 configuratie Imaging:
     acties:
+        mkdir -p /mnt/data01
         vim Imaging/environments/development.yml
 
     structuur:
@@ -79,18 +80,21 @@ configuratie Imaging:
                 options:
                     url: "http://localhost:8983/solr/core1"
         index:
-            #meercat index (staat op andere machine)
+            #meercat index (staat op andere machine, maar ik leg er een ssh-tunnel naartoe)
             meercat:
                 url: "http://localhost:4000/solr"
             
 
 peepshow-solr:
-    acties: 
+    acties: (optioneel)
         service peepshow-solr stop
         rm -rf /var/data/peepshow-solr/core0/* /var/data/peepshow-solr/core1/*
         cp Imaging/doc/schema-scans.xml /etc/peepshow-solr/core0/conf/schema.xml
         cp Imaging/doc/schema-log.xml /etc/peepshow-solr/core1/conf/schema.xml
         service peepshow-solr start
+
+    => het is gewoon van belang om de allernieuwste solr te gebruiken
+    => ..twee cores te voorzien (core0 en core1)
 
 cronjobs:
     acties:

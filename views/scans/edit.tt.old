@@ -26,10 +26,6 @@
                 }
             }
         }
-        function changeStatus(scan_id,select){
-            var state = select.options[select.selectedIndex].value;
-            window.location.href="/scans/edit/"+scan_id+"/status?status_to="+state;
-        }
     </script>
 
     <h1>Wijzig [% scan.item("_id") %]</h1>
@@ -52,14 +48,9 @@
 			</td>
 			<td>
 				[% status_conf = settings.status.change.qa_control.item(scan.status) %]
-                <select onchange="changeStatus('[% scan.item("_id") %]',this)">
-                    <option value="">wijzig status ..</option>
 				[% FOREACH status IN status_conf.values %]
-					<option value="[% status %]">		
-                        [% settings.human_readable.${status} %]
-                    </option>
+						<input type="button" value="[% settings.human_readable.${status} %]" onclick="window.location.href='/scans/edit/[% scan.item("_id") %]/status?status_to=[% status %]'"/>		
 				[% END %]
-                </select>
 			</td>
 		</tr>
 		<tr>
@@ -231,7 +222,7 @@
 					<input type="text" name="metadata_id" id="metadata_id" value="[% metadata.source _ ":" _ metadata.fSYS %]" />
 					<input type="button" onclick="window.location.href='http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]'" value="bekijk record"/>
 					[% IF scan.metadata.size == 1 %]
-					<input type="submit" name="submit" value="overschrijf huidige metadata" onclick="return confirm('Hiermee worden de marc en de baginfo overschreven. Bent u zeker?');" />	
+					<input type="submit" name="submit" value="bewaar" onclick="return confirm('Hiermee worden de marc en de baginfo overschreven. Bent u zeker?');" />	
 					<input type="hidden" name="action" value="edit_metadata_id" />
 					[% END %]
 					<input type="button" onclick="window.location.href='/scans/edit/[% scan.item("_id") %]?action=delete_metadata_id&metadata_id=[% metadata.source _ ":" _ metadata.fSYS %]'" value="verwijder"/>

@@ -167,7 +167,7 @@ status:
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    qa_control_ok: 
-    values: ["registered","reprocess_scans","reprocess_metadata","reprocess_derivatives"]
+    values: ["registered","reprocess_scans","reprocess_metadata","reprocess_derivatives","archived_ok","published_ok"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    archived:
