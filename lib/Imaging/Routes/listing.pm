@@ -88,10 +88,6 @@ any('/ready/:user_login/:scan_id',sub{
             text => "Het systeem is bezig met het registreren van deze map. Hij zal binnenkort verplaatst worden naar 02_processed, en zal de status 'registered' krijgen"
         });
 
-    }elsif($status ne "incoming" && $status ne "incoming_error" && $status ne "incoming_ok"){
-
-        return not_found();
-
     }
 
     my @errors = ();
