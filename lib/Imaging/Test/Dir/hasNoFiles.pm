@@ -1,18 +1,17 @@
 package Imaging::Test::Dir::hasNoFiles;
 use Moo;
-use Data::Util qw(:check :validate);
 
 has patterns => (
     is => 'rw',
     isa => sub {
         my $array = shift;      
-        array_ref($array);
+        Data::Util::array_ref($array);
         foreach(@$array){
             if(!is_rx($_)){
                 $_ = qr/$_/;
             }
         }
-        rx($_) foreach(@$array);
+        Data::Util::rx($_) foreach(@$array);
     },
     lazy => 1,
     default => sub{
@@ -34,7 +33,7 @@ sub test {
             $found = $stats if $stats->{basename} =~ $pattern;
         }
         if($found){
-            push @errors,"forbidden file ".$found->{path}." found in $topdir";
+            push @errors,$found->{path}." bevat een patroon dat niet toegelaten is";
         }
     }
     scalar(@errors) == 0,\@errors;

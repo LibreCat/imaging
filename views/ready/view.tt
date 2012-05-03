@@ -22,6 +22,7 @@
                         <th>naam</th>
                         <th>grootte</th>
                         <th>datum laatst gewijzigd</th>
+                        <th>type</th>
                     </tr>
 					<!--
 						/mnt/data01/01_ready/geert/BHSL-PAP-000/BHSL-PAP-000_2012_0001_MA.tif
@@ -43,6 +44,7 @@
                     <td>
                         [% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]
                     </td>
+                    <td>[% file.content_type %]</td>
 				</tr>
 				[% END %]
 				</table>

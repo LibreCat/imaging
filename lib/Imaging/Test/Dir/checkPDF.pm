@@ -16,11 +16,11 @@ sub test {
         next if !$self->is_valid_basename($stats->{basename});
         try{
             my $pdf = CAM::PDF->new($stats->{path});
-            die("is not a pdf\n") if !defined($pdf);
-            die("cannot print pdf\n") if !$pdf->canPrint();
-            die("cannot copy pdf\n") if !$pdf->canCopy();
+            die("is geen pdf\n") if !defined($pdf);
+            die("pdf kan niet worden geprint\n") if !$pdf->canPrint();
+            die("pdf kan niet worden gekopiëerd\n") if !$pdf->canCopy();
         }catch {
-            push @errors,"error in pdf ".$stats->{path}.":$_";
+            push @errors,"fout in pdf ".$stats->{path}.":$_";
         };
     }
     scalar(@errors) == 0,\@errors;

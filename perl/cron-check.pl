@@ -17,6 +17,7 @@ use DateTime::Format::Strptime;
 use Time::HiRes;
 use Array::Diff;
 use File::Find;
+use File::MimeInfo;
 our($a,$b);
 
 sub formatted_date {
@@ -36,6 +37,7 @@ sub file_info {
             mtime => $mtime,
             ctime => $ctime,
             size => $size,
+            content_type => mimetype($path),
             mode => $mode
         };
     }else{
@@ -209,7 +211,7 @@ foreach my $scan_id(@scan_ids){
     $scan->{check_log} = [];
     my @files = ();
     #acceptatie valt niet af te leiden uit het bestaan van foutboodschappen, want niet alle testen zijn 'fatal'
-    my $accepted = 1;
+    my $num_fatal = 0;
 
     foreach my $test(@{ $profile->{packages} }){
 
@@ -224,14 +226,16 @@ foreach my $scan_id(@scan_ids){
             }
         }
         if(!$success){
-            if($ref->is_fatal || $test->{on_error} eq "stop"){
-                $accepted = 0;
+            if($test->{on_error} eq "stop"){
+                $num_fatal = 1;
                 last;
+            }elsif($ref->is_fatal){
+                $num_fatal++;
             }
         }
     }
 
-    if(!$accepted){
+    if($num_fatal > 0){
         if($scan->{status} eq "incoming_back"){
             
             push @{$scan->{status_history}},{

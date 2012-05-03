@@ -5,7 +5,7 @@
 [% IF scan %]
 	[% USE ToJSON %]
     <script type="text/javascript">
-        var baginfo_config = [% settings.app.scan.edit.baginfo.to_json || "{}" %];
+        var baginfo_config = [% settings.app.scans.edit.baginfo.to_json || "{}" %];
         function set_baginfo_input(select_id,value_id){
             var select = document.getElementById(select_id);
             var key = select.options[ select.selectedIndex ].value;
@@ -116,7 +116,7 @@
             <td>
 				<table style="width:100%">
 					<tr>
-                        <td colspan="3">
+                        <td colspan="4">
                             aantal: [% scan.files.size || 0 %]&nbsp;
                             [% IF do_open %]
                                 <a href="[% "file://" _ dir_processed_windows %]">open map</a>&nbsp;(windows)&nbsp;
@@ -128,6 +128,7 @@
 						<th>naam</th>
 						<th>grootte</th>
 						<th>laatst gewijzigd</th>
+                        <th>type</th>
 					</tr>
 				[% FOREACH file IN scan.files %]
 					<tr>
@@ -144,8 +145,10 @@
 							</td>
                             <td>[% file.size.size_pretty %]</td>
                             <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
+                            <td>[% file.content_type %]</td>
                         [% ELSE %]
                             <td>[% file.path %]!error!</td>
+                            <td></td>
                             <td></td>
                             <td></td>
                         [% END %]
@@ -245,7 +248,7 @@
 				<form method="post">
 					<table id="table-baginfo" style="width:100%;">
 					[% i = 0 %]
-					[% FOREACH element IN settings.app.scan.edit.baginfo %]
+					[% FOREACH element IN settings.app.scans.edit.baginfo %]
 						[% NEXT IF !( metadata.baginfo.${element.key} && metadata.baginfo.${element.key}.size > 0 ) %]
 						[% FOREACH value IN metadata.baginfo.${element.key} %]
 							<tr class="tr-baginfo" id="tr-baginfo-[% i %]">
@@ -286,15 +289,15 @@
 						<tr>
 							<th>
 								<select name="key" id="key" onchange="set_baginfo_input('key','value');">
-								[% FOREACH element IN settings.app.scan.edit.baginfo %]
+								[% FOREACH element IN settings.app.scans.edit.baginfo %]
 									<option value="[% element.key %]">[% element.key %]</option>
 								[% END %]
 								</select>
 							</th>
 							<td>	
-								[% IF settings.app.scan.edit.baginfo.0.item("values") %]
-									<select name="[% settings.app.scan.edit.baginfo.0.key %]" id="[% settings.app.scan.edit.baginfo.0.key %]">
-									[% FOREACH val IN settings.app.scan.edit.baginfo.0.item("values") %]
+								[% IF settings.app.scans.edit.baginfo.0.item("values") %]
+									<select name="[% settings.app.scans.edit.baginfo.0.key %]" id="[% settings.app.scans.edit.baginfo.0.key %]">
+									[% FOREACH val IN settings.app.scans.edit.baginfo.0.item("values") %]
 										<option value="[% val %]">[% val %]</option>
 									[% END %]
 									</select>

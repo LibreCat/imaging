@@ -6,9 +6,9 @@ rpm:
     perl-CPAN 
     imagemagick 
     kakadu_ugent
-    peepshow-solr 
     jre.noarch 
     jdk.noarch 
+    peepshow-solr 
     expat 
     expat-devel 
     libxml2-devel 
@@ -116,3 +116,7 @@ init-scripts:
     cp init.d/imaging-redhat /etc/init.d/imaging
     chmod +x /etc/init.d/imaging
     service imaging start
+
+clear databank en index:
+    Imaging/test/clear.pl
+    verplaats daarna alle mappen in 02_processed en 03_reprocessing terug naar 01_ready

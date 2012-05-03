@@ -12,6 +12,7 @@ use File::Spec;
 use YAML;
 use Try::Tiny;
 use DBI;
+use File::MimeInfo;
 
 #variabelen
 sub file_info {
@@ -25,6 +26,7 @@ sub file_info {
             mtime => $mtime,
             ctime => $ctime,
             size => $size,
+            content_type => mimetype($path),
             mode => $mode
         };
     }else{

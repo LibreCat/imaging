@@ -1,5 +1,6 @@
 package Imaging::Test::Dir::NARA::checkFilename;
 use Moo;
+use Data::Util qw(:check);
 
 has _re_filename => (
     is => 'ro',
@@ -21,7 +22,7 @@ sub test {
     #zit er wel iets in?
     if(scalar(@$file_info)<=0){
 
-        push @errors,"$topdir is empty";
+        push @errors,"$topdir is een lege map";
 
     }
 
@@ -31,12 +32,46 @@ sub test {
         next if !$self->is_valid_basename($stats->{basename});
 
         if($stats->{basename} !~ $self->_re_filename()){
+    
 
-            push @errors,$stats->{path}." does not confirm to required format <directory>_<year>_<sequence>_<type>.<extension>";
+            push @errors,"Ongeldige bestandsnaam aangetroffen";
+            my $index = rindex($stats->{basename},".");
+            my $base = substr($stats->{basename},$index + 1);           
+            
+            #type (MA|ST)
+            my $type = substr($base,-2);
+            if(!( is_string($type) && (
+                $type eq "MA" || $type eq "ST"
+            ))){
+                $type = defined($type) ? $type:"";
+                push @errors,$stats->{path}." moet MA of ST zijn (gevonden:'$type')";
+            }
+
+            #sequentienummer (0001)
+            my $number = substr($base,-7,4);
+            if(!( 
+                is_string($number) &&
+                $number !~ /^\d{4}$/o
+            )){
+                $number = defined($number) ? $number:"";
+                push @errors,$stats->{path}." bevat geen sequentienummer met vier karakters (gevonden:'$number')";
+            }
+
+            #jaartal
+            my $year = substr($base,-12,4);
+            if(!(
+                is_string($year) && $year =~ /^\d{4}$/o
+            )){
+                $year = defined($year)? $year:"";
+                push @errors,$stats->{path}." bevat geen jaartal met vier karakters (gevonden:'$year')";
+            }
+  
+
+            push @errors,"Voorbeeld goede bestandsnaam: ".basename($topdir)."_2012_0001_MA.tif";
 
         }elsif($1 ne basename($stats->{dirname})){
 
-            push @errors,$stats->{path}." does not include the directory in its path";
+            push @errors,$stats->{path}." mist naam van de hoofdmap als eerste deel van de bestandsnaam (hoofdmap: ".basename($topdir).")";
 
         }else{
 
@@ -50,7 +85,7 @@ sub test {
     my $num_st = scalar(@{ $type_numbers->{ST} || [] });
     #indien een ST, dan minstens twee
     if($num_st  > 0 && $num_st < 2){
-        push @errors,"when stitch files are present, the minimum number should be 2, not $num_st";
+        push @errors,"wanneer er stitch files zijn, dan moeten er minimum 2 zijn. Opgegeven: $num_st";
     }
 
     #check volgorde binnen MA, ST
@@ -73,15 +108,15 @@ sub test {
     #check minstens 1 master (en die moet 0001 zijn) -> want vorige kan dat niet controleren!
     my $num_ma = scalar(@{ $type_numbers->{MA} || [] });
     if($num_ma == 0){
-        push @errors,"at least one master has to be present, none given";
+        push @errors,"Er moet tenminste 1 master tif aanwezig zijn. Geen aanwezig.";
     }elsif($num_ma == 1 && $type_numbers->{MA}->[0] != 1){
-        push @errors,"one master present that does not start from 0001";
+        push @errors,"Een master tif aangetroffen waarvan het sequentienummer niet begint vanaf 0001";
     }
 
     foreach my $type(keys %$missing_type_numbers){
         my $missing = $missing_type_numbers->{$type};
         if(scalar(@$missing)>0){
-            push @errors,"directory $topdir is missing $type-files with these sequence numbers:".join(',',@$missing);
+            push @errors,"de hoofdmap $topdir mist $type-files met deze sequentienummers:".join(',',@$missing);
         }
 
     }

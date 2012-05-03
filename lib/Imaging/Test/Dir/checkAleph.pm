@@ -35,10 +35,9 @@ sub test {
     }
 
     try{
-        print "searching for $query\n";
         my $res = $self->_solr->search($query,{ rows => 0, wt => "json" });
         if($res->content->{response}->{numFound} <= 0){
-            push @errors,"$query not found in Aleph";
+            push @errors,"$query niet gevonden in Aleph";
         }
     }catch{
         push @errors,$_;

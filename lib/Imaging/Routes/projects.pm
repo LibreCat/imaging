@@ -53,7 +53,7 @@ any('/projects',sub {
 
     my $projects = projects->to_array();
 
-    if(is_string($params->{'sort'}) && $params->{'sort'} =~ /^(\w+)\s(?:asc|desc)$/o){
+    if(is_string($params->{'sort'}) && $params->{'sort'} =~ /^(\w+)\s(asc|desc)$/o){
         my($sort_key,$sort_dir)=($1,$2);
         if(is_string($projects->[0]->{$sort_key})){
             our($a,$b); 

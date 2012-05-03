@@ -12,11 +12,11 @@ use File::MimeInfo;
 sub import {
     Catmandu::Sane->import;
     Data::Util->import(qw(:check :validate));
-    File::Basename->import; 
-    File::Find->import;
+    File::Basename->import(qw(basename dirname)); 
+    File::Find->import(qw(find finddepth));
     Cwd->import(qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath));
     Try::Tiny->import;
-    File::MimeInfo->import;
+    File::MimeInfo->import(qw(mimetype));
 }
 sub _load_file_info {
     my $self = shift;

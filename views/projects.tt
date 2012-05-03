@@ -35,6 +35,24 @@
 	<a href="/projects/add">nieuw project</a>
 </p>
 [% END %]
+<form method="GET" id="query-form">
+    [% IF projects.size > 0 %]
+        <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
+            <option value="">--sorteer resultaten--</option>
+            [% FOREACH key IN ["datetime_start","datetime_last_modified"] %]
+            <option value="[% key %] asc" [% IF params.item("sort") == ( key _ " asc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] oplopend</option>
+            <option value="[% key %] desc" [% IF params.item("sort") == ( key _ " desc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] aflopend</option>
+            [% END %]
+        </select>
+        [% SET numbers = [5,10,20,50,100] %]
+        <select name="num" id="num" onchange="document.getElementById('query-form').submit();">
+            <option value="">-- aantal per pagina --</option>
+        [% FOREACH number IN numbers %]
+            <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
+        [% END %]
+        </select>
+    [% END %]
+</form>
 [% IF projects && projects.size > 0 %]
 	<table id="table-projects" class="left">
 		<tr>

@@ -21,6 +21,7 @@ use Catmandu::Importer::MARC;
 use Catmandu::Fix;
 use Time::HiRes;
 use XML::Simple;
+use File::MimeInfo;
 
 #variabelen
 sub xml_simple {
@@ -37,6 +38,7 @@ sub file_info {
             mtime => $mtime,
             ctime => $ctime,
             size => $size,
+            content_type => mimetype($path),
             mode => $mode
         };
     }else{

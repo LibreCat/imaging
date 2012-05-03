@@ -88,7 +88,7 @@
             <td>
 				<table style="width:100%">
 					<tr>
-                        <td colspan="3">
+                        <td colspan="4">
                             aantal: [% scan.files.size || 0 %]&nbsp;
                             [% IF do_open %]
                                 <a href="[% dir_processed_windows %]">open map</a>&nbsp;(windows)&nbsp;
@@ -100,6 +100,7 @@
 						<th>naam</th>
 						<th>grootte</th>
 						<th>laatst gewijzigd</th>
+                        <th>type</th>
 					</tr>
 				[% FOREACH file IN scan.files %]
 					<tr>
@@ -116,6 +117,7 @@
 							</td>
                             <td>[% file.size.size_pretty %]</td>
                             <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
+                            <td>[% file.content_type %]</td>
 						[% ELSE %]
 							<td>[% file.path %]!error!</td>
                             <td></td>

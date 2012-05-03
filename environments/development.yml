@@ -107,7 +107,8 @@ index:
  meercat: &meercatindex
   url: "http://localhost:4000/solr"
 app:
- scan:
+ scans:
+  facet_fields: ["project_name","status"]
   edit:
    baginfo:
     - key: "DC-Title"
@@ -206,9 +207,9 @@ profiles:
    - class: "Imaging::Test::Dir::checkEmpty"
      args: {}
      on_error: "continue"
-   - class: "Imaging::Test::Dir::checkFilePattern"
+   - class: "Imaging::Test::Dir::checkFileExtension"
      args:
-      pattern: "(txt|tif)$"
+      extensions: ["txt","tif"]
      on_error: "continue"
    - class: "Imaging::Test::Dir::checkTIFF"
      args:

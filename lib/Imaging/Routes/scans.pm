@@ -173,8 +173,15 @@ any('/scans',sub {
     }
     my @errors = ();
     my($result);
+    my $facets = [];
     try {
+        my $facet_fields = config->{app}->{scans}->{facet_fields};
+        if(is_array_ref($facet_fields) && scalar(@$facet_fields) > 0){
+            $opts{facet} = "true";
+            $opts{"facet.field"} = $facet_fields;
+        }
         $result= indexer->search(%opts);
+        $facets = $result->{facets};
     }catch{
         push @errors,"ongeldige zoekvraag";
     };
@@ -188,6 +195,7 @@ any('/scans',sub {
         });
         template('scans',{
             scans => $result->hits,
+            facets => $facets,
             page_info => $page_info,
             auth => auth(),
             mount_conf => mount_conf()
@@ -508,7 +516,7 @@ sub edit_scan {
             my @conf_baginfo_keys = do {
                 my $config = config;
                 my @values = ();
-                push @values,$_->{key} foreach(@{$config->{app}->{scan}->{edit}->{baginfo}});
+                push @values,$_->{key} foreach(@{$config->{app}->{scans}->{edit}->{baginfo}});
                 @values;
             };
 

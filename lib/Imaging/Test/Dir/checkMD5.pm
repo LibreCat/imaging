@@ -29,7 +29,7 @@ sub test {
     }
     if(!defined($path_manifest)){
 
-        push @errors,$self->name_manifest()." could not be found in $topdir" if !$self->is_optional();
+        push @errors,$self->name_manifest()." kon niet gevonden worden in $topdir" if !$self->is_optional();
 
     }else{
         
@@ -46,7 +46,7 @@ sub test {
             chomp($line);
             my($md5sum_original,$filename) = split(/\s+/o,$line);
             if(!defined($filename)){
-                push @errors,"$path_manifest format incorrect (<md5sum> <path>)";
+                push @errors,"$path_manifest: formaat incorrect (<md5sum> <path> op elke lijn)";
                 last;
             } 
             $filename = "$dirname_manifest/$filename";
@@ -59,7 +59,7 @@ sub test {
             my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
             close FILE;
             if($md5sum_file ne $md5sum_original){
-                push @errors,"checksum for $filename failed";
+                push @errors,"checksum voor $filename faalde";
                 next;
             }
         }
