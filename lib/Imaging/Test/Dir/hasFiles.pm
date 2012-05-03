@@ -32,7 +32,7 @@ sub test {
             $found = $stats if $stats->{basename} =~ $pattern;
         }
         if(!$found){
-            push @errors,"bestandspatroon $pattern niet gevonden in $topdir";
+            push @errors,"bestandspatroon $pattern niet gevonden in deze map";
         }
     }
     

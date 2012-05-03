@@ -22,7 +22,7 @@ sub test {
 
     foreach my $stats(@$file_info){
         if($stats->{basename} !~ $pattern){
-            push @errors,"$stats->{basename} voldoet niet aan het vereiste bestandspatroon";
+            push @errors,"$stats->{basename} voldoet niet aan het vereiste bestandspatroon ($pattern)";
         }
     }
     

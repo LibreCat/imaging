@@ -13,31 +13,32 @@
         <tr>
             <th>files ([% scan.files.size || 0 %])</th>
             <td>
-				<table style="width:100%">
+                <table style="width:100%">
                 [% dir_processed_windows = settings.mounts.directories.network_directories.ready.windows _ scan.item("_id") %]
                 [% dir_processed_samba = settings.mounts.directories.network_directories.ready.samba _ user.login _ "/" _ scan.item("_id") %]
-				[% FOREACH file IN scan.files %]
-				<tr>
-                    <tr>
-                        <th>naam</th>
-                        <th>grootte</th>
-                        <th>datum laatst gewijzigd</th>
-                        <th>type</th>
-                    </tr>
-					<!--
-						/mnt/data01/01_ready/geert/BHSL-PAP-000/BHSL-PAP-000_2012_0001_MA.tif
-						wordt BHSL-PAP-000_2012_0001_MA.tif,						
-						..
-						maar..
-						/mnt/data01/01_ready/geert/BHSL-PAP-000/test/manifest.txt
-						wordt test/manifest.txt
-					-->
-					<td>
+                <tr>
+                    <th>naam</th>
+                    <th>grootte</th>
+                    <th>datum laatst gewijzigd</th>
+                    <th>type</th>
+                </tr>
+                [% FOREACH file IN scan.files %]
+                <tr>
+                    
+                    <!--
+                        /mnt/data01/01_ready/geert/BHSL-PAP-000/BHSL-PAP-000_2012_0001_MA.tif
+                        wordt BHSL-PAP-000_2012_0001_MA.tif,
+                        ..
+                        maar..
+                        /mnt/data01/01_ready/geert/BHSL-PAP-000/test/manifest.txt
+                        wordt test/manifest.txt
+                    -->
+                    <td>
                         [% link = "file://" _ dir_processed_windows _ "/" _ file.name %]
                         <a href="[% link %]">[% file.path.replace(scan.path _ "/","") %]</a>&nbsp;
                         [% link = dir_processed_samba _ "/" _ file.name %]
                         (<a href="[% link %]">via samba</a>)
-                    </td>	    
+                    </td>
                     <td>
                         [% file.size.size_pretty %]
                     </td>
@@ -45,9 +46,9 @@
                         [% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]
                     </td>
                     <td>[% file.content_type %]</td>
-				</tr>
-				[% END %]
-				</table>
+                </tr>
+                [% END %]
+                </table>
 			</td>
         </tr>
         <tr>
