@@ -133,10 +133,8 @@ mounts:
   network_directories:
    processed:
     windows: "I:\\"
-    samba: "smb://localhost/02_processed"
    ready:
     windows: "J:\\"
-    samba: "smb://localhost/01_ready"
 status:
  change:
   all:

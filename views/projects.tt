@@ -5,27 +5,27 @@
 [% IF projects && projects.size > 0 && page_info.pages_in_set.size > 1 %]
 
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/projects?page=[% page_info.first_page %]&amp;num=[% params.num %]">eerste</a>
+    <a href="/projects?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">eerste</a>
     [% END %]
 
     [% IF page_info.previous_page %]
-    <a href="/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >vorige</a>
+    <a href="/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]" >vorige</a>
     [% END %]
 
     [% FOREACH page IN page_info.pages_in_set %]
         [% IF page == page_info.current_page %]
         <span class="current">[% page %]</span>
         [% ELSE %]
-        <a href="/projects?page=[% page %]&amp;num=[% params.num %]">[% page %]</a>
+        <a href="/projects?page=[% page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">[% page %]</a>
         [% END %]
     [% END %]
 
     [% IF page_info.next_page %]
-    <a href="/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]" >volgende</a>
+    <a href="/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]" >volgende</a>
     [% END %]
 
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/projects?page=[% page_info.last_page %]&amp;num=[% params.num %]">laatste</a>
+    <a href="/projects?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">laatste</a>
     [% END %]
 
 [% END %]

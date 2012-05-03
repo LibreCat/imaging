@@ -15,7 +15,6 @@
             <td>
                 <table style="width:100%">
                 [% dir_processed_windows = settings.mounts.directories.network_directories.ready.windows _ scan.item("_id") %]
-                [% dir_processed_samba = settings.mounts.directories.network_directories.ready.samba _ user.login _ "/" _ scan.item("_id") %]
                 <tr>
                     <th>naam</th>
                     <th>grootte</th>
@@ -34,10 +33,8 @@
                         wordt test/manifest.txt
                     -->
                     <td>
-                        [% link = "file://" _ dir_processed_windows _ "/" _ file.name %]
+                        [% link = "file://" _ dir_processed_windows _ '/' _ file.name %]
                         <a href="[% link %]">[% file.path.replace(scan.path _ "/","") %]</a>&nbsp;
-                        [% link = dir_processed_samba _ "/" _ file.name %]
-                        (<a href="[% link %]">via samba</a>)
                     </td>
                     <td>
                         [% file.size.size_pretty %]

@@ -109,7 +109,6 @@
             [% do_open = 0 %]
             [% IF ( auth.asa("qa_manager") || auth.asa("admin") ) && states_processed.grep(scan.status).size > 0 %]
                 [% dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ scan.item("_id") %]
-                [% dir_processed_samba = settings.mounts.directories.network_directories.processed.samba _ "/" _ scan.item("_id") %]
                 [% do_open = 1 %]
             [% END %]
             <th>bestanden</th>
@@ -120,7 +119,6 @@
                             aantal: [% scan.files.size || 0 %]&nbsp;
                             [% IF do_open %]
                                 <a href="[% "file://" _ dir_processed_windows %]">open map</a>&nbsp;(windows)&nbsp;
-                                <a href="[% dir_processed_samba %]">open map</a>&nbsp;(samba)
                             [% END %]
                         </td>
                     </tr>
@@ -137,8 +135,6 @@
 							[% IF do_open %]
                                 [% link = "file://" _ dir_processed_windows _ "/" _ file.name %]
                                 <a href="[% link %]">[% file.name %]</a>&nbsp;
-                                [% link = dir_processed_samba _ "/" _ file.name %]
-                                (<a href="[% link %]">via samba</a>)
                             [% ELSE %]
                                 [% file.name %]
                             [% END %]

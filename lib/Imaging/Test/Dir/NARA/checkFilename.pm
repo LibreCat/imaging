@@ -51,7 +51,7 @@ sub test {
                     my $number = substr($base,-7,4);
                     if(!(
                         is_string($number) &&
-                        $number !~ /^\d{4}$/o
+                        $number =~ /^\d{4}$/o
                     )){
                         $number = defined($number) ? $number:"";
                         push @errors,$stats->{basename}." moet een sequentienummer met vier karakters bevatten (gevonden:'$number')";
