@@ -110,6 +110,35 @@
                 </a>
             </td>
         </tr>
+        <tr>
+            <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">archivering en publicatie</th>
+        </tr>
+        <tr>
+            <th>archivering</th>
+            <td>
+                [% IF scan.links && scan.links.size > 0 %]
+                    [% FOREACH link IN scan.links %]
+                        [% NEXT IF link.type != "archive" %]
+                        <a href="[% link.url %]">[% link.name || link.url %]</a>
+                    [% END %]
+                [% ELSE %]
+                    -
+                [% END %]
+            </td>
+        </tr>
+        <tr>
+            <th>publicatie</th>
+            <td>
+                [% IF scan.links && scan.links.size > 0 %]
+                    [% FOREACH link IN scan.links %]
+                        [% NEXT IF link.type != "public" %]
+                        <a href="[% link.url %]">[% link.name || link.url %]</a>
+                    [% END %]
+                [% ELSE %]
+                    -
+                [% END %]
+            </td>
+        </tr>
 		<tr>
             <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">technisch</th>
         </tr>
