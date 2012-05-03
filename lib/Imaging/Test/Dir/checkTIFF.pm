@@ -18,9 +18,9 @@ sub test {
         next if !$self->is_valid_basename($stats->{basename});
         my $exif = $self->_exif->ImageInfo($stats->{path});
         if($exif->{Error}){
-            push @errors,$stats->{path}." is geen foto";
+            push @errors,$stats->{basename}." is geen foto";
         }elsif(!(uc($exif->{FileType}) eq "TIFF" && $exif->{MIMEType} eq "image/tiff")){
-            push @errors,$stats->{path}." is geen tif (bestandstype gevonden:".mimetype($stats->{path}).")";    
+            push @errors,$stats->{basename}." is geen tif (bestandstype gevonden:".mimetype($stats->{path}).")";    
         }
     }
     scalar(@errors) == 0,\@errors;

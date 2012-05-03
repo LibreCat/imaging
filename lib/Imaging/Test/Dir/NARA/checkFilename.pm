@@ -22,7 +22,7 @@ sub test {
     #zit er wel iets in?
     if(scalar(@$file_info)<=0){
 
-        push @errors,"$topdir is een lege map";
+        push @errors,"Deze map is leeg";
 
     }
 
@@ -43,7 +43,7 @@ sub test {
                     $type eq "MA" || $type eq "ST"
                 ))){
                     $type = defined($type) ? $type:"";
-                    push @errors,$stats->{path}." moet MA of ST zijn (gevonden:'$type')";
+                    push @errors,$stats->{basename}." moet MA of ST zijn (gevonden:'$type')";
                 }
 
                 #sequentienummer (0001)
@@ -54,10 +54,10 @@ sub test {
                         $number !~ /^\d{4}$/o
                     )){
                         $number = defined($number) ? $number:"";
-                        push @errors,$stats->{path}." moet een sequentienummer met vier karakters bevatten (gevonden:'$number')";
+                        push @errors,$stats->{basename}." moet een sequentienummer met vier karakters bevatten (gevonden:'$number')";
                     }
                 }else{
-                    push @errors,$stats->{path}." moet een sequentienummer met vier karakters bevatten (gevonden:'')";
+                    push @errors,$stats->{basename}." moet een sequentienummer met vier karakters bevatten (gevonden:'')";
                 }
 
                 #jaartal
@@ -67,10 +67,10 @@ sub test {
                         is_string($year) && $year =~ /^\d{4}$/o
                     )){
                         $year = defined($year)? $year:"";
-                        push @errors,$stats->{path}." moet een jaartal met vier karakters bevatten (gevonden:'$year')";
+                        push @errors,$stats->{basename}." moet een jaartal met vier karakters bevatten (gevonden:'$year')";
                     }
                 }else{
-                    push @errors,$stats->{path}." moet een jaartal met vier karakters bevatten (gevonden:'')";
+                    push @errors,$stats->{basename}." moet een jaartal met vier karakters bevatten (gevonden:'')";
                 }
 
             }
@@ -79,7 +79,7 @@ sub test {
 
         }elsif($1 ne basename($stats->{dirname})){
 
-            push @errors,$stats->{path}." mist naam van de hoofdmap als eerste deel van de bestandsnaam (hoofdmap: ".basename($topdir).")";
+            push @errors,$stats->{basename}." mist naam van de hoofdmap als eerste deel van de bestandsnaam (hoofdmap: ".basename($topdir).")";
 
         }else{
 

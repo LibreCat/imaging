@@ -21,7 +21,7 @@ sub test {
             die("volgens de pdf permissies kan dit niet worden gekopiëerd\n") if !$pdf->canCopy();
         }catch {
             chomp($_);
-            push @errors,"fout in pdf ".$stats->{path}.":$_";
+            push @errors,"fout in pdf ".$stats->{basename}.":$_";
         };
     }
     scalar(@errors) == 0,\@errors;

@@ -12,7 +12,7 @@ sub test {
     my(@errors) = ();
     foreach my $stats(@$file_info){
         if(!-r $stats->{path}){
-            push @errors,$stats->{path}." is niet leesbaar of bestaat niet";
+            push @errors,$stats->{basename}." is niet leesbaar of bestaat niet";
         }
     }
     scalar(@errors) == 0,\@errors;

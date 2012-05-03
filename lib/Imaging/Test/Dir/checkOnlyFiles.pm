@@ -13,9 +13,9 @@ sub test {
     foreach my $stats(@$file_info){
         next if !$self->is_valid_basename($stats->{basename});
         if(!-f $stats->{path}){
-            push @errors,$stats->{path}." is geen normaal bestand (waarschijnlijk een map)";
+            push @errors,$stats->{basename}." is geen normaal bestand (waarschijnlijk een map)";
         }elsif(-l $stats->{path}){
-            push @errors,$stats->{path}." is een symbolic link";
+            push @errors,$stats->{basename}." is een symbolic link";
         }
     }
     scalar(@errors) == 0,\@errors;

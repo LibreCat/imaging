@@ -13,7 +13,7 @@ sub test {
     foreach my $stats(@$file_info){
         next if !$self->is_valid_basename($stats->{basename});
         if((-s $stats->{path}) == 0){
-            push @errors,$stats->{path}." is een leeg bestand";
+            push @errors,$stats->{basename}." is een leeg bestand";
         }
     }
     scalar(@errors) == 0,\@errors;
