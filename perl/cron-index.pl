@@ -21,10 +21,33 @@ use Catmandu::Importer::MARC;
 use Catmandu::Fix;
 use Time::HiRes;
 use XML::Simple;
+use File::MimeInfo;
 
 #variabelen
 sub xml_simple {
     state $xml_simple = XML::Simple->new();
+}
+sub file_info {
+    my $path = shift;
+    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
+    if($dev){
+        return {
+            name => basename($path),
+            path => $path,
+            atime => $atime,
+            mtime => $mtime,
+            ctime => $ctime,
+            size => $size,
+            content_type => mimetype($path),
+            mode => $mode
+        };
+    }else{
+        return {
+            name => basename($path),
+            path => $path,
+            error => $!
+        }
+    }
 }
 sub config {
     state $config = do {
@@ -63,6 +86,18 @@ sub index_scans {
         %{ config->{store}->{'index'}->{options} }
     )->bag();
 }
+sub index_log {
+    state $index_log = Catmandu::Store::Solr->new(
+        %{ config->{store}->{'index_log'}->{options} }
+    )->bag();
+}
+sub mount_conf {
+    state $mount_conf = do {
+        my $dir = dirname(__FILE__);
+        my $conf = YAML::LoadFile("$dir/../environments/development.yml");
+        my $mount_conf = $conf->{mounts}->{directories};
+    };
+}
 sub users {
     state $users = do {
         my $opts = store_opts();
@@ -86,9 +121,28 @@ sub formatted_date {
         '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
     );
 }
+sub status2index {
+    my $scan = shift;
+    my $doc;
+    my $index_log = index_log();
+    my $users_get = users_get();
+    $users_get->execute( $scan->{user_id} ) or die($users_get->errstr);
+    my $user = $users_get->fetchrow_hashref();
+
+    foreach my $history(@{ $scan->{status_history} || [] }){
+        $doc = clone($history);
+        $doc->{datetime} = formatted_date($doc->{datetime});
+        $doc->{scan_id} = $scan->{_id};
+        $doc->{owner} = $user->{login};
+        my $blob = join('',map { $doc->{$_} } sort keys %$doc);
+        $doc->{_id} = md5_hex($blob);
+        $index_log->add($doc);
+    }
+    $doc;
+}
 sub marcxml_flatten {
     my $xml = shift;
-    my $ref = xml_simple->XMLin($xml,,ForceArray => 1);
+    my $ref = xml_simple->XMLin($xml,ForceArray => 1);
     my @text = ();
     foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
         foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
@@ -148,10 +202,321 @@ sub scan2index {
         next if $key !~ /datetime/o;
         $doc->{$key} = formatted_date($doc->{$key});
     }
+
     index_scans()->add($doc);
     $doc;
 }
 
+our $marc_type_map = { 
+    'article'        => 'Text' ,
+    'audio'          => 'Sound' ,
+    'book'           => 'Text' ,
+    'coin'           => 'Image' ,
+    'cursus'         => 'Text' ,
+    'database'       => 'Dataset' ,
+    'digital'        => 'Dataset' ,
+    'dissertation'   => 'Text' ,
+    'ebook'          => 'Text' ,
+    'ephemera'       => 'Text' ,
+    'film'           => 'MovingImage' ,
+    'image'          => 'Image' ,
+    'manuscript'     => 'Text' ,
+    'map'            => 'Image' ,
+    'medal'          => 'Image' ,
+    'microform'      => 'Text' ,
+    'mixed'          => 'Dataset' ,
+    'music'          => 'Sound' ,
+    'newspaper'      => 'Text' ,
+    'periodical'     => 'Text' ,
+    'plan'           => 'Image' ,
+    'poster'         => 'Image' ,
+    'score'          => 'Text' ,
+    'videorecording' => 'MovingImage' ,
+    '-'              => 'Text'
+};
+sub marcxml2baginfo {
+    my $xml = shift;
+
+    use XML::XPath;
+    use POSIX qw(strftime);
+
+    my $xpath = XML::XPath->new(xml => $xml);
+    my $rec = {};
+    my @fields = qw(
+        DC-Title DC-Identifier DC-Description DC-DateAccepted DC-Type DC-Creator DC-AccessRights DC-Subject
+    );
+    $rec->{$_} = [] foreach(@fields);
+
+    my $id = &marc_controlfield($xpath,'001');
+
+    push(@{$rec->{'DC-Title'}}, "RUG01-$id");
+
+    push(@{$rec->{'DC-Identifier'}}, "rug01:$id");
+    for my $val (&marc_datafield_array($xpath,'852','j')){
+        push(@{$rec->{'DC-Identifier'}}, $val) if $val =~ /\S/o;
+    }
+    my $f035 = &marc_datafield($xpath,'035','a');
+    push(@{$rec->{'DC-Identifier'}}, $f035) if $f035;
+
+    my $description = &marc_datafield($xpath,'245');
+    push(@{$rec->{'DC-Description'}}, $description);
+
+    my $type = &marc_datafield($xpath,'920','a');
+    push(@{$rec->{'DC-Type'}}, $marc_type_map->{$type} || $marc_type_map->{'-'});
+
+    my $creator = &marc_datafield($xpath,'100','a');
+    push(@{$rec->{'DC-Creator'}}, $creator) if $creator;
+
+    for my $val (&marc_datafield_array($xpath,'700','a')) {
+        push(@{$rec->{'DC-Creator'}}, $val) if $val =~ /\S/;
+    }
+
+    my $rights = &marc_datafield($xpath,'856','z');
+    if ($rights =~ /no access/io) {
+        push(@{$rec->{'DC-AccessRights'}}, 'closed');
+    }
+    elsif ($rights =~ /ugent/io) {
+        push(@{$rec->{'DC-AccessRights'}}, 'ugent');
+    }
+    else {
+        push(@{$rec->{'DC-AccessRights'}}, 'open');
+    }
+
+    for my $subject (&marc_datafield_array($xpath,'922','a')) {
+        push(@{$rec->{'DC-Subject'}}, $subject) if $subject =~ /\S/;
+    }
+
+    return $rec;
+}
+sub str_clean {
+    my $str = shift;
+    $str =~ s/\n//gom;
+    $str =~ s/^\s+//go;
+    $str =~ s/\s+$//go;
+    $str =~ s/\s\s+/ /go;
+    $str;
+}
+sub marc_controlfield {
+    my $xpath = shift;
+    my $field = shift;
+    
+    my $search = '/marc:record';
+    $search .= "/marc:controlfield[\@tag='$field']" if $field; 
+    return &str_clean($xpath->findvalue($search)->to_literal->value);
+}
+sub marc_datafield {
+    my $xpath = shift;
+    my $field = shift;
+    my $subfield = shift;
+
+    my $search = '/marc:record';
+    $search .= "/marc:datafield[\@tag='$field']" if $field; 
+    $search .= "/marc:subfield[\@code='$subfield']" if $subfield;
+    return &str_clean($xpath->findvalue($search)->to_literal->value);
+}
+sub marc_datafield_array {
+    my $xpath = shift;
+    my $field = shift;
+    my $subfield = shift;
+
+    my $search = '/marc:record';
+    $search .= "/marc:datafield[\@tag='$field']" if $field; 
+    $search .= "/marc:subfield[\@code='$subfield']" if $subfield;
+
+    my @vals = (); 
+    for my $node ($xpath->find($search)->get_nodelist) {
+      push @vals , $node->string_value;
+    }
+
+    return @vals;
+}
+
+#stap 2: ken scans toe aan projects
+say "\nassigning scans to projects\n";
+projects()->each(sub{
+    my $project = shift;
+    if(!is_array_ref($project->{list})){
+        say "\tproject $project->{_id}: no list available";
+        return;
+    }
+    foreach my $item(@{ $project->{list} }){
+        
+        my($scan_name);
+        my @ids = ();
+
+        # name: liefst het plaatsnummer, en indien niet mogelijk het rug01-nummer
+        if($item->{location}){
+            $scan_name = $item->{location};
+        }else{
+            $scan_name = $item->{source}.":".$item->{fSYS};
+        }
+
+        # id: plaatsnummer of rug01 mogelijk (verschil met name: letters verwisseld, en bijkomende nummering mogelijk bij plaatsnummers)
+        if($item->{location}){
+            my $scan_id = $item->{location};
+            $scan_id =~ s/[\.\/]/-/go;
+            if(defined($item->{number})){
+                $scan_id .= "-".$item->{number};        
+            }
+            push @ids,$scan_id;         
+
+        }
+        push @ids,uc($item->{source})."-".$item->{fSYS};
+
+        foreach my $id(@ids){
+
+            my $scan = scans()->get($id);
+
+            #directory nog niet aanwezig
+            if(!$scan){
+                say "\tproject ".$project->{_id}.":scan $id not found";
+                next;
+            }
+
+            #scan toekennen aan project
+            if(!$scan->{project_id}){
+                $scan->{name} = $scan_name;
+                $scan->{project_id} = $project->{_id};
+            }
+
+            say "\tproject ".$project->{_id}.":scan $id assigned to project";
+            scans()->add($scan);
+
+            last;
+        }
+    }
+});
+
+#stap 3: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
+#wijziging/update moet gebeuren door qa_manager
+say "\nretrieving metadata for good scans:\n";
+my @ids_ok_for_metadata = ();
+scans()->each(sub{
+    my $scan = shift;
+    my $status = $scan->{status};
+    my $metadata = $scan->{metadata};
+    if( $status ne "incoming" && $status ne "incoming_error" && !(is_array_ref($metadata) && scalar(@$metadata) > 0 )){
+        push @ids_ok_for_metadata,$scan->{_id};
+    }
+});
+foreach my $id(@ids_ok_for_metadata){
+    my $scan = scans()->get($id);
+    my $query = $scan->{_id};
+    if($query !~ /^RUG01-/o){
+        $query =~ s/^RUG01-/rug01:/o;
+    }else{
+        $query = "location:$query";
+    }
+    my $res = meercat()->search($query,{rows=>1000});
+    $scan->{metadata} = [];
+    if($res->content->{response}->{numFound} > 0){
+
+        my $docs = $res->content->{response}->{docs};
+        foreach my $doc(@$docs){
+            push @{ $scan->{metadata} },{
+                fSYS => $doc->{fSYS},#000000001
+                source => $doc->{source},#rug01
+                fXML => $doc->{fXML},
+                baginfo => marcxml2baginfo($doc->{fXML})
+            };
+        }
+
+    }
+    my $num = scalar(@{$scan->{metadata}});
+    say "\tscan ".$scan->{_id}." has $num metadata-records";
+    scans()->add($scan);
+}
+
+#stap 4: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest indien nog niet aanwezig)
+my @incoming_ok = ();
+scans()->each(sub{
+    my $scan = shift;
+    push @incoming_ok,$scan->{_id} if $scan->{status} eq "incoming_ok";
+});
+say "\nregistering incoming_ok\n";
+foreach my $id (@incoming_ok){
+    my $scan = scans()->get($id);
+    say "\tscan $id:";
+
+    #status 'registering'
+    $scan->{status} = "registering";
+    push @{ $scan->{status_history} },{
+        user_name =>"-",
+        status => "registering",
+        datetime => Time::HiRes::time,
+        comments => ""
+    };
+
+    #=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /scans is terug te vinden
+    #=> daarom opnemen in databank én indexeren
+    scans->add($scan);
+    scan2index($scan);
+    index_scans->commit();
+
+    status2index($scan);
+    index_log->commit();
+
+    #pas manifest -> maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)
+        
+    #verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
+    unlink($scan->{path}."/manifest.txt") if -f $scan->{path}."/manifest.txt";
+    my $index = first_index { $_ eq $scan->{path}."/manifest.txt" } map { $_->{path} } @{ $scan->{files} };
+    splice(@{ $scan->{files} },$index,1) if $index >= 0;
+
+    say "\tcreating new manifest.txt";
+
+    #maak nieuwe manifest
+    local(*MANIFEST);
+    open MANIFEST,">".$scan->{path}."/manifest.txt" or die($!);
+    foreach my $file(@{ $scan->{files} }){
+        local(*FILE);
+        open FILE,$file->{path} or die($!);
+        my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
+        say MANIFEST "$md5sum_file ".basename($file->{path});
+        close FILE;
+    }
+    close MANIFEST;
+
+    #voeg manifest toe aan de lijst
+    push @{ $scan->{files} },file_info($scan->{path}."/manifest.txt");
+    
+
+    #verplaats  
+    my $oldpath = $scan->{path};
+    my $mount_conf = mount_conf();
+    my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".basename($oldpath);
+    say "\tmoving from $oldpath to $newpath";
+    move($oldpath,$newpath);
+    $scan->{path} = $newpath;
+    foreach my $file(@{ $scan->{files} }){
+        $file->{path} =~ s/^$oldpath/$newpath/;
+    }
+
+    #update file info
+    foreach my $file(@{ $scan->{files} }){
+        my $new_stats = file_info($file->{path});
+        $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
+    }
+    
+    #status 'registered'
+    $scan->{status} = "registered";
+    push @{ $scan->{status_history} },{
+        user_name =>"-",
+        status => "registered",
+        datetime => Time::HiRes::time,
+        comments => ""
+    };
+    
+    scans->add($scan);
+    scan2index($scan);
+    index_scans->commit();
+
+    status2index($scan);
+    index_log->commit();
+}
+
+#stap 5: indexeer
+say "\nindexing merge scans-projects-users\n";
 scans->each(sub{
     my $scan = shift;
     my $doc = scan2index($scan);
@@ -159,3 +524,13 @@ scans->each(sub{
 });
 index_scans->commit();
 index_scans->store->solr->optimize();
+
+#stap 6: indexeer logs
+say "\nlogging:\n";
+scans()->each(sub{
+    my $scan = shift;
+    my $doc = status2index($scan);
+    say "\tscan $scan->{_id} added to log (_id:$doc->{_id})" if $doc;
+});
+index_log->commit();
+index_log->store->solr->optimize();

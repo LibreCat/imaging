@@ -12,7 +12,6 @@ use Data::Pageset;
 use Try::Tiny;
 use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
-
 use Clone qw(clone);
 use DateTime;
 use DateTime::TimeZone;
@@ -27,8 +26,6 @@ sub formatted_date {
         '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
     );
 }
-
-
 sub core {
     state $core = store("core");
 }

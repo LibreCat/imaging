@@ -1,6 +1,5 @@
 package Imaging::Routes::account;
 use Dancer ':syntax';
-use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;

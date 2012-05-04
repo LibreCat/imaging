@@ -1,6 +1,5 @@
 package Imaging::Route;
 use Dancer ':syntax';
-use Dancer::Plugin::Imaging::Routes::Common;
 use Catmandu::Sane;
 
 prefix undef;

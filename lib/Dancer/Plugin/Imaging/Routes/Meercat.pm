@@ -60,8 +60,6 @@ sub marcxml2baginfo {
     my $description = &marc_datafield($xpath,'245');
     push(@{$rec->{'DC-Description'}}, $description);
 
-    #push(@{$rec->{'DC-DateAccepted'}}, strftime("%Y-%m-%d",localtime));
-
     my $type = &marc_datafield($xpath,'920','a');
     push(@{$rec->{'DC-Type'}}, $marc_type_map->{$type} || $marc_type_map->{'-'});
 
