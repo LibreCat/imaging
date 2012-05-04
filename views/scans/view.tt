@@ -106,9 +106,9 @@
             <th colspan="2" style="text-align:center;padding-top:20px;padding-bottom:20px;">technisch</th>
         </tr>
         <tr>
-			[% states_processed = ["registered","reprocess_metadata","reprocess_derivatives"] %]
+			[% states_processed = ["registered","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published","published_ok"] %]
 			[% do_open = 0 %]
-			[% IF ( auth.asa("qa_manager") || auth.asa("admin") ) && states_processed.grep(scan.status).size > 0 %]
+			[% IF states_processed.grep(scan.status).size > 0 %]
 				[% dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ scan.item("_id") %]
 				[% do_open = 1 %]
 			[% END %]

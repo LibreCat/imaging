@@ -149,8 +149,9 @@ status:
    reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_ok"]
    qa_control_ok: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived"]
    archived: ["archived_ok"]
-   archived_ok: ["published"]
+   archived_ok: ["archived"]
    published: ["published_ok"]
+   published_ok: ["published"]
   qa_control:
    registered: 
     values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
