@@ -1,5 +1,6 @@
 package Imaging::Test::Dir;
 use Catmandu::Sane;
+use Catmandu::Util qw(load_package);
 use Data::Util qw(:check :validate);
 use Moo::Role;
 use File::Basename;
@@ -11,6 +12,7 @@ use File::MimeInfo;
 
 sub import {
     Catmandu::Sane->import;
+    Catmandu::Util->import("load_package");
     Data::Util->import(qw(:check :validate));
     File::Basename->import(qw(basename dirname)); 
     File::Find->import(qw(find finddepth));
@@ -18,12 +20,20 @@ sub import {
     Try::Tiny->import;
     File::MimeInfo->import(qw(mimetype));
 }
+
 sub _load_file_info {
     my $self = shift;
     my @file_info = ();
+    my $lookup_dir = $self->dir;
+    my $lookup = $self->lookup();
+    if(is_string($lookup) && $lookup ne "."){
+
+        $lookup_dir = Cwd::realpath(File::Spec->catdir($lookup_dir,$lookup));
+
+    }
     find({
         wanted => sub{
-            return if abs_path($_) eq abs_path($self->dir);
+            return if abs_path($_) eq abs_path($lookup_dir);
             push @file_info,{
                 dirname => abs_path($File::Find::dir),
                 basename => basename($_),
@@ -31,7 +41,7 @@ sub _load_file_info {
             };
         },
         no_chdir => 1
-    },$self->dir);
+    },$lookup_dir);
     $self->file_info(\@file_info);
 }
 sub is_valid_basename {
@@ -42,6 +52,15 @@ sub is_valid_basename {
     return 0;
 }
 
+has lookup => (
+    is => 'rw',
+    isa => sub {
+        is_string($_[0]) or die("lookup must be string\n");
+    },
+    default => sub {    
+        return "."; 
+    }
+);
 has dir => (
     is => 'rw',
     isa => sub{ (is_string($_[0]) && -d $_[0]) || die("directory not given or does not exist"); },

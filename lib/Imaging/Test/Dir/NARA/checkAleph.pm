@@ -1,4 +1,4 @@
-package Imaging::Test::Dir::checkAleph;
+package Imaging::Test::Dir::NARA::checkAleph;
 use Moo;
 use WebService::Solr;
 use Data::Util qw(:validate);

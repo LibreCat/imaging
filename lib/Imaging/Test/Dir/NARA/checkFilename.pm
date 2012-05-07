@@ -77,7 +77,7 @@ sub test {
 
             push @errors,"Voorbeeld goede bestandsnaam: ".basename($topdir)."_2012_0001_MA.tif";
 
-        }elsif($1 ne basename($stats->{dirname})){
+        }elsif($1 ne basename($topdir)){
 
             push @errors,$stats->{basename}." mist naam van de hoofdmap als eerste deel van de bestandsnaam (hoofdmap: ".basename($topdir).")";
 

@@ -22,6 +22,7 @@ sub test {
     my $extensions = $self->extensions;
 
     foreach my $stats(@$file_info){
+        next if !$self->is_valid_basename($stats->{basename});
         my $index = rindex($stats->{basename},".");
         if($index >= 0){
             my $ext = substr($stats->{basename},$index + 1);

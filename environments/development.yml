@@ -204,7 +204,8 @@ profiles:
      args: {}
      on_error: "continue"
    - class: "Imaging::Test::Dir::checkEmpty"
-     args: {}
+     args:
+      inverse: 1
      on_error: "continue"
    - class: "Imaging::Test::Dir::checkFileExtension"
      args:
@@ -220,7 +221,51 @@ profiles:
       valid_patterns:
        - '^(?!manifest\.txt$)'
      on_error: "continue"
-   - class: "Imaging::Test::Dir::checkAleph"
+   - class: "Imaging::Test::Dir::NARA::checkAleph"
      args:
+      solr_args: *meercatindex
+     on_error: "continue"
+ BAG:
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkEmpty"
+     args:
+      valid_patterns:
+       - '^RUG01-\d{9}$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkBag"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::BAG::checkNARA"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::BAG::checkAleph"
+     args:
+      lookup: "data"
+      solr_args: *meercatindex
+     on_error: "continue"
+ TAR:
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkEmpty"
+     args:
+      valid_patterns:
+       - '^RUG01-\d{9}$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::TAR::checkNARA"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::BAG::checkAleph"
+     args: 
       solr_args: *meercatindex
      on_error: "continue"
