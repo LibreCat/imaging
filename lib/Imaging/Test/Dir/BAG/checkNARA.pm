@@ -39,7 +39,7 @@ has _stash => (
         my $stash = {};
         my $nara_conf = $self->_nara_conf;
         foreach my $nara(@$nara_conf){
-            $stash->{$nara->{class}} = Catmandu::Util::load_package($nara->{class})->new(%{ $nara->{args} });
+            $stash->{$nara->{class}} = Catmandu::Util::require_package($nara->{class})->new(%{ $nara->{args} });
         }
         $stash;
     }

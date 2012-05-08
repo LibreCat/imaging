@@ -1,10 +1,13 @@
 #!/usr/bin/env perl
+use Catmandu;
+use Dancer qw(:script);
+
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
 use Catmandu::Store::Solr;
-use Catmandu::Util qw(load_package :is);
+use Catmandu::Util qw(require_package :is);
 use List::MoreUtils qw(first_index);
-use File::Basename;
+use File::Basename qw();
 use File::Copy qw(copy move);
 use File::Path qw(mkpath);
 use Cwd qw(abs_path);
@@ -14,13 +17,23 @@ use Try::Tiny;
 use DBI;
 use File::MimeInfo;
 
+BEGIN {
+    my $appdir = Cwd::realpath("..");
+    Dancer::Config::setting(appdir => $appdir);
+    Dancer::Config::setting(public => "$appdir/public");
+    Dancer::Config::setting(confdir => $appdir);
+    Dancer::Config::setting(envdir => "$appdir/environments");
+    Dancer::Config::load();
+    Catmandu->load($appdir);
+}
+
 #variabelen
 sub file_info {
     my $path = shift;
     my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
     if($dev){
         return {
-            name => basename($path),
+            name => File::basename::basename($path),
             path => $path,
             atime => $atime,
             mtime => $mtime,
@@ -31,34 +44,27 @@ sub file_info {
         };
     }else{
         return {
-            name => basename($path),
+            name => File::basename::basename($path),
             path => $path,
             error => $!
         }
     }
 }
-sub config {
-    state $config = do {
-        my $config_file = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"environments")."/development.yml";
-        YAML::LoadFile($config_file);
-    };
-}
-sub store_opts {
+sub core_opts {
     state $opts = do {
-        my $config = config;
-        my %opts = (
+        my $config = Catmandu->config;
+        {
             data_source => $config->{store}->{core}->{options}->{data_source},
             username => $config->{store}->{core}->{options}->{username},
             password => $config->{store}->{core}->{options}->{password}
-        );
-        \%opts;
+        };
     };
 }
-sub store {
-    state $store = Catmandu::Store::DBI->new(%{ store_opts() });
+sub core {
+    state $core = store("core");
 }
 sub scans {
-    state $scans = store()->bag("scans");
+    state $scans = core()->bag("scans");
 }
 
 my $scans = scans();

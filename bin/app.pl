@@ -3,6 +3,9 @@ use Dancer;
 use Plack::Builder;
 use Plack::Util;
 
+#laad configuratie van catmandu één keer!
+use Catmandu qw(:load);
+
 #routes
 use all qw(
 	Imaging::Routes::*

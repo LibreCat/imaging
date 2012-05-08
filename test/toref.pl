@@ -2,7 +2,7 @@
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
 use Catmandu::Store::Solr;
-use Catmandu::Util qw(load_package :is);
+use Catmandu::Util qw(require_package :is);
 use List::MoreUtils qw(first_index);
 use File::Basename;
 use Cwd qw(abs_path);

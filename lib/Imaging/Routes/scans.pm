@@ -2,7 +2,7 @@ package Imaging::Routes::scans;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Imaging::Routes::Meercat;
-use Dancer::Plugin::NestedParams;
+use CGI::Expand qw(expand_hash);
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
@@ -507,8 +507,8 @@ sub edit_scan {
             push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
 
         }else{
-        
-            my $baginfo_params = expand_params->{baginfo} || {};
+            my $expanded_params = expand_hash($params || {});
+            my $baginfo_params = $expanded_params->{baginfo} || {};
 
             my @conf_baginfo_keys = do {
                 my $config = config;

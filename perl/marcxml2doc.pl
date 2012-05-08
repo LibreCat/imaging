@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use Catmandu::Sane;
 use Catmandu::Store::Solr;
-use Catmandu::Util qw(load_package :is);
+use Catmandu::Util qw(require_package :is);
 use File::Basename;
 use Cwd qw(abs_path);
 use File::Spec;

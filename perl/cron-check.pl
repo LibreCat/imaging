@@ -1,10 +1,13 @@
 #!/usr/bin/env perl
+use Dancer qw(:script);
+use Catmandu qw(store);
+
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
 use Catmandu::Store::Solr;
-use Catmandu::Util qw(load_package :is);
+use Catmandu::Util qw(require_package :is);
 use List::MoreUtils;
-use File::Basename;
+use File::Basename qw();
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
@@ -20,6 +23,53 @@ use File::Find;
 use File::MimeInfo;
 our($a,$b);
 
+BEGIN {
+    my $appdir = Cwd::realpath("..");
+    Dancer::Config::setting(appdir => $appdir);
+    Dancer::Config::setting(public => "$appdir/public");
+    Dancer::Config::setting(confdir => $appdir);
+    Dancer::Config::setting(envdir => "$appdir/environments");
+    Dancer::Config::load();
+    Catmandu->load($appdir);
+}
+sub core_opts {
+    state $core_opts = do {
+        my $catmandu_config = Catmandu->config;
+        {
+            data_source => $catmandu_config->{store}->{core}->{options}->{data_source},
+            username => $catmandu_config->{store}->{core}->{options}->{username},
+            password => $catmandu_config->{store}->{core}->{options}->{password}
+        };
+    };
+}
+sub core {
+    state $core = store("core");
+}
+sub users {
+    state $users = do {
+        my $core_opts = core_opts();
+        my $users = DBI->connect($core_opts->{data_source}, $core_opts->{username}, $core_opts->{password},{
+            AutoCommit => 1,
+            RaiseError => 1,
+            mysql_auto_reconnect => 1
+        });
+    };
+}
+sub users_each {
+    state $x = users->prepare("select * from users where has_dir = 1");
+}
+sub users_get {
+    state $x = users->prepare("select * from users where id = ?");
+}
+sub scans {
+    state $scans = core->bag("scans");
+}
+sub profiles {
+    config->{profiles} ||= {};
+}
+sub mount_conf {
+    config->{mounts}->{directories};
+}
 sub formatted_date {
     my $time = shift || Time::HiRes::time;
     DateTime::Format::Strptime::strftime(
@@ -31,7 +81,7 @@ sub file_info {
     my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
     if($dev){
         return {
-            name => basename($path),
+            name => File::Basename::basename($path),
             path => $path,
             atime => $atime,
             mtime => $mtime,
@@ -42,36 +92,19 @@ sub file_info {
         };
     }else{
         return {
-            name => basename($path),
+            name => File::Basename::basename($path),
             path => $path,
             error => $!
         }
     }
 }
 
-
-my $config_file = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"environments")."/development.yml";
-my $config = YAML::LoadFile($config_file);
-my %opts = (
-    data_source => $config->{store}->{core}->{options}->{data_source},
-    username => $config->{store}->{core}->{options}->{username},
-    password => $config->{store}->{core}->{options}->{password}
-);
-
-my $store = Catmandu::Store::DBI->new(%opts);
-my $scans = $store->bag("scans");
-my $profiles = $config->{profiles} || {};
-my $mount_conf = $config->{mounts}->{directories};
-
-my $users = DBI->connect($opts{data_source}, $opts{username}, $opts{password}, {
-    AutoCommit => 1,
-    RaiseError => 1,
-    mysql_auto_reconnect => 1
-});
+my $sth_each = users_each;
+my $sth_get = users_get;
+my $mount_conf = mount_conf;
+my $scans = scans;
 
 #stap 1: zoek scans
-my $sth_each = $users->prepare("select * from users where has_dir = 1");
-my $sth_get = $users->prepare("select * from users where id = ?");
 $sth_each->execute() or die($sth_each->errstr());
 while(my $user = $sth_each->fetchrow_hashref()){
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
@@ -83,7 +116,7 @@ while(my $user = $sth_each->fetchrow_hashref()){
         open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
         while(my $dir = <CMD>){
             chomp($dir);    
-            my $basename = basename($dir);
+            my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
             if(!$scan){
                 say "adding new record $basename";
@@ -147,7 +180,7 @@ while(my $user = $sth_each->fetchrow_hashref()){
 #stap 2: doe check
 sub get_package {
     my($class,$args)=@_;
-    state $stash->{$class} ||= load_package($class)->new(%$args);
+    state $stash->{$class} ||= require_package($class)->new(%$args);
 }
 my @scan_ids = ();
 
@@ -210,7 +243,7 @@ foreach my $scan_id(@scan_ids){
         say STDERR "no profile defined for $user->{login}";
         next;
     }
-    my $profile = $profiles->{ $user->{profile_id} };
+    my $profile = profiles->{ $user->{profile_id} };
     if(!$profile){
         say STDERR "strange, profile_id is defined in table users, but no profile could be found";
         next;

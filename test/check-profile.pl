@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 use Catmandu::Sane;
-use Catmandu::Util qw(load_package :is);
+use Catmandu::Util qw(require_package :is);
 use Cwd qw(abs_path);
 use File::Spec;
 use File::Basename;
@@ -15,7 +15,7 @@ my $profile = $config->{profiles}->{$profile_id} || die("profile $profile_id not
 #doe check
 sub get_package {
     my($class,$args)=@_;
-    state $stash->{$class} ||= load_package($class)->new(%$args);
+    state $stash->{$class} ||= require_package($class)->new(%$args);
 }
 
 foreach my $path(@ARGV){

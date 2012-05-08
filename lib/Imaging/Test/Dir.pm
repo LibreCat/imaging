@@ -1,6 +1,6 @@
 package Imaging::Test::Dir;
 use Catmandu::Sane;
-use Catmandu::Util qw(load_package);
+use Catmandu::Util qw(require_package);
 use Data::Util qw(:check :validate);
 use Moo::Role;
 use File::Basename;
@@ -12,7 +12,7 @@ use File::MimeInfo;
 
 sub import {
     Catmandu::Sane->import;
-    Catmandu::Util->import("load_package");
+    Catmandu::Util->import("require_package");
     Data::Util->import(qw(:check :validate));
     File::Basename->import(qw(basename dirname)); 
     File::Find->import(qw(find finddepth));

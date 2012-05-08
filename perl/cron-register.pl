@@ -1,10 +1,13 @@
 #!/usr/bin/env perl
+use Catmandu qw(store);
+use Dancer qw(:script);
+
 use Catmandu::Sane;
 use Catmandu::Store::DBI;
 use Catmandu::Store::Solr;
-use Catmandu::Util qw(load_package :is);
+use Catmandu::Util qw(require_package :is);
 use List::MoreUtils qw(first_index);
-use File::Basename;
+use File::Basename qw();
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
@@ -23,6 +26,16 @@ use Time::HiRes;
 use XML::Simple;
 use File::MimeInfo;
 
+BEGIN {
+    my $appdir = Cwd::realpath("..");
+    Dancer::Config::setting(appdir => $appdir);
+    Dancer::Config::setting(public => "$appdir/public");
+    Dancer::Config::setting(confdir => $appdir);
+    Dancer::Config::setting(envdir => "$appdir/environments");
+    Dancer::Config::load();
+    Catmandu->load($appdir);
+}
+
 #variabelen
 sub xml_simple {
     state $xml_simple = XML::Simple->new();
@@ -32,7 +45,7 @@ sub file_info {
     my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
     if($dev){
         return {
-            name => basename($path),
+            name => File::Basename::basename($path),
             path => $path,
             atime => $atime,
             mtime => $mtime,
@@ -43,37 +56,30 @@ sub file_info {
         };
     }else{
         return {
-            name => basename($path),
+            name => File::Basename::basename($path),
             path => $path,
             error => $!
         }
     }
 }
-sub config {
-    state $config = do {
-        my $config_file = File::Spec->catdir( dirname(dirname( abs_path(__FILE__) )),"environments")."/development.yml";
-        YAML::LoadFile($config_file);
-    };
-}
-sub store_opts {
+sub core_opts {
     state $opts = do {
-        my $config = config;
-        my %opts = (
+        my $config = Catmandu->config;
+        {
             data_source => $config->{store}->{core}->{options}->{data_source},
             username => $config->{store}->{core}->{options}->{username},
             password => $config->{store}->{core}->{options}->{password}
-        );
-        \%opts;
+        };
     };
 }
-sub store {
-    state $store = Catmandu::Store::DBI->new(%{ store_opts() });
+sub core {
+    state $core = store("core");
 }
 sub projects {
-    state $projects = store()->bag("projects");
+    state $projects = core()->bag("projects");
 }
 sub scans {
-    state $scans = store()->bag("scans");
+    state $scans = core()->bag("scans");
 }
 sub meercat {
     state $meercat = WebService::Solr->new(
@@ -82,30 +88,17 @@ sub meercat {
     );
 }
 sub index_scans {
-    state $index_scans = Catmandu::Store::Solr->new(
-        %{ config->{store}->{'index'}->{options} }
-    )->bag();
+    state $index_scans = store("index")->bag;
 }
 sub index_log {
-    state $index_log = Catmandu::Store::Solr->new(
-        %{ config->{store}->{'index_log'}->{options} }
-    )->bag();
-}
-sub index_log {
-    state $index_log = Catmandu::Store::Solr->new(
-        %{ config->{store}->{'index_log'}->{options} }
-    )->bag();
+    state $index_log = store("index_log")->bag;
 }
 sub mount_conf {
-    state $mount_conf = do {
-        my $dir = dirname(__FILE__);
-        my $conf = YAML::LoadFile("$dir/../environments/development.yml");
-        my $mount_conf = $conf->{mounts}->{directories};
-    };
+    config->{mounts}->{directories} ||= {};
 }
 sub users {
     state $users = do {
-        my $opts = store_opts();
+        my $opts = core_opts();
         DBI->connect($opts->{data_source}, $opts->{username}, $opts->{password}, {
             AutoCommit => 1,
             RaiseError => 1,
@@ -539,7 +532,7 @@ foreach my $id (@incoming_ok){
         local(*FILE);
         open FILE,$file->{path} or die($!);
         my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-        say MANIFEST "$md5sum_file ".basename($file->{path});
+        say MANIFEST "$md5sum_file ".File::Basename::basename($file->{path});
         close FILE;
     }
     close MANIFEST;
@@ -551,7 +544,7 @@ foreach my $id (@incoming_ok){
     #verplaats  
     my $oldpath = $scan->{path};
     my $mount_conf = mount_conf();
-    my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".basename($oldpath);
+    my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".File::Basename::basename($oldpath);
     say "\tmoving from $oldpath to $newpath";
     move($oldpath,$newpath);
     $scan->{path} = $newpath;
