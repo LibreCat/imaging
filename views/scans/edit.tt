@@ -3,9 +3,9 @@
 [% USE POSIX %]
 [% USE SizePretty %]
 [% IF scan %]
-	[% USE ToJSON %]
+	[% USE JSON %]
     <script type="text/javascript">
-        var baginfo_config = [% settings.app.scans.edit.baginfo.to_json || "{}" %];
+        var baginfo_config = [% settings.app.scans.edit.baginfo.json || "{}" %];
         function set_baginfo_input(select_id,value_id){
             var select = document.getElementById(select_id);
             var key = select.options[ select.selectedIndex ].value;
