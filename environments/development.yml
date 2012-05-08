@@ -42,7 +42,7 @@ plugins:
    AutoCommit: 1
    mysql_auto_reconnect: 1
   on_connect_do:
-   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,profile_id varchar(256),PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
+   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,profile_id varchar(256),has_dir bool default 0,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
    - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
  Auth::RBAC:
   credentials:

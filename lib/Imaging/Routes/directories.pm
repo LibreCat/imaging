@@ -47,11 +47,7 @@ any('/directories',sub {
     $params->{num} = $num;
     my $offset = ($page - 1)*$num;
 
-    my @users = dbi_handle->quick_select('users',{
-        roles => { like => '%scanner%'  }   
-    },{ 
-        order_by => 'id'
-    });
+    my @users = dbi_handle->quick_select('users',{},{ order_by => 'id' });
     my $total = scalar(@users);
     @users = splice(@users,$offset,$num);
 
@@ -87,11 +83,6 @@ any('/directories/:id/edit',sub {
     my(@errors,@messages);
     my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
     $user or return not_found();    
-    if($user->{roles} !~ /scanner/o){
-        return forward("/access_denied",{
-            text => "Enkel gebruikers die beschikken over de rol 'scanner' kunnen een scandirectory krijgen"
-        });
-    }
 
     #sanity check on mount
     my($success,$errs) = sanity_check();
@@ -100,7 +91,7 @@ any('/directories/:id/edit',sub {
     my $mount = mount();
     my $subdirectories = subdirectories();
 
-    #check directories of scanner
+    #check directories
     $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
     $user->{reprocessing} = "$mount/".$subdirectories->{reprocessing}."/".$user->{login};
 
@@ -110,6 +101,7 @@ any('/directories/:id/edit',sub {
                 my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
                 mkpath($path);
                 push @messages,"directory '$_' is ok nu";
+                dbi_handle->quick_update('users',{ id => $user->{id} },{ has_dir => 1 });
             }catch{
                 push @errors,$_;
             };

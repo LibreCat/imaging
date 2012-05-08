@@ -31,17 +31,19 @@ sub _load_file_info {
         $lookup_dir = Cwd::realpath(File::Spec->catdir($lookup_dir,$lookup));
 
     }
-    find({
-        wanted => sub{
-            return if abs_path($_) eq abs_path($lookup_dir);
-            push @file_info,{
-                dirname => abs_path($File::Find::dir),
-                basename => basename($_),
-                path => abs_path($File::Find::name)
-            };
-        },
-        no_chdir => 1
-    },$lookup_dir);
+    try{
+        find({
+            wanted => sub{
+                return if abs_path($_) eq abs_path($lookup_dir);
+                push @file_info,{
+                    dirname => abs_path($File::Find::dir),
+                    basename => basename($_),
+                    path => abs_path($File::Find::name)
+                };
+            },
+            no_chdir => 1
+        },$lookup_dir);
+    };
     $self->file_info(\@file_info);
 }
 sub is_valid_basename {

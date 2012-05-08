@@ -27,15 +27,15 @@
                         
                         [% IF auth.can('manage_accounts','edit') %]
                             <li>
-                                <a href="/users">users</a>
+                                <a href="/users">gebruikers</a>
                             </li>
                         [% END %]
                         [% IF auth.can('directories','edit') %]
                         <li>
-                            <a href="/directories">directories per scanner</a>
+                            <a href="/directories">mappen</a>
                         </li>
                         [% END %]
-                        [% IF auth.asa('scanner') %]
+                        [% IF session.user.has_dir %]
                         <li>
                             <a href="/ready/[% session.user.login %]">ready</a>
                         </li>
@@ -43,7 +43,8 @@
                             [% q = "status:reprocess_scans" _ " AND user_name:" _ session.user.login  %]
                             <a href="/scans?q=[% q | url %]">reprocessing</a>
                         </li>
-                        [% ELSIF auth.asa('qa_manager') %]
+                        [% END %]
+                        [% IF auth.asa('qa_manager') %]
                         <li>
                             <a href="/qa_control">qa_controle</a>
                         </li>

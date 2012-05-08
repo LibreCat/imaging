@@ -1,14 +1,14 @@
 [% PROCESS inc/errors_messages.tt %]
-<h1>List of directories per scanner</h1>
+<h1>Lijst van mappen per gebruiker</h1>
 <div class="paging">
 [% IF users && users.size > 0 && page_info.pages_in_set.size > 1 %]
 
     [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/directories?page=[% page_info.first_page %]&amp;num=[% params.num %]">first</a>
+    <a href="/directories?page=[% page_info.first_page %]&amp;num=[% params.num %]">eerste</a>
     [% END %]
 
     [% IF page_info.previous_page %]
-    <a href="/directories?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >previous</a>
+    <a href="/directories?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >vorige</a>
     [% END %]
 
     [% FOREACH page IN page_info.pages_in_set %]
@@ -20,11 +20,11 @@
     [% END %]
 
     [% IF page_info.next_page %]
-    <a href="/directories?page=[% page_info.next_page %]&amp;num=[% params.num %]" >next</a>
+    <a href="/directories?page=[% page_info.next_page %]&amp;num=[% params.num %]" >volgende</a>
     [% END %]
 
     [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/directories?page=[% page_info.last_page %]&amp;num=[% params.num %]">last</a>
+    <a href="/directories?page=[% page_info.last_page %]&amp;num=[% params.num %]">laatste</a>
     [% END %]
 
 [% END %]
@@ -33,45 +33,44 @@
 	<table id="table-users" class="left">
 		<tr>
 			<th>login</th>
-			<th>directory ready</th>
-			<th>directory reprocessing</th>
+			<th>01_ready</th>
+			<th>03_reprocessing</th>
 			<th>acties</th>
 		</tr>
 	[% FOREACH user IN users %]
-		[% roles = [ user.roles ] %]
 		<tr>
 			<td>[% user.item("login") %]</td>
 			<td>
-				<a href="/ready/[% user.login %]">
-				[% user.item("ready") || "-" %]
-				</a>
-				[% IF roles.grep('scanner').size > 0 %]
+                [% IF user.has_dir %]                
+                    <a href="/ready/[% user.login %]">
+                        [% user.item("ready") %]
+                    </a>
 					[% TRY %]
                         [% USE File(user.item("ready")) %]
                     [% CATCH File %]
                     	<span style="color:red">error!</span>
                     [% END %]					
-				[% END %]
+                [% ELSE %]
+                    -
+                [% END %]
 			</td>
 			<td>
-				[% q = "status:reprocess_scans AND user_login:" _ user.login %]
-				<a href="/scans?q=[% q | url %]">
-				[% user.item("reprocessing") || "-" %]
-				</a>
-				[% IF roles.grep('scanner').size > 0 %]
+				[% IF user.has_dir %]
+				    [% q = "status:reprocess_scans AND user_login:" _ user.login %]
+                    <a href="/scans?q=[% q | url %]">
+                    [% user.item("reprocessing") || "-" %]
+                    </a>
                     [% TRY %]
                         [% USE File(user.item("reprocessing")) %]
                     [% CATCH File %]
                         <span style="color:red">error!</span>
                     [% END %]
+                [% ELSE %]
+                    -        
                 [% END %]
 			</td>
 			<td>
-				[% IF roles.grep('scanner').size > 0 %]
-					<a href="/directories/[% user.item("id") %]/edit">edit</a>
-				[% ELSE %]
-					-
-				[% END %]
+			    <a href="/directories/[% user.item("id") %]/edit">edit/add</a>
 			</td>
 		</tr>
 	[% END %]

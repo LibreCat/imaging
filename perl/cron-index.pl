@@ -109,7 +109,7 @@ sub users {
     };
 }
 sub users_each {
-    state $users_each = users->prepare("select * from users where roles like '%scanner'");
+    state $users_each = users->prepare("select * from users where has_dir = 1");
 }
 sub users_get {
     state $users_get = users->prepare("select * from users where id = ?");

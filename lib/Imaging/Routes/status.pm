@@ -36,7 +36,7 @@ any('/status',sub {
 
     my $params = params;
     my @users = dbi_handle->quick_select('users',{
-        roles => { like => '%scanner%'  }
+        has_dir => 1
     },{
         order_by => 'id'
     });

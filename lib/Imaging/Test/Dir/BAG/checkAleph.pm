@@ -19,35 +19,48 @@ has _solr => (
         WebService::Solr->new($url,{ default_params => {wt => "json"} });
     }
 );
+has _re => (
+    is => 'ro',
+    default => sub { qr/^RUG01-(\d{9})$/; }
+);
 sub is_fatal {
-    1;
+    0;
 };
 sub test {
     my $self = shift;
     my $topdir = $self->dir();
+    my $basename_topdir = basename($topdir);
     my(@errors) = ();
     my $query = "";
-    my $lookup_dir = $topdir;
 
-    if(Data::Util::is_string($self->lookup) && $self->lookup ne "."){
-        $lookup_dir = Cwd::realpath(File::Spec->catdir($topdir,$self->lookup));
-    }
 
     my $fSYS;
-    my @rug01_files = grep { 
-        $_ =~ /RUG01-(\d{9})$/o && ($fSYS = $1)
-    } glob("$lookup_dir/*");
-    my $num_rug01_files = scalar(@rug01_files);
+    if($basename_topdir =~ $self->_re){
 
-    if($num_rug01_files == 0){
-
-        push @errors,basename($topdir).": geen rug01-bestand gevonden";
-
-    }elsif($num_rug01_files > 1){
-
-        push @errors,basename($topdir).": meer dan één rug01-bestand gevonden";
+        $fSYS = $1;
 
     }else{
+
+        my $lookup_dir = $topdir;
+        if(Data::Util::is_string($self->lookup) && $self->lookup ne "."){
+            $lookup_dir = Cwd::realpath(File::Spec->catdir($topdir,$self->lookup));
+        }
+        my @rug01_files = grep { 
+            $_ =~ /RUG01-(\d{9})$/o && ($fSYS = $1)
+        } glob("$lookup_dir/*");
+        my $num_rug01_files = scalar(@rug01_files);
+
+        if($num_rug01_files == 0){
+
+            push @errors,"$basename_topdir: geen rug01-bestand gevonden";
+
+        }elsif($num_rug01_files > 1){
+
+            push @errors,"$basename_topdir: meer dan één rug01-bestand gevonden";
+
+        }
+    }
+    if(scalar(@errors) == 0 && Data::Util::is_string($fSYS)){
 
         $query = "rug01:$fSYS";
 

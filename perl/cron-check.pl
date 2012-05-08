@@ -69,71 +69,79 @@ my $users = DBI->connect($opts{data_source}, $opts{username}, $opts{password}, {
     mysql_auto_reconnect => 1
 });
 
-#stap 1: zoek scans van scanners
-my $sth_each = $users->prepare("select * from users where roles like '%scanner'");
+#stap 1: zoek scans
+my $sth_each = $users->prepare("select * from users where has_dir = 1");
 my $sth_get = $users->prepare("select * from users where id = ?");
 $sth_each->execute() or die($sth_each->errstr());
 while(my $user = $sth_each->fetchrow_hashref()){
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
-    open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
-    while(my $dir = <CMD>){
-        chomp($dir);    
-        my $basename = basename($dir);
-        my $scan = $scans->get($basename);
-        if(!$scan){
-            say "adding new record $basename";
-            $scans->add({
-                _id => $basename,
-                name => undef,
-                path => $dir,
-                status => "incoming",
-                status_history => [{
-                    user_name => $user->{login},
+    if(! -d $ready ){
+        say STDERR "directory $ready of user $user->{login} does not exist";
+        next;
+    }
+    try{
+        open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
+        while(my $dir = <CMD>){
+            chomp($dir);    
+            my $basename = basename($dir);
+            my $scan = $scans->get($basename);
+            if(!$scan){
+                say "adding new record $basename";
+                $scans->add({
+                    _id => $basename,
+                    name => undef,
+                    path => $dir,
                     status => "incoming",
-                    datetime => Time::HiRes::time,
-                    comments => ""
-                }],
-                check_log => [],
-                files => [],
-                user_id => $user->{id},
-                datetime_last_modified => Time::HiRes::time,
-                project_id => undef,
-                metadata => [],
-                comments => []
-            });
-        }else{
-            #het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
-            if("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
-                say "ah you little bastard, you came back?";
-                #03_reprocessing => 01_ready, maar laat de oude map in 03_reprocessing staan (verantwoordelijkheid van de scanners)
+                    status_history => [{
+                        user_name => $user->{login},
+                        status => "incoming",
+                        datetime => Time::HiRes::time,
+                        comments => ""
+                    }],
+                    check_log => [],
+                    files => [],
+                    user_id => $user->{id},
+                    datetime_last_modified => Time::HiRes::time,
+                    project_id => undef,
+                    metadata => [],
+                    comments => []
+                });
+            }else{
+                #het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
+                if("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
+                    say "ah you little bastard, you came back?";
+                    #03_reprocessing => 01_ready, maar laat de oude map in 03_reprocessing staan (verantwoordelijkheid van de scanners)
 
-                #pas paden aan
-                my $oldpath = $scan->{path};
-                foreach my $file(@{ $scan->{files} }){
-                    $file->{path} =~ s/^$oldpath/$dir/;
+                    #pas paden aan
+                    my $oldpath = $scan->{path};
+                    foreach my $file(@{ $scan->{files} }){
+                        $file->{path} =~ s/^$oldpath/$dir/;
+                    }
+                    $scan->{path} = $dir;
+
+                    #update file info
+                    foreach my $file(@{ $scan->{files} }){
+                        my $new_stats = file_info($file->{path});
+                        $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
+                    }
+
+                    #status op 'incoming_back'
+                    $scan->{status} = "incoming_back";
+                    push @{ $scan->{status_history} },{
+                        user_name => $user->{login},
+                        status => "incoming_back",
+                        datetime => Time::HiRes::time,
+                        comments => ""
+                    };
+
+                    $scans->add($scan);
                 }
-                $scan->{path} = $dir;
-
-                #update file info
-                foreach my $file(@{ $scan->{files} }){
-                    my $new_stats = file_info($file->{path});
-                    $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
-                }
-
-                #status op 'incoming_back'
-                $scan->{status} = "incoming_back";
-                push @{ $scan->{status_history} },{
-                    user_name => $user->{login},
-                    status => "incoming_back",
-                    datetime => Time::HiRes::time,
-                    comments => ""
-                };
-
-                $scans->add($scan);
             }
         }
-    }
-    close CMD;   
+        close CMD;   
+    }catch{
+        say STDERR "could not read directory $ready of user $user->{login}: $_";
+    };
 }
 
 #stap 2: doe check

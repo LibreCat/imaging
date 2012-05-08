@@ -7,26 +7,14 @@ has _nara_conf  => (
     is => 'rw',
     default => sub {
         [{
-            class => "Imaging::Test::Dir::checkFileExtension",
+            class => "Imaging::Test::Dir::checkPDF",
             args => {
-                extensions => ["tif"],
-                lookup => "data",
-                valid_patterns => ['^(?!RUG01-\d{9}$)']
+                valid_patterns => ['\.pdf$']
             }
          },
          {
-            class => "Imaging::Test::Dir::checkTIFF",
-            args => {
-                lookup => "data",
-                valid_patterns => ['^(?!RUG01-\d{9}$)']
-            }
-         },
-         {
-            class => "Imaging::Test::Dir::NARA::checkFilename",
-            args => {
-                lookup => "data",
-                valid_patterns => ['^(?!RUG01-\d{9}$)']
-            }
+            class => "Imaging::Test::Dir::TAR::checkFilename",
+            args => {}
         }];
     }
 );

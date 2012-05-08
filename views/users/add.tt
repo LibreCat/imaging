@@ -37,7 +37,7 @@
             </td>
 		</tr>
 		<tr>
-            <th>profile (indien scanner)</th>
+            <th>profile</th>
             <td>
                 <select name="profile_id" id="profile_id">
                     <option value="">--select profile--</option>

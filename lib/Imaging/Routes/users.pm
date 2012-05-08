@@ -179,13 +179,13 @@ sub check_params_new_user {
         if($is_scanner){
             my  $profile;
             if(!is_string($params->{profile_id})){
-                push    @errors,"geen   profiel opgegeven,  hoewel  rol van scanner";
+                push @errors,"geen profiel opgegeven, hoewel rol van scanner";
             }elsif(!($profile = config->{profiles}->{ $params->{profile_id} })){
                 push @errors,"opgegeven profiel bestaat niet";
             }
         }
     }
-    return  scalar(@errors)==0,\@errors;
+    return scalar(@errors)==0,\@errors;
 }
 
 true;

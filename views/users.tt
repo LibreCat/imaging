@@ -1,6 +1,6 @@
-<h1>List of users</h1>
+<h1>Lijst van gebruikers</h1>
 <p>
-	<a href="/users/add">add user</a>
+	<a href="/users/add">voeg gebruiker toe</a>
 </p>
 [% IF users && users.size > 0 %]
 	<table id="table-users" class="right">
