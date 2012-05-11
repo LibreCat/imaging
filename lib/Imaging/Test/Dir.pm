@@ -11,7 +11,6 @@ use Try::Tiny;
 use File::MimeInfo;
 
 sub import {
-    Catmandu::Sane->import;
     Catmandu::Util->import("require_package");
     Data::Util->import(qw(:check :validate));
     File::Basename->import(qw(basename dirname)); 

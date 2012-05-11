@@ -16,7 +16,6 @@ sub test {
     my $file_info = $self->file_info();
     my(@errors) = ();
     foreach my $stats(@$file_info){
-
         next if !$self->is_valid_basename($stats->{basename});
     
         #file mag niet empty leeg zijn

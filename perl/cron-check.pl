@@ -8,6 +8,7 @@ use Catmandu::Store::Solr;
 use Catmandu::Util qw(require_package :is);
 use List::MoreUtils;
 use File::Basename qw();
+use File::Path;
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
@@ -31,6 +32,32 @@ BEGIN {
     Dancer::Config::setting(envdir => "$appdir/environments");
     Dancer::Config::load();
     Catmandu->load($appdir);
+}
+sub _test_deep_hash {
+    my($hash,@keys) = @_;
+    my $key = pop @keys;
+    if(!exists($hash->{$key})){
+        return 0;
+    }else{
+        return _test_deep_hash(
+            $hash->{$key},@keys
+        );
+    }
+}
+sub test_deep_hash {
+    my($hash,$test) = @_;
+    _test_deep_hash($hash,split('.',$test));
+}
+sub seconds_day { 3600*24; }
+sub diff_days {
+    my($date1,$date2)=@_;
+    my $diff = ($date2 - $date1) / seconds_day();
+    if($diff > 0){
+        $diff = POSIX::floor($diff);
+    }else{
+        $diff = POSIX::ceil($diff);
+    }
+    return $diff;
 }
 sub core_opts {
     state $core_opts = do {
@@ -69,6 +96,79 @@ sub profiles {
 }
 sub mount_conf {
     config->{mounts}->{directories};
+}
+#how long before a warning is created?
+#-1 means never
+sub warn_after {
+    state $warn_after = do {
+        my $config = config;
+        if( 
+            defined($config->{mounts}) && defined($config->{mounts}->{subdirectories}) && 
+            defined($config->{mounts}->{subdirectories}->{ready}) &&
+            is_hash_ref($config->{mounts}->{subdirectories}->{ready}->{warn_after})
+        ){
+            my $warn_after = $config->{mounts}->{subdirectories}->{ready}->{warn_after};
+            return convertInterval(
+                seconds => $warn_after->{seconds},
+                minutes => $warn_after->{minutes},
+                hours => $warn_after->{hours},
+                days => $warn_after->{days},
+                ConvertTo => "seconds"
+            );
+        }else{
+            return -1;
+        }
+    };
+}
+sub do_warn {
+    my $scan = shift;
+    my $warn_after = warn_after();
+    print "$warn_after\n";
+    if($warn_after < 0){
+        return 1;
+    }else{
+        return ( time + $warn_after - $scan->{datetime_started} ) < 0;
+    }
+}
+#how long before the scan is deleted?
+#-1 means never
+sub delete_after {
+    state $delete_after = do {
+        my $config = config;
+        if(
+            defined($config->{mounts}) && defined($config->{mounts}->{ready}) && defined($config->{mounts}->{subdirectories}) &&
+            is_hash_ref($config->{mounts}->{subdirectories}->{ready}->{delete_after})
+        ){
+            my $delete_after = $config->{mounts}->{subdirectories}->{ready}->{delete_after};
+            return convertInterval(
+                seconds => $delete_after->{seconds},
+                minutes => $delete_after->{minutes},
+                hours => $delete_after->{hours},
+                days => $delete_after->{days},
+                ConvertTo => "seconds"
+            );
+        }else{
+            return -1;
+        }
+    };
+}
+sub do_delete {
+    my $scan = shift;
+    my $delete_after = delete_after();
+    my $warn_after = warn_after();
+    if($delete_after < 0){
+        return 0;
+    }else{
+        return ( ( time + $warn_after + $delete_after ) - $scan->{datetime_started} ) < 0;
+    }
+}
+sub delete_scan_data {
+    my $scan = shift;
+    try{
+        rmtree($scan->{path});
+    }catch{
+        say STDERR $_;
+    };
 }
 sub formatted_date {
     my $time = shift || Time::HiRes::time;
@@ -135,9 +235,11 @@ while(my $user = $sth_each->fetchrow_hashref()){
                     files => [],
                     user_id => $user->{id},
                     datetime_last_modified => Time::HiRes::time,
+                    datetime_started => Time::HiRes::time,
                     project_id => undef,
                     metadata => [],
-                    comments => []
+                    comments => [],
+                    warnings => []
                 });
             }else{
                 #het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
@@ -176,8 +278,33 @@ while(my $user = $sth_each->fetchrow_hashref()){
         say STDERR "could not read directory $ready of user $user->{login}: $_";
     };
 }
+#stap 2: zijn er scandirectories die hier al te lang staan?
+my @delete = ();
+my @warn = ();
+$scans->each(sub{
+    my $scan = shift;
+    if(do_delete($scan)){
+        push @delete,$scan->{_id};
+    }elsif(do_warn($scan)){
+        push @warn,$scan->{_id};
+    }
+});
+foreach my $id(@delete){
+    my $scan = $scans->get($id);
+    delete_scan_data($scan);
+    $scans->delete($id);
+}
+foreach my $id(@warn){
+    my $scan = $scans->get($id);
+    $scan->{warnings} = [{
+        datetime => Time::HiRes::time,
+        text => "Deze map heeft de tijdslimiet op validatie niet gehaald, en zal binnenkort verwijderd worden",
+        username => "-"
+    }];   
+    $scan->add($scan);
+}
 
-#stap 2: doe check
+#stap 3: doe check
 sub get_package {
     my($class,$args)=@_;
     state $stash->{$class} ||= require_package($class)->new(%$args);
@@ -204,9 +331,9 @@ $scans->each(sub{
         my $new = [];
         find({          
             wanted => sub{
-            my $path = abs_path($File::Find::name);
-            return if $path eq abs_path($scan->{path});
-            push @$new,$path;
+                my $path = abs_path($File::Find::name);
+                return if $path eq abs_path($scan->{path});
+                push @$new,$path;
             },
             no_chdir => 1
         },$scan->{path});

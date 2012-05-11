@@ -111,6 +111,13 @@ mounts:
     windows: "I:\\"
    ready:
     windows: "J:\\"
+  ready: 
+   #warn 3 days after first arrival
+   warn_after: 
+    days: 3
+   #delete 1 day after the warning
+   delete_after:
+    days: 1
 status:
  change:
   all:
