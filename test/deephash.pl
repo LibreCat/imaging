@@ -1,27 +1,19 @@
 #!/usr/bin/env perl
 use Catmandu::Sane;
-use Data::Util qw(:check);
+use Dancer qw(:script);
+use Catmandu qw(store);
+use Imaging::Util qw(data_at);
+use Data::Dumper;
 
-sub _test_deep_hash {
-    my($hash,@keys) = @_;
-    say join(',',@keys);
-    my $key = pop @keys;
-    say join(',',@keys);
-    if(!is_hash_ref($hash->{$key})){
-        return 0;
-    }else{
-        return _test_deep_hash(
-            $hash->{$key},@keys
-        );
-    }
-}
-sub test_deep_hash {
-    my($hash,$test) = @_;
-    say $test;
-    say split('.',$test);
-    _test_deep_hash($hash,split('.',$test));
+BEGIN {
+    my $appdir = Cwd::realpath("..");
+    Dancer::Config::setting(appdir => $appdir);
+    Dancer::Config::setting(public => "$appdir/public");
+    Dancer::Config::setting(confdir => $appdir);
+    Dancer::Config::setting(envdir => "$appdir/environments");
+    Dancer::Config::load();
+    Catmandu->load($appdir);
 }
 
-say test_deep_hash({
-    a => 1
-},"a.b");
+my $config = config;
+print Dumper(data_at($config,"mounts.directories.directories.ready.warn_after"));

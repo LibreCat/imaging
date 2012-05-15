@@ -1,6 +1,7 @@
 package Imaging::Routes::users;
 use Dancer  ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
@@ -11,9 +12,6 @@ use Digest::MD5 qw(md5_hex);
 use File::Path  qw(mkpath   rmtree);
 use Try::Tiny;
 
-sub dbi_handle {
-    state $dbi_handle = database;
-}
 hook before => sub {
     if(request->path    =~  /^\/user/o){
         my  $auth   =   auth;

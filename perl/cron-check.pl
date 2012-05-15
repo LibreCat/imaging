@@ -1,10 +1,9 @@
 #!/usr/bin/env perl
 use Dancer qw(:script);
 use Catmandu qw(store);
+use Imaging::Util qw(data_at);
 
 use Catmandu::Sane;
-use Catmandu::Store::DBI;
-use Catmandu::Store::Solr;
 use Catmandu::Util qw(require_package :is);
 use List::MoreUtils;
 use File::Basename qw();
@@ -12,16 +11,12 @@ use File::Path;
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
-use YAML;
 use Try::Tiny;
-use DBI;
-use DateTime;
-use DateTime::TimeZone;
-use DateTime::Format::Strptime;
 use Time::HiRes;
 use Array::Diff;
 use File::Find;
 use File::MimeInfo;
+use Time::Interval;
 our($a,$b);
 
 BEGIN {
@@ -33,64 +28,8 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 }
-sub _test_deep_hash {
-    my($hash,@keys) = @_;
-    my $key = pop @keys;
-    if(!exists($hash->{$key})){
-        return 0;
-    }else{
-        return _test_deep_hash(
-            $hash->{$key},@keys
-        );
-    }
-}
-sub test_deep_hash {
-    my($hash,$test) = @_;
-    _test_deep_hash($hash,split('.',$test));
-}
-sub seconds_day { 3600*24; }
-sub diff_days {
-    my($date1,$date2)=@_;
-    my $diff = ($date2 - $date1) / seconds_day();
-    if($diff > 0){
-        $diff = POSIX::floor($diff);
-    }else{
-        $diff = POSIX::ceil($diff);
-    }
-    return $diff;
-}
-sub core_opts {
-    state $core_opts = do {
-        my $catmandu_config = Catmandu->config;
-        {
-            data_source => $catmandu_config->{store}->{core}->{options}->{data_source},
-            username => $catmandu_config->{store}->{core}->{options}->{username},
-            password => $catmandu_config->{store}->{core}->{options}->{password}
-        };
-    };
-}
-sub core {
-    state $core = store("core");
-}
-sub users {
-    state $users = do {
-        my $core_opts = core_opts();
-        my $users = DBI->connect($core_opts->{data_source}, $core_opts->{username}, $core_opts->{password},{
-            AutoCommit => 1,
-            RaiseError => 1,
-            mysql_auto_reconnect => 1
-        });
-    };
-}
-sub users_each {
-    state $x = users->prepare("select * from users where has_dir = 1");
-}
-sub users_get {
-    state $x = users->prepare("select * from users where id = ?");
-}
-sub scans {
-    state $scans = core->bag("scans");
-}
+use Dancer::Plugin::Imaging::Routes::Utils;
+
 sub profiles {
     config->{profiles} ||= {};
 }
@@ -102,32 +41,28 @@ sub mount_conf {
 sub warn_after {
     state $warn_after = do {
         my $config = config;
-        if( 
-            defined($config->{mounts}) && defined($config->{mounts}->{subdirectories}) && 
-            defined($config->{mounts}->{subdirectories}->{ready}) &&
-            is_hash_ref($config->{mounts}->{subdirectories}->{ready}->{warn_after})
-        ){
-            my $warn_after = $config->{mounts}->{subdirectories}->{ready}->{warn_after};
-            return convertInterval(
-                seconds => $warn_after->{seconds},
-                minutes => $warn_after->{minutes},
-                hours => $warn_after->{hours},
-                days => $warn_after->{days},
-                ConvertTo => "seconds"
-            );
+        my $warn_after = data_at($config,"mounts.directories.ready.warn_after");
+        my $return;
+        if($warn_after){
+            my %opts = ();
+            my @keys = qw(seconds minutes hours days);
+            foreach(@keys){
+                $opts{$_} = is_string($warn_after->{$_}) ? int($warn_after->{$_}) : 0;
+            }
+            $return = convertInterval(%opts,ConvertTo => "seconds");
         }else{
-            return -1;
+            $return = -1;
         }
+        $return;
     };
 }
 sub do_warn {
     my $scan = shift;
     my $warn_after = warn_after();
-    print "$warn_after\n";
     if($warn_after < 0){
         return 1;
     }else{
-        return ( time + $warn_after - $scan->{datetime_started} ) < 0;
+        return ( $scan->{datetime_started} + $warn_after - time ) < 0;
     }
 }
 #how long before the scan is deleted?
@@ -135,31 +70,29 @@ sub do_warn {
 sub delete_after {
     state $delete_after = do {
         my $config = config;
-        if(
-            defined($config->{mounts}) && defined($config->{mounts}->{ready}) && defined($config->{mounts}->{subdirectories}) &&
-            is_hash_ref($config->{mounts}->{subdirectories}->{ready}->{delete_after})
-        ){
-            my $delete_after = $config->{mounts}->{subdirectories}->{ready}->{delete_after};
-            return convertInterval(
-                seconds => $delete_after->{seconds},
-                minutes => $delete_after->{minutes},
-                hours => $delete_after->{hours},
-                days => $delete_after->{days},
-                ConvertTo => "seconds"
-            );
+        my $delete_after = data_at($config,"mounts.directories.ready.delete_after");
+        my $return;
+        if($delete_after){
+            my %opts = ();
+            my @keys = qw(seconds minutes hours days);
+            foreach(@keys){
+                $opts{$_} = is_string($delete_after->{$_}) ? int($delete_after->{$_}) : 0;
+            }
+            $return = convertInterval(%opts,ConvertTo => "seconds");
         }else{
-            return -1;
+            $return = -1;
         }
+        $return;
     };
 }
 sub do_delete {
     my $scan = shift;
     my $delete_after = delete_after();
-    my $warn_after = warn_after();
+    my $warn_after = warn_after();  
     if($delete_after < 0){
         return 0;
     }else{
-        return ( ( time + $warn_after + $delete_after ) - $scan->{datetime_started} ) < 0;
+        return ( ( $scan->{datetime_started} + $warn_after + $delete_after ) - time ) < 0;
     }
 }
 sub delete_scan_data {
@@ -169,12 +102,6 @@ sub delete_scan_data {
     }catch{
         say STDERR $_;
     };
-}
-sub formatted_date {
-    my $time = shift || Time::HiRes::time;
-    DateTime::Format::Strptime::strftime(
-        '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
-    );
 }
 sub file_info {
     my $path = shift;
@@ -199,14 +126,14 @@ sub file_info {
     }
 }
 
-my $sth_each = users_each;
-my $sth_get = users_get;
 my $mount_conf = mount_conf;
 my $scans = scans;
 
 #stap 1: zoek scans
-$sth_each->execute() or die($sth_each->errstr());
-while(my $user = $sth_each->fetchrow_hashref()){
+my @users =  dbi_handle->quick_select("users",{ has_dir => 1});
+
+foreach my $user(@users){
+
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
     if(! -d $ready ){
         say STDERR "directory $ready of user $user->{login} does not exist";
@@ -220,7 +147,7 @@ while(my $user = $sth_each->fetchrow_hashref()){
             my $scan = $scans->get($basename);
             if(!$scan){
                 say "adding new record $basename";
-                $scans->add({
+                $scan = {
                     _id => $basename,
                     name => undef,
                     path => $dir,
@@ -240,11 +167,11 @@ while(my $user = $sth_each->fetchrow_hashref()){
                     metadata => [],
                     comments => [],
                     warnings => []
-                });
+                };
+                $scans->add($scan);
             }else{
                 #het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
                 if("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
-                    say "ah you little bastard, you came back?";
                     #03_reprocessing => 01_ready, maar laat de oude map in 03_reprocessing staan (verantwoordelijkheid van de scanners)
 
                     #pas paden aan
@@ -268,13 +195,19 @@ while(my $user = $sth_each->fetchrow_hashref()){
                         datetime => Time::HiRes::time,
                         comments => ""
                     };
+                    #datum aanpassen
+                    $scan->{datetime_last_modified} = Time::HiRes::time;
 
                     $scans->add($scan);
                 }
             }
+            #update index_scan en index_log
+            scan2index($scan);
+            status2index($scan);
         }
         close CMD;   
     }catch{
+        chomp($_);
         say STDERR "could not read directory $ready of user $user->{login}: $_";
     };
 }
@@ -284,13 +217,20 @@ my @warn = ();
 $scans->each(sub{
     my $scan = shift;
     if(do_delete($scan)){
+        say "ah too late man!";
+        #voor later
+        return;
+        say "nothing too see here!";
+
         push @delete,$scan->{_id};
     }elsif(do_warn($scan)){
+        say "ah a warning!";
         push @warn,$scan->{_id};
     }
 });
 foreach my $id(@delete){
     my $scan = $scans->get($id);
+    say "ah no! You're deleting things!";
     delete_scan_data($scan);
     $scans->delete($id);
 }
@@ -301,7 +241,7 @@ foreach my $id(@warn){
         text => "Deze map heeft de tijdslimiet op validatie niet gehaald, en zal binnenkort verwijderd worden",
         username => "-"
     }];   
-    $scan->add($scan);
+    $scans->add($scan);
 }
 
 #stap 3: doe check
@@ -364,8 +304,7 @@ foreach my $scan_id(@scan_ids){
     }
 
     say "checking $scan_id at $scan->{path}";
-    $sth_get->execute( $scan->{user_id} ) or die($sth_get->errstr);
-    my $user = $sth_get->fetchrow_hashref();
+    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
     if(!defined($user->{profile_id})){
         say STDERR "no profile defined for $user->{login}";
         next;
@@ -445,5 +384,15 @@ foreach my $scan_id(@scan_ids){
         $scan->{status} = "incoming_ok";
     }
     $scan->{files} = \@files;
+
+    $scan->{datetime_last_modified} = Time::HiRes::time;
+
+    #update index_scan en index_log
+    scan2index($scan);
+    status2index($scan);
+
     $scans->add($scan);
 }
+
+index_log->store->solr->optimize();
+index_scan->store->solr->optimize()

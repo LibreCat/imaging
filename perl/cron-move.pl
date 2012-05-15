@@ -3,18 +3,13 @@ use Catmandu;
 use Dancer qw(:script);
 
 use Catmandu::Sane;
-use Catmandu::Store::DBI;
-use Catmandu::Store::Solr;
-use Catmandu::Util qw(require_package :is);
-use List::MoreUtils qw(first_index);
+use Catmandu::Util qw(:is);
 use File::Basename qw();
 use File::Copy qw(copy move);
 use File::Path qw(mkpath);
 use Cwd qw(abs_path);
 use File::Spec;
-use YAML;
 use Try::Tiny;
-use DBI;
 use File::MimeInfo;
 
 BEGIN {
@@ -26,6 +21,7 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 }
+use Dancer::Plugin::Imaging::Routes::Utils;
 
 #variabelen
 sub file_info {
@@ -33,7 +29,7 @@ sub file_info {
     my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
     if($dev){
         return {
-            name => File::basename::basename($path),
+            name => File::Basename::basename($path),
             path => $path,
             atime => $atime,
             mtime => $mtime,
@@ -44,29 +40,12 @@ sub file_info {
         };
     }else{
         return {
-            name => File::basename::basename($path),
+            name => File::Basename::basename($path),
             path => $path,
             error => $!
         }
     }
 }
-sub core_opts {
-    state $opts = do {
-        my $config = Catmandu->config;
-        {
-            data_source => $config->{store}->{core}->{options}->{data_source},
-            username => $config->{store}->{core}->{options}->{username},
-            password => $config->{store}->{core}->{options}->{password}
-        };
-    };
-}
-sub core {
-    state $core = store("core");
-}
-sub scans {
-    state $scans = core()->bag("scans");
-}
-
 my $scans = scans();
 
 my @ids_to_be_moved = ();

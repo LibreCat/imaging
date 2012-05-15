@@ -1,6 +1,7 @@
 package Imaging::Routes::qa_control;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -9,16 +10,6 @@ use Data::Pageset;
 use Try::Tiny;
 use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
-
-sub core {
-    state $core = store("core");
-}
-sub indexer {
-    state $index = store("index")->bag;
-}
-sub scans {
-    state $scans = core()->bag("scans");
-}
 
 hook before => sub {
     if(request->path =~ /^\/qa_control/o){
@@ -37,7 +28,7 @@ any('/qa_control',sub {
     }
 
     my $params = params;
-    my $indexer = indexer();
+    my $index_scan = index_scan();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
 
     my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
@@ -47,11 +38,10 @@ any('/qa_control',sub {
     my $offset = ($page - 1)*$num;
     my $sort = $params->{sort};
 
-    my @states = qw(registered derivatives_created reprocess_scans reprocess_metadata reprocess_derivatives archived);
+    my @states = qw(registered derivatives_created archived published);
     my $fq = join(' OR ',map {
         "status:$_"
     } @states);
-    say $fq;
     my %opts = (
         query => $q,
         fq => $fq,
@@ -77,7 +67,7 @@ any('/qa_control',sub {
     my @errors = ();
     my($result);
     try {
-        $result= indexer->search(%opts);
+        $result= index_scan->search(%opts);
     }catch{
         push @errors,"ongeldige zoekvraag";
     };
@@ -93,7 +83,7 @@ any('/qa_control',sub {
             scans => $result->hits,
             page_info => $page_info,
             auth => auth(),
-            facet_status => $result->{facets}->{facet_counts}->{status} || [],
+            facet_status => $result->{facets}->{facet_fields}->{status} || [],
             mount_conf => mount_conf()
         });
     }else{

@@ -1,8 +1,8 @@
 package Imaging::Routes::listing;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
-use Dancer::Plugin::Database;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
@@ -10,15 +10,6 @@ use URI::Escape qw(uri_escape);
 use Try::Tiny;
 use File::Find;
 
-sub dbi_handle {
-    state $dbi_handle = database;
-}
-sub core {
-    state $core = store("core");
-}
-sub scans {
-    state $scans = core()->bag("scans");
-}
 hook before => sub {
     if(request->path =~ /^\/ready/o){
         my $auth = auth;

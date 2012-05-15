@@ -1,15 +1,12 @@
 package Imaging::Routes::account;
 use Dancer ':syntax';
 use Dancer::Plugin::Auth::RBAC;
-use Dancer::Plugin::Database;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use URI::Escape qw(uri_escape);
 use Digest::MD5 qw(md5_hex);
 
-sub dbi_handle {
-    state $dbi_handle = database;
-}
 hook before => sub {
     if(request->path =~ /^\/account/o){
         my $auth = auth;
