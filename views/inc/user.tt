@@ -1,8 +1,0 @@
-[% IF session.user.id %]
-	<div id="logo_login">
-		<a href="/account">
-			[% session.user.login %]
-			<img src="/images/user.png" />
-		</a>
-	</div>
-[% END %]

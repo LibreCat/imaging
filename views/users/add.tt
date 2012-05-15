@@ -1,56 +1,52 @@
 [% PROCESS inc/errors_messages.tt %]
-<h1>New user</h1>
-<form method="post" accept-charset="UTF-8">
-	<table id="form-user-add">
-		<tr>
-			<th>login:</th>
-			<td>
-				<input type="text" name="login" id="login" value="[% params.item("login") %]" />
-			</td>
-		</tr>
-		<tr>
-            <th>name:</th>
-            <td>
-                <input type="text" name="name" id="name" value="[% params.item("name") %]" />
-            </td>
-        </tr>
-		<tr>
-            <th>password:</th>
-            <td>
-				<input type="password" name="password1" id="password1" value="" />
-            </td>
-        </tr>
-		<tr>
-            <th>retype password:</th>
-            <td>
-                <input type="password" name="password2" id="password2" value="" />
-            </td>
-        </tr>
-		<tr>
-			<th>roles</th>
-            <td>
-                <select name="roles" id="roles" multiple="multiple">
-				[% FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
-					<option value="[% role %]" [% IF params.roles.grep(role).size > 0 %]selected="selected"[% END %]>[% role %]</option>
-				[% END %]
-				</select>
-            </td>
-		</tr>
-		<tr>
-            <th>profile</th>
-            <td>
-                <select name="profile_id" id="profile_id">
-                    <option value="">--select profile--</option>
-                [% FOREACH profile_id IN settings.profiles.keys.sort %]
-                    <option value="[% profile_id %]" [% IF params.profile_id == profile_id %]selected="selected"[% END %]>[% profile_id %]</option>
-                [% END %]
-                </select>
-            </td>
-        </tr>
-		<tr>
-			<td colspan="2">
-				<input type="submit" value="add" name="submit" id="submit" />
-			</td>
-		</tr>
-	</table>
+<h1>Nieuwe gebruiker</h1>
+<form method="POST" accept-charset="UTF-8" class="form-horizontal">
+  <div class="control-group">
+    <label for="login" class="control-label">login:</label>
+    <div class="controls">
+      <input type="text" name="login" id="login" class="span3" value="[% params.item('login') | html %]"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="name" class="control-label">name:</label>
+    <div class="controls">
+      <input type="text" name="name" id="name" class="span6" value="[% params.item('name') | html %]"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="password1" class="control-label">password:</label>
+    <div class="controls">
+      <input type="password" name="password1" id="password1" class="span3" value=""/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="password2" class="control-label">retype password:</label>
+    <div class="controls">
+      <input type="password" name="password2" id="password2" class="span3" value=""/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="roles" class="control-label">roles:</label>
+    <div class="controls">
+      <select name="roles" id="roles" multiple="multiple">
+				[%- FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
+				<option value="[% role %]" [% IF params.roles.grep(role).size > 0 %]selected="selected"[% END %]>[% role %]</option>
+				[%- END %]
+			</select>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="profile_id" class="control-label">profile:</label>
+    <div class="controls">
+      <select name="profile_id" id="profile_id">
+        <option value=""></option>
+        [%- FOREACH profile_id IN settings.profiles.keys.sort %]
+        <option value="[% profile_id %]" [% IF params.profile_id == profile_id %]selected="selected"[% END %]>[% profile_id %]</option>
+        [%- END %]
+      </select>
+    </div>
+  </div>
+  <div class="form-actions">
+	  <input type="submit" value="add" name="submit" id="submit" class="btn btn-large btn-primary"/>
+  </div>
 </form>

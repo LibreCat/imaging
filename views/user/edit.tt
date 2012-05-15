@@ -1,78 +1,59 @@
 [% PROCESS inc/errors_messages.tt %]
-<h1>Edit user '[% user.login %]'</h1>
-[% IF user %]
-	<script type="text/javascript">
-		function toggle_passwords(){
-			var edit_passwords = document.getElementById("edit_passwords");
-			var button_toggle_passwords = document.getElementById("button_toggle_passwords");
-			var password1 = document.getElementById("password1");
-			var password2 = document.getElementById("password2");
-			if(parseInt(edit_passwords.value)){
-				password1.disabled = true;
-				password2.disabled = true;
-				edit_passwords.value = 0;
-				button_toggle_passwords.value = "edit passwords..";
-			}else{
-				password1.disabled = false;
-                password2.disabled = false;
-                edit_passwords.value = 1;
-                button_toggle_passwords.value = "cancel..";
-			}
-		}
-	</script>
-	<form method="post">
-		<input type="submit" name="submit" id="submit" value="update" />
-	<table id="form-user-delete-detail" class="right">
-		<tr>
-			<th>login</th>
-			<td>
-				<input type="text" name="login" id="login" value="[% user.login %]" />
-			</td>
-		</tr>
-		<tr>
-            <th>name</th>
-            <td>
-                <input type="text" name="name" id="name" value="[% user.name %]" />
-            </td>
-        </tr>
-		<tr>
-			<th>roles</th>
-			<td>
-				<select name="roles" id="roles" multiple="multiple">
-				[% SET myroles = user.roles.split(', ') %]
-				[% FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
-                    <option value="[% role %]" [% IF myroles.grep(role).size > 0 %]selected="selected"[% END %]>[% role %]</option>
-                [% END %]
-				</select>
-			</td>
-		</tr>
-		<tr>
-            <th>profile</th>
-            <td>
-                <select name="profile_id" id="profile_id">
-					<option value="">--select profile--</option>
-                [% FOREACH profile_id IN settings.profiles.keys.sort %]
-                    <option value="[% profile_id %]" [% IF user.item("profile_id") == profile_id %]selected="selected"[% END %]>[% profile_id %]</option>
-                [% END %]
-                </select>
-            </td>
-        </tr>
-		<tr>
-			<td colspan="2">
-				<input type="button" id="button_toggle_passwords" value="edit passwords" onclick="toggle_passwords();"/>
-			</td>
-		</tr>
-		<tr>
-			<th>password:</th>
-			<td><input type="password" name="password1" id="password1" disabled="disabled" /></td>
-		</tr>	
-		<tr>
-            <th>retype password:</th>
-            <td>
-				<input type="password" name="password2" id="password2" disabled="disabled" />
-				<input type="hidden" name="edit_passwords" id="edit_passwords" value="0" />
-			</td>
-        </tr>
-	</table>
-	</form>
-[% END %]
+<h1>Edit user [% user.login %]</h1>
+[%- IF user %]
+<script type="text/javascript">
+  $(document).ready(function(){
+    $('#edit_passwords').bind('change', function(){
+        $('input[type="password"]').each(function(){
+          this.disabled = !this.disabled;
+        });
+    });
+  });
+</script>
+<form method="POST" accept-charset="UTF-8" class="form-horizontal">
+<table id="form-user-delete-detail" class="right">
+  <div class="control-group">
+    <label for="login" class="control-label">login:</label>
+    <div class="controls">
+      <input type="text" name="login" id="login" class="span3" value="[% user.login | html %]"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="name" class="control-label">name:</label>
+    <div class="controls">
+      <input type="text" name="name" id="name" class="span6" value="[% user.name | html %]"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="roles" class="control-label">roles:</label>
+    <div class="controls">
+      <select name="roles" id="roles" multiple="multiple">
+				[%- FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
+				<option value="[% role %]" [% IF user.roles.grep(role).size > 0 %]selected="selected"[% END %]>[% role %]</option>
+				[%- END %]
+			</select>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="profile_id" class="control-label">profile:</label>
+    <div class="controls">
+      <select name="profile_id" id="profile_id">
+        <option value=""></option>
+        [%- FOREACH profile_id IN settings.profiles.keys.sort %]
+        <option value="[% profile_id %]" [% IF user.profile_id == profile_id %]selected="selected"[% END %]>[% profile_id %]</option>
+        [%- END %]
+      </select>
+    </div>
+  </div>
+  <div class="control-group">
+    <div class="controls">
+      <label class="checkbox"><input type="checkbox" name="edit_passwords" id="edit_passwords" value="1"/>change password</label>
+      <div class="control-group"><input type="password" name="password1" id="password1" disabled="disabled"/></div>
+      <div class="control-group"><input type="password" name="password2" id="password2" disabled="disabled"/></div>
+    </div>
+  </div>
+  <div class="form-actions">
+	  <input type="submit" value="Update" name="submit" id="submit" class="btn btn-large btn-primary"/>
+  </div>
+</form>
+[%- END %]
