@@ -1,23 +1,14 @@
 [% PROCESS inc/errors_messages.tt %]
 <h1>Account</h1>
-[% IF user %]
-	<input type="button" onclick="window.location.href=document.referrer" value="back" />
-	<table id="form-user-delete-detail">
-		<tr>
-			<th>login:</th>
-			<td>[% user.login %]</td>
-		</tr>
-		<tr>
-			<th>name:</th>
-			<td>[% user.name %]</td>
-		</tr>
-		<tr>
-			<th>roles:</th>
-			<td>[% user.roles %]</td>
-		</tr>
-		<tr>
-			<th>password:</th>
-            <td>*****</td>
-		</tr>		
-	</table>
-[% END %]
+[%- IF user %]
+<dl class="dl-horizontal">
+  <dt>login:</dt>
+  <dd>[% user.login | html %]</dd>
+  <dt>name:</dt>
+  <dd>[% user.name | html %]</dd>
+  <dt>roles:</dt>
+  <dd>[% user.roles | html %]</dd>
+  <dt>password:</dt>
+  <dd>*****</dd>
+</dl>
+[%- END %]
