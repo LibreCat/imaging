@@ -1,0 +1,19 @@
+store:
+ core:
+  package: "Catmandu::Store::DBI"
+  options:
+   data_source: "dbi:mysql:database=imaging"
+   username: "imaging"
+   password: "imaging"
+   bags:
+    projects: &sformat
+     serialization_format: "messagepack"
+    scans: *sformat
+ index_scan:
+  package: "Catmandu::Store::Solr"
+  options:
+   url: "http://localhost:8983/solr/core0"
+ index_log:
+  package: "Catmandu::Store::Solr"
+  options:
+   url: "http://localhost:8983/solr/core1"
