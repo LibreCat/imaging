@@ -18,5 +18,5 @@
 </table>
 
 <form method="POST" accept-charset="UTF-8">
-  <button type="submit" class="btn btn-warning" name="submit">Maak mappen aan</button>
+  <input type="submit" class="btn btn-warning" name="submit" value="Maak mappen aan" />
 </form>
