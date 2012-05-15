@@ -1,52 +1,39 @@
 [% PROCESS inc/errors_messages.tt %]
 [% PROCESS inc/datepicker.tt %]
-<script type="text/javascript">
-	$(document).ready(function(){
-		$("input.date").datepicker({
-			dateFormat:'dd-mm-yy',
-			appendText: '&nbsp;e.g. 01-01-2012',
-			defaultDate:new Date(),
-			minDate:new Date()
-		});
-	});
-</script>
-<h1>New project</h1>
-<form method="post" accept-charset="UTF-8">
-	<table id="form-project-add" class="right">
-		<tr>
-            <th>naam project:</th>
-            <td>
-                <input type="text" name="name" id="name" value="[% params.item("name") %]" />
-            </td>
-        </tr>
-		<tr>
-            <th>naam deelproject:</th>
-            <td>
-                <input type="text" name="name_subproject" id="name_subproject" value="[% params.item("name_subproject") %]" />
-            </td>
-        </tr>
-		<tr>
-            <th>beschrijving:</th>
-            <td>
-                <textarea name="description" id="description" rows="15" cols="50">[% params.item("description") %]</textarea>
-            </td>
-        </tr>
-		<tr>
-            <th>start project (dag-maand-jaar):</th>
-            <td>
-                <input class="date" name="datetime_start" id="datetime_start" value="[% params.item("datetime_start") %]" />
-            </td>
-        </tr>
-		<tr>
-            <th>query:</th>
-            <td>
-                <textarea name="query" id="query" rows="15" cols="50">[% params.item("query") %]</textarea>
-            </td>
-        </tr>
-		<tr>
-			<td colspan="2">
-				<input type="submit" value="add" name="submit" id="submit" />
-			</td>
-		</tr>
-	</table>
+<h1>Nieuw project</h1>
+<form method="POST" accept-charset="UTF-8" class="form-horizontal">
+  <div class="control-group">
+    <label for="name" class="control-label">naam project:</label>
+    <div class="controls">
+      <input type="text" name="name" id="name" class="span6" value="[% params.name | html %]"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="name_subproject" class="control-label">naam deelproject:</label>
+    <div class="controls">
+      <input type="text" name="name_subproject" id="name_subproject" class="span6" value="[% params.name_subproject | html %]"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="description" class="control-label">beschrijving:</label>
+    <div class="controls">
+      <textarea name="description" id="description" class="span6">[% params.description | html %]</textarea>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="datetime_start" class="control-label">start project:</label>
+    <div class="controls">
+      <input type="text" name="datetime_start" id="datetime_start" class="datepicker" value="[% params.datetime_start %]"/>
+      <span class="help-inline">dag-maand-jaar</span>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="query" class="control-label">query:</label>
+    <div class="controls">
+      <textarea name="query" id="query" class="span6">[% params.query | html %]</textarea>
+    </div>
+  </div>
+  <div class="form-actions">
+	  <input type="submit" value="Add" name="submit" id="submit" class="btn btn-large btn-primary"/>
+  </div>
 </form>

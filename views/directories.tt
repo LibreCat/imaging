@@ -1,84 +1,66 @@
 [% PROCESS inc/errors_messages.tt %]
-<h1>Lijst van mappen per gebruiker</h1>
-<div class="paging">
-[% IF users && users.size > 0 && page_info.pages_in_set.size > 1 %]
+<h1>Mappen per gebruiker</h1>
 
-    [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/directories?page=[% page_info.first_page %]&amp;num=[% params.num %]">eerste</a>
-    [% END %]
+[%- IF users && users.size > 0 && page_info.pages_in_set.size > 1 %]
+<ul class="pager">
+  [%- IF page_info.previous_page %]
+  <li class="previous"><a href="/directories?page=[% page_info.previous_page %]&amp;num=[% params.num %]">vorige</a></li>
+  [%- ELSE %]
+  <li class="previous disabled"><a href="#">vorige</a></li>
+  [%- END %]
+  [%- IF page_info.next_page %]
+  <li class="next"><a href="/directories?page=[% page_info.next_page %]&amp;num=[% params.num %]">volgende</a></li>
+  [%- ELSE %]
+  <li class="next disabled"><a href="#">volgende</a></li>
+  [%- END %]
+</ul>
+[%- END %]
 
-    [% IF page_info.previous_page %]
-    <a href="/directories?page=[% page_info.previous_page %]&amp;num=[% params.num %]" >vorige</a>
-    [% END %]
-
-    [% FOREACH page IN page_info.pages_in_set %]
-        [% IF page == page_info.current_page %]
-        <span class="current">[% page %]</span>
-        [% ELSE %]
-        <a href="/directories?page=[% page %]&amp;num=[% params.num %]">[% page %]</a>
-        [% END %]
-    [% END %]
-
-    [% IF page_info.next_page %]
-    <a href="/directories?page=[% page_info.next_page %]&amp;num=[% params.num %]" >volgende</a>
-    [% END %]
-
-    [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/directories?page=[% page_info.last_page %]&amp;num=[% params.num %]">laatste</a>
-    [% END %]
-
-[% END %]
-</div>
-[% IF users && users.size > 0 %]
-	<table id="table-users" class="left">
-		<tr>
-			<th>login</th>
-			<th>01_ready</th>
-			<th>03_reprocessing</th>
-			<th>acties</th>
-		</tr>
-	[% FOREACH user IN users %]
-		<tr>
-			<td>[% user.item("login") %]</td>
-			<td>
-                [% IF user.has_dir %]                
-                    <a href="/ready/[% user.login %]">
-                        [% user.item("ready") %]
-                    </a>
-					[% TRY %]
-                        [% USE File(user.item("ready")) %]
-                    [% CATCH File %]
-                    	<span style="color:red">error!</span>
-                    [% END %]					
-                [% ELSE %]
-                    -
-                [% END %]
-			</td>
-			<td>
-				[% IF user.has_dir %]
-				    [% q = "status:reprocess_scans AND user_login:" _ user.login %]
-                    <a href="/scans?q=[% q | url %]">
-                    [% user.item("reprocessing") || "-" %]
-                    </a>
-                    [% TRY %]
-                        [% USE File(user.item("reprocessing")) %]
-                    [% CATCH File %]
-                        <span style="color:red">error!</span>
-                    [% END %]
-                [% ELSE %]
-                    -        
-                [% END %]
-			</td>
-			<td>
-			    <a href="/directories/[% user.item("id") %]/edit">edit/add</a>
-			</td>
-		</tr>
-	[% END %]
-	</table>
-[% ELSE %]
-	<table id="table-directories"> 
-		<tr>
-            <th>geen gebruikers (buiten admin)</th>
-        </tr>
-	</table>
-[% END %]
+[%- IF users && users.size %]
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>login</th>
+      <th>01_ready</th>
+      <th>03_reprocessing</th>
+    </tr>
+  </thead>
+  <tbody>
+    [%- FOREACH user IN users %]
+    <tr>
+      <td>
+        [% user.login | html %]
+        <div class="btn-group actions">
+          <a class="btn" href="/directories/[% user.id %]/edit"><i class="icon-pencil"></i></a>
+        </div>
+      </td>
+      <td>
+        [%- IF user.has_dir %]
+        <a href="/ready/[% user.login %]">[% user.ready %]</a>
+        [%- TRY %]
+        [%- USE File(user.ready) %]
+        [%- CATCH File %]
+        <span class="label label-important">error</span>
+        [%- END %]					
+        [%- ELSE %]
+        -
+        [%- END %]
+      </td>
+      <td>
+        [%- IF user.has_dir %]
+        [%- q = "status:reprocess_scans AND user_login:" _ user.login -%]
+        <a href="/scans?q=[% q | url %]">[% user.reprocessing || '-' %]</a>
+        [%- TRY %]
+        [%- USE File(user.reprocessing) %]
+        [%- CATCH File %]
+        <span class="label label-important">error</span>
+        [%- END %]
+        [%- ELSE %]
+        -
+        [%- END %]
+      </td>
+    </tr>
+    [%- END %]
+  </tbody>
+</table>
+[%- END %]

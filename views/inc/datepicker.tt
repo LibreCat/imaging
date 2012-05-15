@@ -1,2 +1,12 @@
-<link rel="stylesheet" href="[% request.base_uri %]/css/datepicker/jquery-ui-1.8.17.custom.css" type="text/css" media="screen" />
-<script type="text/javascript" src="[% request.base_uri %]/js/jquery-ui-1.8.17.custom.min.js"></script>
+<link rel="stylesheet" href="[% request.base_uri %]/css/bootstrap-datepicker.css" type="text/css" media="screen"/>
+<script type="text/javascript" src="[% request.base_uri %]/js/bootstrap-datepicker.js"></script>
+<script type="text/javascript" src="[% request.base_uri %]/js/bootstrap-datepicker.nl.js"></script>
+<script type="text/javascript">
+	$(document).ready(function(){
+      $('.datepicker').datepicker({
+        format: 'dd-mm-yyyy',
+        autoclose: true,
+        language: 'nl'
+      });
+	});
+</script>

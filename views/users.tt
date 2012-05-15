@@ -1,33 +1,34 @@
-<h1>Lijst van gebruikers</h1>
+<h1>Gebruikers</h1>
+
 <p>
-	<a href="/users/add">voeg gebruiker toe</a>
+  <a class="btn btn-primary" href="/users/add"><i class="icon-plus icon-white"></i> nieuwe gebruiker</a>
 </p>
-[% IF users && users.size > 0 %]
-	<table id="table-users" class="right">
-		<tr>
-			<th>naam</th>
-			<th>login</th>
-			<th>rol</th>
-			<th>acties</th>
-		</tr>
-	[% FOREACH user IN users %]
-		<tr>
-			<td>[% user.name %]</td>
-			<td>[% user.login %]</td>
-			<td>[% user.roles %]</td>
-			<td>
-				[% IF user.id != "1" %]
-				<a href="/user/[% user.id %]/delete">delete</a>&nbsp;|&nbsp;
-				<a href="/user/[% user.id %]/edit">edit</a>
-				[% END %]
-			</td>
-		</tr>
-	[% END %]
-	</table>
-[% ELSE %]
-	<table id="table-users"> 
-		<tr>
-            <th>Geen gebruikers aanwezig</th>
-        </tr>
-	</table>
-[% END %]
+
+[%- IF users && users.size %]
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>naam</th>
+      <th>login</th>
+      <th>rol</th>
+    </tr>
+  </thead>
+  <tbody>
+    [%- FOREACH user IN users %]
+    <tr>
+      <td>
+        [% user.name | html %]
+        [%- IF user.id != "1" %]
+        <div class="btn-group actions">
+          <a class="btn btn-small" href="/user/[% user.id %]/edit"><i class="icon-pencil"></i></a>
+          <a class="btn btn-small" href="/user/[% user.id %]/delete"><i class="icon-trash"></i></a>
+        </div>
+        [%- END %]
+      </td>
+      <td>[% user.login | html %]</td>
+      <td>[% user.roles | html %]</td>
+    </tr>
+    [%- END %]
+  </tbody>
+</table>
+[%- END %]

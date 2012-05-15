@@ -1,10 +1,15 @@
-    <ul class="error">
-    [% FOREACH error IN errors %]
-        <li>[% error.replace("_"," ") %]</li>
-    [% END %]
-    </ul>
-    <ul class="messages">
-    [% FOREACH message IN messages %]
-        <li>[% message %]</li>
-    [% END %]
-    </ul>
+<div class="row">
+  [%- FOREACH error IN errors %]
+  <div class="alert alert-error span8">
+    <a class="close" data-dismiss="alert" href="#">×</a>
+    <strong>[% error.replace("_"," ") | html %]</strong>
+  </div>
+  [%- END %]
+  <ul class="messages">
+  [%- FOREACH message IN messages %]
+  <div class="alert alert-info span8">
+    <a class="close" data-dismiss="alert" href="#">×</a>
+    <strong>[% message | html %]</strong>
+  </div>
+  [%- END %]
+</div>
