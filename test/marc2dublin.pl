@@ -35,13 +35,10 @@ $scans->each(sub{
         $xml =~ s/[\n\r]//go;       
         open my $fh,"<",\$xml or die($!);
         my $importer = Catmandu::Importer::MARC->new(file => $fh, type => 'XML');
-        #$importer->each(sub{ print Dumper(shift); });
-        #next;
         $fixer->fix($importer)->each(sub{
             my $ref = shift;
             print Dumper($ref);
         });
         close $fh;
-        say "\n\n";
     }
 });
