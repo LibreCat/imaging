@@ -6,6 +6,8 @@ my $requires = {
 	perl => '>=5.10.0',
 	Dancer => '>=1.3091',
 	Plack => '>=0.9985',
+    Catmandu => 0,
+    'Catmandu::MARC' => 0,
 
 	'Dancer::Session::PSGI' => 0,
 	'Dancer::Session::Cookie' => 0,
@@ -20,7 +22,7 @@ my $requires = {
 	'DateTime::Format::Strptime' => 0,
 	'Scalar::Util' => 0,
 	'Data::Util' => 0,
-	'Dancer::Plugin::Auth::RBAC' => '>=1.110720',
+	'Dancer::Plugin::Auth::RBAC' => 0,
 	'Data::Pageset' => 0,
 	'Hash::Merge::Simple' => 0,
 	'Digest::MD5' => 0,

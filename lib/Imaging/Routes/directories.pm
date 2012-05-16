@@ -1,6 +1,7 @@
 package Imaging::Routes::directories;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
@@ -11,16 +12,6 @@ use File::Path qw(mkpath rmtree);
 use Try::Tiny;
 use Data::Pageset;
 use URI::Escape qw(uri_escape);
-
-sub dbi_handle {
-    state $dbi_handle = database;
-}
-sub core {
-    state $core = store("core");
-}
-sub scans {
-    state $scans = core()->bag("scans");
-}
 
 hook before => sub {
     if(request->path =~ /^\/directories/o){

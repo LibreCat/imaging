@@ -1,9 +1,12 @@
 #!/usr/bin/env perl
-use Catmandu::Sane;
-use Dancer qw(:script);
 use Catmandu qw(store);
-use Imaging::Util qw(data_at);
-use Data::Dumper;
+use Dancer qw(:script);
+use Catmandu::Sane;
+use Catmandu::Util qw(require_package :is);
+use File::Basename qw();
+use File::Copy qw(copy move);
+use Cwd qw(abs_path);
+use File::Spec;
 
 BEGIN {
     my $appdir = Cwd::realpath("..");
@@ -14,6 +17,6 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 }
-
-my $config = config;
-print Dumper(data_at($config,"mounts.directories.directories.ready.warn_after"));
+use Dancer::Plugin::Imaging::Routes::Utils;
+use Data::Dumper;
+print Dumper(core());

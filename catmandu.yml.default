@@ -5,7 +5,11 @@ store:
    data_source: "dbi:mysql:database=imaging"
    username: "imaging"
    password: "imaging"
- index:
+   bags:
+    projects: &sformat
+     serialization_format: "messagepack"
+    scans: *sformat
+ index_scan:
   package: "Catmandu::Store::Solr"
   options:
    url: "http://localhost:8983/solr/core0"

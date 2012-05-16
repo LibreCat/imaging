@@ -1,6 +1,7 @@
 package Imaging::Routes::projects;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -12,18 +13,6 @@ use Time::HiRes;
 use Try::Tiny;
 use List::MoreUtils qw(first_index);
 
-sub core {
-    state $core = store("core");
-}
-sub indexer {
-    state $indexer = store("index");
-}   
-sub index_scans {
-    state $index_scans = indexer->bag;
-}
-sub projects {
-    state $projects = core()->bag("projects");
-}
 hook before => sub {
     if(request->path =~ /^\/project(.*)$/o){
         my $auth = auth;
@@ -135,8 +124,6 @@ any('/projects/add',sub{
         #insert
         if(scalar(@errors)==0){
             $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
-            say to_dumper($params);
-            say "day:$1, month:$2, year:$3";
             my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));
             my $project = projects->add({
                 name => $params->{name},

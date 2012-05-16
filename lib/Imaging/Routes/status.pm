@@ -1,6 +1,7 @@
 package Imaging::Routes::status;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
@@ -10,19 +11,6 @@ use Data::Pageset;
 use Try::Tiny;
 use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
-
-sub core {
-    state $core = store("core");
-}
-sub indexer {
-    state $index = store("index")->bag;
-}
-sub scans {
-    state $scans = core()->bag("scans");
-}
-sub dbi_handle {
-    state $dbi_handle = database;
-}
 
 hook before => sub {
     if(request->path =~ /^\/status/o){
@@ -50,7 +38,7 @@ any('/status',sub {
         my @files = glob("$dir_ready/*");
         $stats->{ready}->{ $user->{login} } = scalar(@files);
 
-        my $result = indexer->search(
+        my $result = index_scan->search(
             query => "status:reprocess_scans AND user_login:".$user->{login},
             limit => 0
         );
@@ -58,7 +46,7 @@ any('/status',sub {
     }
     
     #status facet
-    my $result = indexer->search(
+    my $result = index_scan->search(
         query => "*",
         limit => 1,
         facet => "true",

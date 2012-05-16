@@ -4,6 +4,8 @@ use Catmandu qw(store);
 use Imaging::Util qw(data_at);
 
 use Catmandu::Sane;
+use Catmandu::Store::DBI;
+use Catmandu::Store::Solr;
 use Catmandu::Util qw(require_package :is);
 use List::MoreUtils;
 use File::Basename qw();
@@ -11,7 +13,12 @@ use File::Path;
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
+use YAML;
 use Try::Tiny;
+use DBI;
+use DateTime;
+use DateTime::TimeZone;
+use DateTime::Format::Strptime;
 use Time::HiRes;
 use Array::Diff;
 use File::Find;
@@ -28,8 +35,38 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 }
-use Dancer::Plugin::Imaging::Routes::Utils;
-
+sub core_opts {
+    state $core_opts = do {
+        my $catmandu_config = Catmandu->config;
+        {
+            data_source => $catmandu_config->{store}->{core}->{options}->{data_source},
+            username => $catmandu_config->{store}->{core}->{options}->{username},
+            password => $catmandu_config->{store}->{core}->{options}->{password}
+        };
+    };
+}
+sub core {
+    state $core = store("core");
+}
+sub users {
+    state $users = do {
+        my $core_opts = core_opts();
+        my $users = DBI->connect($core_opts->{data_source}, $core_opts->{username}, $core_opts->{password},{
+            AutoCommit => 1,
+            RaiseError => 1,
+            mysql_auto_reconnect => 1
+        });
+    };
+}
+sub users_each {
+    state $x = users->prepare("select * from users where has_dir = 1");
+}
+sub users_get {
+    state $x = users->prepare("select * from users where id = ?");
+}
+sub scans {
+    state $scans = core->bag("scans");
+}
 sub profiles {
     config->{profiles} ||= {};
 }
@@ -103,6 +140,12 @@ sub delete_scan_data {
         say STDERR $_;
     };
 }
+sub formatted_date {
+    my $time = shift || Time::HiRes::time;
+    DateTime::Format::Strptime::strftime(
+        '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+    );
+}
 sub file_info {
     my $path = shift;
     my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
@@ -126,14 +169,14 @@ sub file_info {
     }
 }
 
+my $sth_each = users_each;
+my $sth_get = users_get;
 my $mount_conf = mount_conf;
 my $scans = scans;
 
 #stap 1: zoek scans
-my @users =  dbi_handle->quick_select("users",{ has_dir => 1});
-
-foreach my $user(@users){
-
+$sth_each->execute() or die($sth_each->errstr());
+while(my $user = $sth_each->fetchrow_hashref()){
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
     if(! -d $ready ){
         say STDERR "directory $ready of user $user->{login} does not exist";
@@ -147,7 +190,7 @@ foreach my $user(@users){
             my $scan = $scans->get($basename);
             if(!$scan){
                 say "adding new record $basename";
-                $scan = {
+                $scans->add({
                     _id => $basename,
                     name => undef,
                     path => $dir,
@@ -167,8 +210,7 @@ foreach my $user(@users){
                     metadata => [],
                     comments => [],
                     warnings => []
-                };
-                $scans->add($scan);
+                });
             }else{
                 #het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
                 if("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
@@ -195,15 +237,10 @@ foreach my $user(@users){
                         datetime => Time::HiRes::time,
                         comments => ""
                     };
-                    #datum aanpassen
-                    $scan->{datetime_last_modified} = Time::HiRes::time;
 
                     $scans->add($scan);
                 }
             }
-            #update index_scan en index_log
-            scan2index($scan);
-            status2index($scan);
         }
         close CMD;   
     }catch{
@@ -304,7 +341,8 @@ foreach my $scan_id(@scan_ids){
     }
 
     say "checking $scan_id at $scan->{path}";
-    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+    $sth_get->execute( $scan->{user_id} ) or die($sth_get->errstr);
+    my $user = $sth_get->fetchrow_hashref();
     if(!defined($user->{profile_id})){
         say STDERR "no profile defined for $user->{login}";
         next;
@@ -384,15 +422,5 @@ foreach my $scan_id(@scan_ids){
         $scan->{status} = "incoming_ok";
     }
     $scan->{files} = \@files;
-
-    $scan->{datetime_last_modified} = Time::HiRes::time;
-
-    #update index_scan en index_log
-    scan2index($scan);
-    status2index($scan);
-
     $scans->add($scan);
 }
-
-index_log->store->solr->optimize();
-index_scan->store->solr->optimize()

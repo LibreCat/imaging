@@ -1,6 +1,7 @@
 package Imaging::Routes::logs;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -9,9 +10,6 @@ use Data::Pageset;
 use Try::Tiny;
 use URI::Escape qw(uri_escape);
 
-sub indexer {
-    state $index = store("index_log")->bag;
-}
 hook before => sub {
     if(request->path =~ /^\/logs/o){
         if(!authd){
@@ -22,7 +20,7 @@ hook before => sub {
 };
 any('/logs',sub {
     my $params = params;
-    my $indexer = indexer();
+    my $index_log = index_log();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
 
     my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
@@ -55,7 +53,7 @@ any('/logs',sub {
     }
     my($result,$error);
     try {
-        $result= indexer->search(%opts);
+        $result= index_log->search(%opts);
     }catch{
         $error = $_;
     };
