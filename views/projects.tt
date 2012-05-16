@@ -8,7 +8,7 @@
   [%- END %]
 
   [%- IF projects.size %]
-  <form method="GET" class="query-projects form-inline pull-right">
+  <form method="GET" class="form-inline autosubmit pull-right">
       <label for="sort">sorteer</label>
       <select name="sort" id="sort">
           <option value=""></option>
@@ -25,13 +25,6 @@
           [%- END %]
       </select>
     </form>
-    <script type="text/javascript" charset="utf-8">
-      $(document).ready(function() {
-          $('.query-projects select').change(function() {
-            $('.query-projects').submit();
-          });
-      });
-    </script>
   [%- END %]
 </div>
 

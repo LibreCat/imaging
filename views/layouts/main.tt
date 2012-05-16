@@ -20,6 +20,13 @@
         <![endif]-->
         <script type="text/javascript" src="[% request.base_uri %]/js/jquery-1.7.1.min.js"></script>
         <script type="text/javascript" src="[% request.base_uri %]/js/bootstrap.min.js"></script>
+        <script type="text/javascript" charset="utf-8">
+          $(document).ready(function() {
+              $('form.autosubmit select').change(function() {
+                $(this).closest('form').submit();
+              });
+          });
+        </script>
         <title>Imaging</title>
     </head>
     <body>
