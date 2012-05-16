@@ -1,5 +1,5 @@
 [% PROCESS inc/errors_messages.tt %]
-<h1>Edit user [% user.login %]</h1>
+<h1>Pas gebruiker [% user.login %] aan</h1>
 [%- IF user %]
 <script type="text/javascript">
   $(document).ready(function(){
@@ -19,13 +19,13 @@
     </div>
   </div>
   <div class="control-group">
-    <label for="name" class="control-label">name:</label>
+    <label for="name" class="control-label">naam:</label>
     <div class="controls">
       <input type="text" name="name" id="name" class="span6" value="[% user.name | html %]"/>
     </div>
   </div>
   <div class="control-group">
-    <label for="roles" class="control-label">roles:</label>
+    <label for="roles" class="control-label">rollen:</label>
     <div class="controls">
       <select name="roles" id="roles" multiple="multiple">
 				[%- FOREACH role IN settings.plugins.item("Auth::RBAC").permissions.options.control.keys %]
@@ -35,7 +35,7 @@
     </div>
   </div>
   <div class="control-group">
-    <label for="profile_id" class="control-label">profile:</label>
+    <label for="profile_id" class="control-label">profiel:</label>
     <div class="controls">
       <select name="profile_id" id="profile_id">
         <option value=""></option>
@@ -47,13 +47,13 @@
   </div>
   <div class="control-group">
     <div class="controls">
-      <label class="checkbox"><input type="checkbox" name="edit_passwords" id="edit_passwords" value="1"/>change password</label>
+      <label class="checkbox"><input type="checkbox" name="edit_passwords" id="edit_passwords" value="1"/>Wijzig paswoord (type twee keer)</label>
       <div class="control-group"><input type="password" name="password1" id="password1" disabled="disabled"/></div>
       <div class="control-group"><input type="password" name="password2" id="password2" disabled="disabled"/></div>
     </div>
   </div>
   <div class="form-actions">
-	  <input type="submit" value="Update" name="submit" id="submit" class="btn btn-large btn-primary"/>
+	  <input type="submit" value="Pas aan" name="submit" id="submit" class="btn btn-large btn-primary"/>
   </div>
 </form>
 [%- END %]
