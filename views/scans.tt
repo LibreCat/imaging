@@ -83,7 +83,9 @@
 			<td>[% scan.item("project_name_subproject") %]</td>
 			<td>
 				[% status = scan.item("status") %]
+                <a href="/scans?q=[% "status:\"" _ status _ "\"" | html  %]">
 				[% settings.human_readable.${status} || status %]
+                </a>
 			</td>
 			<td>
 				<input type="checkbox" disabled="disabled" [% IF scan.item("done") %] checked="checked"[% END %] />
