@@ -37,7 +37,18 @@ $scans->each(sub{
         my $importer = Catmandu::Importer::MARC->new(file => $fh, type => 'XML');
         $fixer->fix($importer)->each(sub{
             my $ref = shift;
-            print Dumper($ref);
+            foreach(keys %$ref){
+                if(is_array_ref($ref->{$_})){
+                    delete $ref->{$_} if scalar(@{ $ref->{$_} }) <= 0;
+                }
+            }
+            foreach my $key(sort keys %$ref){
+                if(is_array_ref($ref->{$key})){
+                    printf("%20s : %s\n",$key,$_) foreach(@{ $ref->{$key} });
+                }else{
+
+                }
+            }
         });
         close $fh;
     }

@@ -127,8 +127,8 @@ marc_map('001','sys');
 marc_map('003','prefix');
 move_field('prefix','id.$append');
 move_field('sys','id.$append');
-#join_field('id',':');
-#move_field('id','identifier.$append');
+join_field('id',':');
+move_field('id','identifier.$append');
 
 marc_map('020a','identifier.$append');
 marc_map('022a','identifier.$append');
@@ -210,4 +210,5 @@ marc_map('247','title.$append');
 marc_map('Leader06','type.$append');
 marc_map('Leader07','type.$append');
 marc_map('655','type.$append');
-#remove_field('record');
+remove_field('record');
+remove_field('_id');
