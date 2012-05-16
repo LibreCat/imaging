@@ -22,7 +22,7 @@
     </div>
 </form>
 
-[%- IF logs && logs.size > 0 %]
+[%- IF page_info.last_page > 1 %]
 <div class="pagination">
   <ul>
     [%- IF page_info.first_page && page_info.first_page < page_info.current_page %]
