@@ -33,6 +33,8 @@ my $requires = {
 	'enum' => 0,
 	'Time::Seconds' => 0,
 	'Template::Plugin::POSIX' => 0,
+    'Template::Plugin::JSON' => 0,
+    'Time::Interval' => 0,
     'File::MimeInfo' => 0
 };
 my $recommends = {
