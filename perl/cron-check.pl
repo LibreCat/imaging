@@ -20,7 +20,9 @@ use Time::Interval;
 our($a,$b);
 
 BEGIN {
-    my $appdir = Cwd::realpath("..");
+    my $appdir = Cwd::realpath(
+        dirname(dirname(__FILE__))
+    );
     Dancer::Config::setting(appdir => $appdir);
     Dancer::Config::setting(public => "$appdir/public");
     Dancer::Config::setting(confdir => $appdir);
