@@ -42,7 +42,7 @@ sub local_time {
     my $time = shift || time;
     $time = int($time);
     DateTime::Format::Strptime::strftime(
-        '%d-%m-%Y %H:%M:%S', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+        '%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
     );
 }
 sub status2index {
