@@ -120,12 +120,11 @@ Commentaar kan wel nog worden toegevoegd.</div>
         [%- dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ scan.item("_id") -%]
         [%- do_open = 1 -%]
       [%- END -%]
+      [% IF do_open %]
       <p>
-          [% scan.files.size || 0 %] bestanden
-          [% IF do_open %]
-          <a class="btn btn-mini" href="file://[% dir_processed_windows %]">open map</a>
-          [% END %]
+        <a class="btn btn-mini" href="file://[% dir_processed_windows %]">open map</a>
       </p>
+      [% END %]
       <table class="table table-striped">
         <tr>
           <th>naam</th>
@@ -170,6 +169,7 @@ Commentaar kan wel nog worden toegevoegd.</div>
           <div class="tab-pane" id="tab-baginfo">
             <dl class="dl-horizontal">
               [%- FOREACH key IN metadata.baginfo.keys.sort %]
+              [%- NEXT UNLESS metadata.baginfo.$key.size -%]
               <dt>[% key | html %]</dt>
               [%- FOREACH val IN metadata.baginfo.$key %]
               <dd>[% val | html %]</dd>
