@@ -493,7 +493,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <field name="files" type="string" indexed="true" stored="true" multiValued="true" />
 	<field name="check_log" type="string" indexed="true" stored="true" multiValued="true" />
     <field name="comments" type="lupetext" indexed="true" stored="true" />
-    <field name="datetime_last_modified" type="date" indexed="true" stored="true" />
+    <dynamicField name="datetime_*" type="date" indexed="true" stored="true" />
 	<field name="metadata_id" type="string" indexed="true" stored="true" />
 
     <!-- table users -->
@@ -507,11 +507,11 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="project_name" type="lupetext" indexed="true" stored="true" />
 	<field name="project_name_subproject" type="lupetext" indexed="true" stored="true" />
 	<field name="project_description" type="lupetext" indexed="true" stored="true" />
-    <field name="project_datetime_start" type="string" indexed="true" stored="true" />
+    <field name="project_date_start" type="string" indexed="true" stored="true" />
     <field name="project_query" type="lupetext" indexed="true" stored="true" />
 	<field name="project_total" type="int" indexed="true" stored="true" />
 	<field name="project_done" type="int" indexed="true" stored="true" />
-	<field name="project_datetime_last_modified" type="string" indexed="true" stored="true" />
+	<dynamicField name="project_datetime_*" type="date" indexed="true" stored="true" />
 	<field name="project_locked" type="int" indexed="true" stored="true" />
 
     <!--DEFAULT-->

@@ -86,8 +86,16 @@
     </td>
     <td><a href="/scans/view/[% log.scan_id %]">[% log.scan_id %]</a></td>
     <td>[% log.user_name %]</td>
-    <td>[% log.owner %]</td>
-    <td>[% settings.human_readable.${log.status} || log.status %]</td>
+    <td>
+        <a href="/scans?q=[% "owner:\"" _ log.owner  _ "\"" | uri  %]">
+        [% log.owner %]
+        </a>
+    </td>
+    <td>
+        <a href="/scans?q=[% "status:\"" _ log.status  _ "\"" | uri  %]">
+        [% settings.human_readable.${log.status} || log.status %]
+        </a>
+    </td>
     <td>
       [%- IF log.comments.length > 30 %]
       [% log.comments.substr(0,30) _ ".." %]

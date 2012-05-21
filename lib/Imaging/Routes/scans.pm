@@ -15,6 +15,7 @@ use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
 use Time::HiRes;
 use File::Basename qw();
+use Data::UUID;
 
 hook before => sub {
     if(request->path =~ /^\/scans/o){
@@ -170,46 +171,173 @@ any('/scans/edit/:_id',sub{
     });
 
 });
-any('/scans/view/:_id/comments',,sub{
+any('/scans/comments/:_id',,sub{
+    my $params = params;
+    my @errors = ();
+    my @messages = ();
+    my $scan = scans->get($params->{_id});
+
+    my $comments = [];
+    
+    content_type 'json';    
+
+    my $response = { };
+
+    if(!$scan){
+
+        push @errors, "scandirectory $params->{_id} niet gevonden";
+
+    }else{
+        
+        $comments = $scan->{comments};
+                
+    }
+
+    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+    $response->{errors} = \@errors;
+    $response->{messages} = \@messages;
+    $response->{data} = $comments;
+
+    return to_json($response);
+});
+
+any('/scans/comments/:_id/add',,sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
     my @errors = ();
     my @messages = ();
     my $scan = scans->get($params->{_id});
-    $scan or return not_found();
+    
+    my $comment;
 
-    my $project;
-    if($scan->{project_id}){
-        $project = projects->get($scan->{project_id});
+    content_type 'json';    
+
+    my $response = { };
+
+    if(!$scan){
+
+        push @errors, "scandirectory $params->{_id} niet gevonden";
+
+    }elsif(!$auth->can('scans','comment')){
+
+        push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
+
+    }elsif(!is_string($params->{text})){
+        
+        push @errors,"parameter 'text' is leeg";
+
+    }else{
+
+        $comment = {
+            datetime => Time::HiRes::time,
+            text => $params->{text},
+            user_name => session('user')->{login},
+            id => Data::UUID->new->create_str
+        };
+        push @{ $scan->{comments} ||= [] },$comment;
+        scans->add($scan);
+
     }
 
-    #comment - start
-    if(is_string($params->{comment})){
-        if($auth->can('scans','comment')){
-            push @{ $scan->{comments} ||= [] },{
-                datetime => Time::HiRes::time,
-                text => $params->{comment},
-                user_name => session('user')->{login}
-            };
-            scans->add($scan);
-        }else{
-            #complain
-            push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
-        }
-    }
-    #comment - end
+    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+    $response->{errors} = \@errors;
+    $response->{messages} = \@messages;
+    $response->{data} = $comment;
 
-    template('scans/comments',{
-        scan => $scan,
-        auth => $auth,
-        errors => \@errors,
-        mount_conf => mount_conf(),
-        project => $project,
-        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
-    }); 
-
+    return to_json($response);
 });
+#any('/scans/comments/:_id/delete',,sub{
+#    my $params = params;
+#    my $auth = auth;
+#    my $config = config;
+#    my @errors = ();
+#    my @messages = ();
+#    my $scan = scans->get($params->{_id});
+#    
+#    my $comment;
+#
+#    content_type 'json';    
+#
+#    my $response = { };
+#
+#    if(!$scan){
+#
+#        push @errors, "scandirectory $params->{_id} niet gevonden";
+#
+#    }elsif(!$auth->can('scans','comment')){
+#
+#        push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
+#
+#    }elsif(!is_string($params->{comment_id})){
+#        
+#        push @errors,"parameter 'comment_id' is leeg";
+#
+#    }else{
+#        my $index = first_index {
+#            $_->{id} == $params->{comment_id};
+#        } @{ $scan->{comments} || [] };
+#
+#        if($index >= 0){
+#
+#            my $login = session('user')->{login};
+#            if($auth->asa('admin') || $login eq $scan->{comments}->[$index]->{user_name}){
+#
+#                splice(@{ $scan->{comments} },$index,1);
+#                push @messages,"comment is verwijderd";
+#                scans->add($scan);
+#
+#            }else{
+#                push @errors,"U beschikt niet over de nodige rechten om deze comment te verwijderen";
+#            }
+#        }else{
+#            push @errors,"comment niet gevonden";
+#        }
+#
+#    }
+#
+#    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+#    $response->{errors} = \@errors;
+#    $response->{messages} = \@messages;
+#
+#    return to_json($response);
+#});
+any('/scans/comments/:_id/clear',,sub{
+    my $params = params;
+    my $auth = auth;
+    my $config = config;
+    my @errors = ();
+    my @messages = ();
+    my $scan = scans->get($params->{_id});
+    
+    my $comment;
+
+    content_type 'json';    
+
+    my $response = { };
+
+    if(!$scan){
+
+        push @errors, "scandirectory $params->{_id} niet gevonden";
+
+    }elsif(!$auth->asa('admin')){
+
+        push @errors,"U beschikt niet over de nodige rechten om alle commentaren te wissen";
+
+    }else{
+
+        $scan->{comments} = [];
+        scans->add($scan);
+
+    }
+
+    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+    $response->{errors} = \@errors;
+    $response->{messages} = \@messages;
+
+    return to_json($response);
+});
+
 any('/scans/edit/:_id/status',sub{
     my $params = params;
     my $auth = auth;
@@ -257,7 +385,8 @@ any('/scans/edit/:_id/status',sub{
                 push @{ $scan->{comments} ||= [] },{
                     datetime => Time::HiRes::time,
                     text => $text,
-                    user_name => session('user')->{login}
+                    user_name => session('user')->{login},
+                    id => Data::UUID->new->create_str
                 };
                 $scan->{datetime_last_modified} = Time::HiRes::time;
                 scans->add($scan);
