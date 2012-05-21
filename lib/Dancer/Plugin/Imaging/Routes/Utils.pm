@@ -38,6 +38,13 @@ sub formatted_date {
         '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
     );
 }
+sub local_time {
+    my $time = shift || time;
+    $time = int($time);
+    DateTime::Format::Strptime::strftime(
+        '%d-%m-%Y %H:%M:%S', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+    );
+}
 sub status2index {
     my $scan = shift;
     my $doc;
@@ -122,6 +129,7 @@ sub scan2index {
     $doc;
 }
 
+register local_time => \&local_time;
 register core => \&core;
 register scans => \&scans;
 register projects => \&projects;

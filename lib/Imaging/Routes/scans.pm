@@ -230,7 +230,7 @@ any('/scans/comments/:_id/add',,sub{
     }else{
 
         $comment = {
-            datetime => Time::HiRes::time,
+            datetime => local_time(),
             text => $params->{text},
             user_name => session('user')->{login},
             id => Data::UUID->new->create_str
@@ -328,6 +328,7 @@ any('/scans/comments/:_id/clear',,sub{
 
         $scan->{comments} = [];
         scans->add($scan);
+        push @messages,"Alle commentaar is verwijderd";
 
     }
 
@@ -383,7 +384,7 @@ any('/scans/edit/:_id/status',sub{
                 my $text = "wijzing status $status_from naar $status_to";
                 $text .= ":$comments" if $comments;
                 push @{ $scan->{comments} ||= [] },{
-                    datetime => Time::HiRes::time,
+                    datetime => local_time(),
                     text => $text,
                     user_name => session('user')->{login},
                     id => Data::UUID->new->create_str
