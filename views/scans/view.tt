@@ -190,21 +190,41 @@ Commentaar kan wel nog worden toegevoegd.</div>
 
     <div class="tab-pane" id="tab-comments">
       [% IF auth.can('scans','comment') %]
-      <div>
-        <form action="/scans/view/[% scan.item("_id") %]/comments" method="POST">
-          <textarea class="span4" name="comment"></textarea>
-          <div><input class="btn btn-primary" type="submit" name="submit" value="Post"/></div>
-        </form>
-      </div>
+      <form action="/scans/comments/[% scan.item("_id") %]/add" method="POST" id="add-comment">
+        <textarea class="span6" name="text"></textarea>
+        <div><input class="btn btn-primary" type="submit" name="submit" value="Add"/></div>
+      </form>
       [% END %]
+      <div id="comments">
       [% FOREACH comment IN scan.comments.reverse %]
         <blockquote>
           [% comment.text | html %]
-          <small>posted by [% comment.user_name %] at [% date.format(POSIX.floor(comment.datetime),'%d-%m-%Y %H:%M:%S') %]</small>
-        </blockquote>
+          <small>posted by [% comment.user_name %] at [% comment.datetime %]</small>
+        </
       [% END %]
+      </div>
     </div>
 
+    <script type="text/javascript" charset="utf-8">
+      $(document).ready(function() {
+          $('#add-comment').submit(function(evt) {
+            evt.preventDefault();
+            var f = $(this),
+                textInput = f.find(':input[name="text"]'),
+                text = textInput.val();
+            textInput.val("");
+            $.post(f.attr('action'), {text: text}, function(res) {console.log(res);
+              if (!res.status === 'ok') return;
+              var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
+                res.data.user_name+' at '+res.data.datetime+
+                '</small></blockquote>');
+              comment.hide();
+              $("#comments").prepend(comment);
+              comment.slideDown();
+            }, 'json');
+          });
+        });
+    </script>
   </div>
 </div>
 [%- END %]
