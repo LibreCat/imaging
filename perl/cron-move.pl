@@ -14,7 +14,9 @@ use File::MimeInfo;
 
 BEGIN {
     my $appdir = Cwd::realpath(
-        dirname(dirname(__FILE__))
+        dirname(dirname(
+            Cwd::realpath( __FILE__)
+        ))
     );
     Dancer::Config::setting(appdir => $appdir);
     Dancer::Config::setting(public => "$appdir/public");

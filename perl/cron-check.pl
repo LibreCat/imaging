@@ -2,7 +2,6 @@
 use Dancer qw(:script);
 use Catmandu qw(store);
 use Imaging::Util qw(data_at);
-
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is);
 use List::MoreUtils;
@@ -21,7 +20,9 @@ our($a,$b);
 
 BEGIN {
     my $appdir = Cwd::realpath(
-        dirname(dirname(__FILE__))
+        dirname(dirname(
+            Cwd::realpath( __FILE__)
+        ))
     );
     Dancer::Config::setting(appdir => $appdir);
     Dancer::Config::setting(public => "$appdir/public");
@@ -37,6 +38,24 @@ sub profiles {
 }
 sub mount_conf {
     config->{mounts}->{directories};
+}
+sub upload_idle_time {
+    state $upload_idle_time = do {
+        my $config = config;
+        my $time = data_at($config,"mounts.directories.ready.upload_idle_time");
+        my $return;
+        if($time){
+            my %opts = ();
+            my @keys = qw(seconds minutes hours days);
+            foreach(@keys){
+                $opts{$_} = is_string($time->{$_}) ? int($time->{$_}) : 0;
+            }
+            $return = convertInterval(%opts,ConvertTo => "seconds");
+        }else{
+            $return = 60;
+        }
+        $return;
+    };
 }
 #how long before a warning is created?
 #-1 means never
@@ -132,6 +151,14 @@ my $mount_conf = mount_conf;
 my $scans = scans;
 
 #stap 1: zoek scans
+# 1. lijst mappen
+# 2. Map staat niet in databank: voeg nieuw record toe
+# 3. Map staat wel in databank:
+#     3.1. Map die terugkeert uit 03_reprocessing? Zet 1ste keer status op 'incoming' en zet datetime_last_modified op mtime van de map. Pas tevens de bestandslijst aan. Vergelijk de eerstvolgende
+#          keer datetime_last_modified en mtime, en indien gelijk, zet status op 'incoming_done'
+#     3.2. Map die lange upload nodig heeft? Vergelijk datetime_last_modified met mtime van de map. Indien gelijk, dan wordt upload als afgelopen beschouwd en zet status op 'incoming_done'
+
+
 my @users =  dbi_handle->quick_select("users",{ has_dir => 1});
 
 foreach my $user(@users){
@@ -147,7 +174,16 @@ foreach my $user(@users){
             chomp($dir);    
             my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
-            if(!$scan){
+            my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($dir);
+
+            #wacht totdat er lange tijd niets met de map is gebeurt!!
+            my $seconds_since_modified = time - $mtime;
+            if($seconds_since_modified <= upload_idle_time()){
+                say "directory $basename probably busy (last modified $seconds_since_modified seconds ago)";
+                next;
+            }
+            #map komt nog niet voor in de databanken
+            elsif(!$scan){
                 say "adding new record $basename";
                 $scan = {
                     _id => $basename,
@@ -163,7 +199,11 @@ foreach my $user(@users){
                     check_log => [],
                     files => [],
                     user_id => $user->{id},
+                    #mtime van de diretory
+                    datetime_directory_last_modified => $mtime,
+                    #wanneer heeft het systeem de status van dit record voor het laatst aangepast
                     datetime_last_modified => Time::HiRes::time,
+                    #wanneer heeft het systeem de directory voor het eerst zien staan
                     datetime_started => Time::HiRes::time,
                     project_id => undef,
                     metadata => [],
@@ -171,37 +211,39 @@ foreach my $user(@users){
                     warnings => []
                 };
                 $scans->add($scan);
-            }else{
-                #het kan natuurlijk ook zijn dat een andere gebruiker dezelfde map heeft verwerkt..
-                if("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
-                    #03_reprocessing => 01_ready, maar laat de oude map in 03_reprocessing staan (verantwoordelijkheid van de scanners)
-
-                    #pas paden aan
-                    my $oldpath = $scan->{path};
-                    foreach my $file(@{ $scan->{files} }){
-                        $file->{path} =~ s/^$oldpath/$dir/;
-                    }
-                    $scan->{path} = $dir;
-
-                    #update file info
-                    foreach my $file(@{ $scan->{files} }){
-                        my $new_stats = file_info($file->{path});
-                        $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
-                    }
-
-                    #status op 'incoming_back'
-                    $scan->{status} = "incoming_back";
-                    push @{ $scan->{status_history} },{
-                        user_name => $user->{login},
-                        status => "incoming_back",
-                        datetime => Time::HiRes::time,
-                        comments => ""
-                    };
-                    #datum aanpassen
-                    $scan->{datetime_last_modified} = Time::HiRes::time;
-
-                    $scans->add($scan);
+            }
+            #map komt terug uit 03_reprocessing. Opgelet: een andere gebruiker kan ook gewoon dezelfde map hebben verwerkt!
+            elsif("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
+                
+                #pas paden aan
+                my $oldpath = $scan->{path};
+                foreach my $file(@{ $scan->{files} }){
+                    $file->{path} =~ s/^$oldpath/$dir/;
                 }
+                $scan->{path} = $dir;
+
+                #update file info
+                foreach my $file(@{ $scan->{files} }){
+                    my $new_stats = file_info($file->{path});
+                    $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
+                }
+
+                #status op 'incoming_back'
+                $scan->{status} = "incoming_back";
+                push @{ $scan->{status_history} },{
+                    user_name => $user->{login},
+                    status => "incoming_back",
+                    datetime => Time::HiRes::time,
+                    comments => ""
+                };
+                #datum aanpassen
+                $scan->{datetime_last_modified} = Time::HiRes::time;
+
+                my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($dir);
+                $scan->{datetime_directory_last_modified} = $mtime;
+
+                $scans->add($scan);
+
             }
             #update index_scan en index_log
             scan2index($scan);
@@ -210,7 +252,7 @@ foreach my $user(@users){
         close CMD;   
     }catch{
         chomp($_);
-        say STDERR "could not read directory $ready of user $user->{login}: $_";
+        say STDERR $_;
     };
 }
 #stap 2: zijn er scandirectories die hier al te lang staan?
@@ -256,41 +298,23 @@ my @scan_ids = ();
 $scans->each(sub{ 
 
     my $scan = shift;
-    #nieuwe of slechte directories moeten sowieso opnieuw gecheckt worden
-    if (
-        $scan->{status} && 
-        (
-            $scan->{status} eq "incoming" || 
-            $scan->{status} eq "incoming_error" ||
-            $scan->{status} eq "incoming_back"
-        )
+    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($scan->{path});
 
+    #check nieuwe directories
+    if(
+        $scan->{status} eq "incoming" || 
+        $scan->{status} eq "incoming_back"
     ){
         push @scan_ids,$scan->{_id};
     }
-    #incoming_ok enkel indien er iets aan bestandslijst gewijzigd is
-    elsif($scan->{status} eq "incoming_ok"){
-        my $new = [];
-        find({          
-            wanted => sub{
-                my $path = abs_path($File::Find::name);
-                return if $path eq abs_path($scan->{path});
-                push @$new,$path;
-            },
-            no_chdir => 1
-        },$scan->{path});
-        my $old = do {
-            my @list = map { 
-                $_->{path};
-            } @{ $scan->{files} ||= [] };
-            \@list;
-        };
+    #check slechte en goede indien iets gewijzigd
+    elsif(
+        $scan->{status} eq "incoming_error" ||
+        $scan->{status} eq "incoming_ok"
+    ){
 
-        my $diff = Array::Diff->diff($old,$new);
-        if( $diff->count != 0 ){    
-            say STDERR "something has changed to $scan->{path}, lets check what it is";
-            push @scan_ids,$scan->{_id};
-        }
+        push @scan_ids,$scan->{_id} if $mtime > $scan->{datetime_directory_last_modified};
+
     }
 
 });
@@ -344,47 +368,29 @@ foreach my $scan_id(@scan_ids){
         }
     }
 
-    if($num_fatal > 0){
-        if($scan->{status} eq "incoming_back"){
-            
-            push @{$scan->{status_history}},{
-                user_name =>"-",
-                status => "incoming_error",
-                datetime => Time::HiRes::time,
-                comments => ""
-            };          
-            
-        }else{
-            $scan->{status_history}->[1] = {
-                user_name =>"-",
-                status => "incoming_error",
-                datetime => Time::HiRes::time,
-                comments => ""
-            };
-        }
+    my $index_last_error = List::MoreUtils::last_index {
+        $_->{status} eq "incoming_error";
+    } @{$scan->{status_history}};
 
-        $scan->{status} = "incoming_error";
+    $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
+    
+    my $status_history_object = {
+        user_name =>"-",
+        status => $scan->{status},
+        datetime => Time::HiRes::time,
+        comments => ""
+    };
+
+    if($index_last_error >= 0){
+
+        $scan->{status_history}->[$index_last_error] = $status_history_object;
+    
     }else{
-        if($scan->{status} eq "incoming_back"){
 
-            push @{$scan->{status_history}},{
-                user_name =>"-",
-                status => "incoming_ok",
-                datetime => Time::HiRes::time,
-                comments => ""
-            };
+        push @{ $scan->{status_history} },$status_history_object;
 
-        }else{
-            $scan->{status_history}->[1] = {
-                user_name =>"-",
-                status => "incoming_ok",
-                datetime => Time::HiRes::time,
-                comments => ""
-            };
-            #verplaats maar pas 's nachts!
-        }
-        $scan->{status} = "incoming_ok";
     }
+
     $scan->{files} = \@files;
 
     $scan->{datetime_last_modified} = Time::HiRes::time;
@@ -395,6 +401,7 @@ foreach my $scan_id(@scan_ids){
 
     $scans->add($scan);
 }
-
-index_log->store->solr->optimize();
-index_scan->store->solr->optimize()
+if(scalar(@scan_ids) > 0){
+    index_log->store->solr->optimize();
+    index_scan->store->solr->optimize()
+}
