@@ -160,6 +160,7 @@ my $scans = scans;
 
 
 my @users =  dbi_handle->quick_select("users",{ has_dir => 1});
+my @scan_ids_ready = ();
 
 foreach my $user(@users){
 
@@ -248,6 +249,8 @@ foreach my $user(@users){
             #update index_scan en index_log
             scan2index($scan);
             status2index($scan);
+
+            push @scan_ids_ready,$scan->{_id};
         }
         close CMD;   
     }catch{
@@ -258,8 +261,8 @@ foreach my $user(@users){
 #stap 2: zijn er scandirectories die hier al te lang staan?
 my @delete = ();
 my @warn = ();
-$scans->each(sub{
-    my $scan = shift;
+foreach my $scan_id(@scan_ids_ready){
+    my $scan = $scans->get($scan_id);
     if(do_delete($scan)){
         say "ah too late man!";
         #voor later
@@ -271,7 +274,7 @@ $scans->each(sub{
         say "ah a warning!";
         push @warn,$scan->{_id};
     }
-});
+};
 foreach my $id(@delete){
     my $scan = $scans->get($id);
     say "ah no! You're deleting things!";
@@ -293,11 +296,11 @@ sub get_package {
     my($class,$args)=@_;
     state $stash->{$class} ||= require_package($class)->new(%$args);
 }
-my @scan_ids = ();
+my @scan_ids_test = ();
 
-$scans->each(sub{ 
+foreach my $scan_id(@scan_ids_ready){
 
-    my $scan = shift;
+    my $scan = $scans->get($scan_id);
     my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($scan->{path});
 
     #check nieuwe directories
@@ -305,7 +308,7 @@ $scans->each(sub{
         $scan->{status} eq "incoming" || 
         $scan->{status} eq "incoming_back"
     ){
-        push @scan_ids,$scan->{_id};
+        push @scan_ids_test,$scan->{_id};
     }
     #check slechte en goede indien iets gewijzigd
     elsif(
@@ -313,13 +316,13 @@ $scans->each(sub{
         $scan->{status} eq "incoming_ok"
     ){
 
-        push @scan_ids,$scan->{_id} if $mtime > $scan->{datetime_directory_last_modified};
+        push @scan_ids_test,$scan->{_id} if $mtime > $scan->{datetime_directory_last_modified};
 
     }
 
-});
+};
 
-foreach my $scan_id(@scan_ids){
+foreach my $scan_id(@scan_ids_test){
     my $scan = $scans->get($scan_id);
 
     #directory is ondertussen riebedebie
@@ -401,7 +404,7 @@ foreach my $scan_id(@scan_ids){
 
     $scans->add($scan);
 }
-if(scalar(@scan_ids) > 0){
+if(scalar(@scan_ids_ready) > 0){
     index_log->store->solr->optimize();
     index_scan->store->solr->optimize()
 }
