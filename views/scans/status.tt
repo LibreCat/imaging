@@ -1,66 +1,50 @@
 [% PROCESS inc/errors_messages.tt %]
-[% IF scan %]
-    <h1>Wijzig status [% scan.item("_id") %]</h1>
-	[% IF scan.status == "registering" %]
-		<div class="error">
-		opgelet: een automatisch script registreert dit record, en zal later geupdated worden
-		naar status 'registered'.
-		</div>
-	[% ELSIF scan.busy && scan.busy_reason == "move" %]
-        <div class="error">
-        opgelet: een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
-        kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
-        Commentaar kan wel nog worden toegevoegd.
-        </div>
-	[% ELSE %]
-		<script type="text/javascript">
-			function check_form(){
-				var select_status_to = document.getElementById("status_to");
-				var option_status_to = select_status_to.options[select_status_to.selectedIndex];
-				if(option_status_to.getAttribute("message")){
-					return confirm(option_status_to.getAttribute("message"));
-				}
-				return true;
-			}
-		</script>
-		<form method="post" onsubmit="return check_form();">
-			<table id="table-scans" class="left">
-				<tr>
-					<td colspan="2">
-						<input type="button" value="terug" onclick="window.location.href='/scans/edit/[% scan.item("_id") %]'"/>
-					</td>
-				</tr>
-				<tr>
-					<th>huidige status</th>
-					<td>[% settings.human_readable.${scan.status} || scan.status %]</td>
-				</tr>
-				<tr>
-                    <th>nieuwe status</th>
-                    <td>
-						<select name="status_to" id="status_to">
-						[% status_conf = settings.status.change.qa_control.item(scan.status) %]
-						[% FOREACH status IN status_conf.item("values") %]
-							[% message = status_conf.messages.${status} IF status_conf.messages.${status} %]
-							<option value="[% status %]" [% IF params.status_to == status %]selected="selected"[% END %] message="[% message %]">[% settings.human_readable.${status} || status %]</option>
-						[% END %]
-						[% IF status_conf.item("values").size == 0 %]
-							<option value="">-- wijziging niet mogelijk --</option>
-						[% END %]
-						</select>
-					</td>
-                </tr>
-				<tr>
-					<th>commentaar</th>
-					<td>
-						<textarea name="comments" rows="10" cols="50">[% params.comments %]</textarea>
-					</td>
-				</tr>
-				<tr>
-                    <td colspan="2">
-                        <input type="submit" name="submit" id="submit" value="wijzig">
-                    </td>
-                </tr>
-			</table>
-		</form>
-	[% END %]
-[% END %]
+
+[%- IF scan %]
+<h1>Wijzig status [% scan.item("_id") %]</h1>
+[%- IF scan.status == "registering" %]
+<div class="alert"><strong>opgelet!</strong> een automatisch script registreert dit record, en zal later geupdated worden
+naar status 'registered'.</div>
+[%- ELSIF scan.busy && scan.busy_reason == "move" %]
+<div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
+kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
+Commentaar kan wel nog worden toegevoegd.</div>
+[%- END %]
+
+<form method="POST" accept-charset="UTF-8" class="form-horizontal" id="scan-change-status">
+  <p>De huidige status is <strong>[% settings.human_readable.${scan.status} || scan.status %]</strong></p>
+  <div class="control-group">
+    <label for="status-to" class="control-label">nieuwe status</label>
+    <div class="controls">
+      <select name="status_to" id="status_to">
+      [%- status_conf = settings.status.change.qa_control.item(scan.status) -%]
+      [%- FOREACH status IN status_conf.item("values") %]
+        [%- message = status_conf.messages.${status} IF status_conf.messages.${status} -%]
+        <option value="[% status %]"[% IF params.status_to == status %] selected="selected"[% END %] message="[% message %]">[% settings.human_readable.${status} || status %]</option>
+      [%- END %]
+      </select>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="comments" class="control-label">opmerkingen</label>
+    <div class="controls">
+      <textarea name="comments" class="span6">[% params.comments | html %]</textarea>
+    </div>
+  </div>
+  <div class="form-actions">
+	  <input type="submit" value="Wijzig" name="submit" id="submit" class="btn btn-large btn-primary"/>
+  </div>
+</form>
+
+<script type="text/javascript">
+  $('#scan-change-status').submit(function (evt) {
+    var select_status_to = document.getElementById("status_to");
+    var option_status_to = select_status_to.options[select_status_to.selectedIndex];
+    if (option_status_to.getAttribute("message")){
+      if (!confirm(option_status_to.getAttribute("message"))) {
+        evt.preventDefault();
+      }
+    }
+  });
+</script>
+[%- END %]

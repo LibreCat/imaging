@@ -1,12 +1,9 @@
 [%- USE date -%]
 [%- USE POSIX -%]
 [%- USE SizePretty -%]
+[%- USE JSON -%]
 
 [% PROCESS inc/errors_messages.tt %]
-
-[%- IF auth.can('scans','edit') %]
-<a class="btn pull-right" href="/scans/edit/[% scan.item("_id") %]"><i class="icon-pencil"></i></a>
-[%- END %]
 
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
@@ -25,9 +22,13 @@ Commentaar kan wel nog worden toegevoegd.</div>
   <dd>[% scan.item("name") || "-" %]</dd>
   <dt>status</dt>
   <dd>
-    [%- q = "status:\"" _ scan.status _ "\"" -%]
-    <a href="/scans?q=[% q | uri %]">[% settings.human_readable.${scan.status} || scan.status %]</a>
+    <a href="/scans?q=status:&quot;[% scan.status | url %]&quot;">[% settings.human_readable.${scan.status} || scan.status %]</a>
   </dd>
+  [%- IF auth.can('scans','edit') %]
+  <dd>
+    <a class="btn btn-mini btn-primary" href="/scans/edit/[% scan.item('_id') %]/status">Wijzig status</a>
+  </dd>
+  [%- END %]
   <dt>project</dt>
   <dd>
     [%- IF project %]
@@ -155,18 +156,96 @@ Commentaar kan wel nog worden toegevoegd.</div>
     </div>
 
     <div class="tab-pane" id="tab-metadata">
+      [%- IF auth.can('scans','edit') %]
+      <form method="post" class="form-inline pull-right">
+          <input type="hidden" name="action" value="edit_metadata_id"/>
+          <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="id"/><button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button></div>
+      </form>
+      [%- END %]
       [%- FOREACH metadata IN scan.metadata %]
-      <p><a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata.source _ ":" _ metadata.fSYS %]</a></p>
+      [%- IF loop.index %]
+      <hr/>
+      [%- END%]
+      <p>
+        [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]
+        <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
+        [%- IF auth.can('scans','edit') %]
+        <a class="btn tip"
+          title="Herstel originele metadata"
+          href="/scans/[% scan.item('_id') %]?action=restore_metadata_id&metadata_id=[% metadata_id %]"
+          data-confirm="Hierdoor wordt de metadata overschreven. Bent je zeker?"><i class="icon-repeat"></i></a>
+        <a class="btn tip"
+          title="Verwijder metadata"
+          href="/scans/[% scan.item('_id') %]?action=delete_metadata_id&metadata_id=[% metadata_id %]"
+          data-confirm="De metadata wordt onherroepelijk verwijderd. Ben je zeker?"><i class="icon-trash"></i></a>
+        [%- END %]
+      </p>
       <div class="tabbable">
         <ul class="nav nav-tabs">
-          <li class="active"><a href="#tab-marc" data-toggle="tab">marc</a></li>
-          <li><a href="#tab-baginfo" data-toggle="tab">bag info</a></li>
+          <li class="active"><a href="#tab-marc-[% loop.index %]" data-toggle="tab">marc</a></li>
+          <li><a href="#tab-baginfo-[% loop.index %]" data-toggle="tab">bag info</a></li>
         </ul>
         <div class="tab-content">
-          <div class="tab-pane active" id="tab-marc">
-            <pre><code>[% metadata.fXML | html %]</code></pre>
+          <div class="tab-pane active" id="tab-marc-[% loop.index %]">
+            <pre style="max-height:300px;overflow:auto;"><code>[% metadata.fXML | html %]</code></pre>
           </div>
-          <div class="tab-pane" id="tab-baginfo">
+          <div class="tab-pane" id="tab-baginfo-[% loop.index %]">
+          [%- IF auth.can('scans','edit') %]
+            <form action="/scans/[% scan.item('_id')%]/baginfo/edit" method="POST" class="form-horizontal">
+              [%- i = 0 -%]
+              [%- FOREACH element IN settings.app.scans.edit.baginfo %]
+                [%- NEXT IF !(metadata.baginfo.${element.key} && metadata.baginfo.${element.key}.size > 0) -%]
+                [%- FOREACH value IN metadata.baginfo.${element.key} %]
+                  <div class="control-group baginfo">
+                    <label class="control-label">[% element.key %]</label>
+                    <div class="controls">
+                    [%- IF element.item("values") %]
+                      <select name="baginfo.[% element.key %]">
+                      [%- FOREACH conf_value IN element.item("values").sort %]
+                        <option value="[% conf_value %]"[% IF value == conf_value %] selected="selected"[% END %]>
+                          [% conf_value %]
+                        </option>
+                      [%- END %]
+                      </select>
+                    [%- ELSE %]
+                      <input type="text" name="baginfo-[% element.key %]" value="[% value %]"/>
+                    [%- END %]
+                      <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button>
+                    </div>
+                  </div>
+                  [%- i = i + 1 -%]
+                [%- END %]
+              [%- END %]
+              <div class="form-actions">
+                <input type="hidden" name="metadata_id" value="[% metadata_id %]"/>
+                <input class="btn btn-primary" type="submit" name="submit" value="Bewaar wijzigingen"/>
+              </div>
+            </form>
+            <form action="/scans/[% scan.item('_id') %]/baginfo/add" method="POST" class="form-horizontal">
+              <div class="control-group">
+                <div class="controls">
+                  <select name="key">
+                  [%- FOREACH element IN settings.app.scans.edit.baginfo %]
+                    <option value="[% element.key %]">[% element.key %]</option>
+                  [%- END %]
+                  </select>
+                  [%- IF settings.app.scans.edit.baginfo.0.item("values") %]
+                  <select name="value">
+                    [%- FOREACH val IN settings.app.scans.edit.baginfo.0.item("values") %]
+                    <option value="[% val %]">[% val %]</option>
+                    [%- END %]
+                  </select>
+                  [%- ELSE %]
+                  <input type="text" name="value"/>
+                  [%- END %]
+                </div>
+              </div>
+              <div class="form-actions">
+                <input type="hidden" name="metadata_id" value="[% metadata_id %]"/>
+                <button class="btn btn-primary" type="submit" name="submit">Voeg toe</button>
+              </div>
+            </form>
+          [%- ELSE %]
             <dl class="dl-horizontal">
               [%- FOREACH key IN metadata.baginfo.keys.sort %]
               [%- NEXT UNLESS metadata.baginfo.$key.size -%]
@@ -176,6 +255,7 @@ Commentaar kan wel nog worden toegevoegd.</div>
               [%- END %]
               [%- END %]
             </dl>
+          [%- END %]
           </div>
         </div>
       </div>
@@ -207,23 +287,51 @@ Commentaar kan wel nog worden toegevoegd.</div>
 
     <script type="text/javascript" charset="utf-8">
       $(document).ready(function() {
-          $('#add-comment').submit(function(evt) {
-            evt.preventDefault();
-            var f = $(this),
-                textInput = f.find(':input[name="text"]'),
-                text = textInput.val();
-            textInput.val("");
-            $.post(f.attr('action'), {text: text}, function(res) {console.log(res);
-              if (!res.status === 'ok') return;
-              var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
-                res.data.user_name+' at '+res.data.datetime+
-                '</small></blockquote>');
-              comment.hide();
-              $("#comments").prepend(comment);
-              comment.slideDown();
-            }, 'json');
-          });
+        $('#add-comment').submit(function(evt) {
+          evt.preventDefault();
+          var f = $(this),
+              textInput = f.find(':input[name="text"]'),
+              text = textInput.val();
+          textInput.val("");
+          $.post(f.attr('action'), {text: text}, function(res) {console.log(res);
+            if (!res.status === 'ok') return;
+            var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
+              res.data.user_name+' at '+res.data.datetime+
+              '</small></blockquote>');
+            comment.hide();
+            $("#comments").prepend(comment);
+            comment.slideDown();
+          }, 'json');
         });
+      });
+
+      $('.baginfo-remove').click(function (evt) {
+        evt.preventDefault();
+        $(this).closest('.baginfo').remove();
+      });
+
+      var baginfoConfig = [% settings.app.scans.edit.baginfo.json || "{}" %];
+
+      $(':input[name=key]').change(function () {
+        var select = $(this),
+            key    = select.options[select.selectedIndex].value;
+        for (var i = 0;i < baginfoConfig.length;i++) {
+          if (baginfoConfig[i].key == key) {
+              var data = [];
+              if (baginfoConfig[i].values && baginfoConfig[i].values.length > 0) {
+                  data.push('<select name="value"');
+                  for (var j = 0;j < baginfoConfig[i].values.length;j++) {
+                      data.push('<option value="'+baginfoConfig[i].values[j]+'">'+baginfoConfig[i].values[j]+'</option>');
+                  }
+                  data.push('</select>');
+              } else {
+                  data.push('<input type="text" name="value" value=""/>');
+              }
+              select.closest('form').find(':input[name=value]').replaceWith(data.join(''));
+              return;
+          }
+        }
+      });
     </script>
   </div>
 </div>

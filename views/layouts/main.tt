@@ -22,8 +22,14 @@
         <script type="text/javascript" src="[% request.base_uri %]/js/bootstrap.min.js"></script>
         <script type="text/javascript" charset="utf-8">
           $(document).ready(function() {
+              $('.tip').tooltip();
               $('form.autosubmit select').change(function() {
                 $(this).closest('form').submit();
+              });
+              $('a[data-confirm]').click(function(evt) {
+                if (!confirm($(this).data('confirm'))) {
+                  evt.preventDefault();
+                }
               });
           });
         </script>
