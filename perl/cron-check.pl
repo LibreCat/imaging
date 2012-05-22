@@ -291,13 +291,14 @@ foreach my $id(@warn){
     $scans->add($scan);
 }
 
-#stap 3: doe check
+#stap 3: doe check -> filter lijst van scan_ids_ready op mappen die gecontroleerd moeten worden:
+# 1. mappen die nog geen controle zijn gepasseerd, worden gecontroleerd
+# 2. mappen die wel eens gecontroleerd zijn, maar ongewijzigd sindsdien, worden niet gecontroleerd
 sub get_package {
     my($class,$args)=@_;
     state $stash->{$class} ||= require_package($class)->new(%$args);
 }
 my @scan_ids_test = ();
-
 foreach my $scan_id(@scan_ids_ready){
 
     my $scan = $scans->get($scan_id);
@@ -315,9 +316,7 @@ foreach my $scan_id(@scan_ids_ready){
         $scan->{status} eq "incoming_error" ||
         $scan->{status} eq "incoming_ok"
     ){
-
         push @scan_ids_test,$scan->{_id} if $mtime > $scan->{datetime_directory_last_modified};
-
     }
 
 };

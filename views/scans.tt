@@ -82,7 +82,7 @@
   </tr>
   [%- FOREACH scan IN scans %]
   <tr>
-    <td><a href="/scans/view/[% scan.item("_id") %]">[% scan.item("_id") %]</a></td>
+    <td><a href="/scans/[% scan.item("_id") %]">[% scan.item("_id") %]</a></td>
     <td>[% scan.item("user_name") || "-" %]</td>
     <td>[% scan.item("project_name") || "-" %]</td>
     <td>[% scan.item("project_name_subproject") %]</td>

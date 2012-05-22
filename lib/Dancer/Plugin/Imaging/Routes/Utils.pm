@@ -51,6 +51,10 @@ sub status2index {
     my $index_log = index_log();
     my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
 
+    #delete old states (enkel laatste incoming_error wordt bewaard!)
+    $index_log->delete_by_query(query => "scan_id:\"".$scan->{_id}."\"");
+
+    #send new states
     foreach my $history(@{ $scan->{status_history} || [] }){
         $doc = clone($history);
         $doc->{datetime} = formatted_date($doc->{datetime});

@@ -192,8 +192,8 @@ scans()->each(sub{
 foreach my $id(@ids_ok_for_metadata){
     my $scan = scans()->get($id);
     my $query = $scan->{_id};
-    if($query =~ /^RUG01-/o){
-        $query =~ s/^RUG01-/rug01:/o;
+    if($query =~ /^RUG\d{2}-/o){
+        $query =~ s/^RUG(\d{2})-/rug$1:/o;
     }else{
         $query = "location:$query";
     }
