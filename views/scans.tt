@@ -1,9 +1,10 @@
 [%- USE date -%]
 <h1>Scanopdrachten</h1>
 
-<form method="GET" class="form-search autosubmit">
-    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" class="search-query"/>
-    <input class="btn" type="submit" value="search"/>
+<form method="GET" class="form-inline autosubmit">
+    <div class="input-append">
+      <input type="text" name="q" id="q" value="[% params.q | html %]" size="50"/><button class="btn" type="submit">Search</button>
+    </div>
     <div class="pull-right">
       <label for="sort">sorteer</label>
       <select name="sort" id="sort">

@@ -2,9 +2,10 @@
 
 <h1>QA controle</h1>
 
-<form method="GET" class="form-search form-inline autosubmit">
-    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" class="search-query"/>
-    <button type="submit" class="btn">Search</button>
+<form method="GET" class="form-inline autosubmit">
+    <div class="input-append">
+      <input type="text" name="q" id="q" value="[% params.q | html %]" size="50"/><button class="btn" type="submit">Search</button>
+    </div>
     <div class="btn-group">
       <button class="btn dropdown-toggle" data-toggle="dropdown">
         <span class="caret"></span>
