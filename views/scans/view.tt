@@ -26,7 +26,7 @@ Commentaar kan wel nog worden toegevoegd.</div>
   </dd>
   [%- IF auth.can('scans','edit') %]
   <dd>
-    <a class="btn btn-mini btn-primary" href="/scans/edit/[% scan.item('_id') %]/status">Wijzig status</a>
+    <a class="btn btn-mini btn-primary" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
   </dd>
   [%- END %]
   <dt>project</dt>

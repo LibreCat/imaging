@@ -14,6 +14,10 @@
           .table .actions {
             float: right;
           }
+          .form-inline .btn-group {
+            display: inline-block;
+            vertical-align: middle;
+          }
         </style>
         <!--[if lt IE 9]>
         <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>

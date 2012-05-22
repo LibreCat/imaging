@@ -1,82 +1,86 @@
-[% USE date %]
+[%- USE date -%]
+
 <h1>QA controle</h1>
-<div class="paging">
-[% IF scans && scans.size > 0 %]
 
-    [% IF page_info.first_page && ( page_info.first_page < page_info.current_page ) %]
-    <a href="/qa_control?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a>
-    [% END %]
-
-    [% IF page_info.previous_page %]
-    <a href="/qa_control?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >vorige</a>
-    [% END %]
-
-    [% FOREACH page IN page_info.pages_in_set %]
-        [% IF page == page_info.current_page %]
-        <span class="current">[% page %]</span>
-        [% ELSE %]
-        <a href="/qa_control?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">[% page %]</a>
-        [% END %]
-    [% END %]
-
-    [% IF page_info.next_page %]
-    <a href="/qa_control?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]" >volgende</a>
-    [% END %]
-
-    [% IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <a href="/qa_control?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">laatste</a>
-    [% END %]
-    (
-    [% page = params.page || 1 %]
-    [% first = ( ( page - 1 ) * page_info.entries_per_page ) + 1 %]
-    Resultaten [% first %] tot [% first + scans.size - 1 %]
-    )
-[% END %]
-</div>
-<form method="GET" id="query-form">
-    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" />
-    <input type="submit" value="search" />
-    <select name="sort" id="sort" onchange="document.getElementById('query-form').submit();">
-        <option value="">--sort results--</option>
-    [% FOREACH key IN ["_id","user_name","status","datetime_last_modified"] %]
-        <option value="[% key %] asc" [% IF params.item("sort") == ( key _ " asc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] oplopend</option>
-        <option value="[% key %] desc" [% IF params.item("sort") == ( key _ " desc" ) %]selected="selected"[% END %]>[% key.replace("_"," ") %] aflopend</option>
-    [% END %]
-    </select>
-    [% SET numbers = [5,10,20,50,100] %]
-    <select name="num" id="num" onchange="document.getElementById('query-form').submit();">
-        <option value="">-- aantal per pagina --</option>
-    [% FOREACH number IN numbers %]
-        <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
-    [% END %]
-    </select>
+<form method="GET" class="form-search form-inline autosubmit">
+    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50" class="search-query"/>
+    <button type="submit" class="btn">Search</button>
+    <div class="btn-group">
+      <button class="btn dropdown-toggle" data-toggle="dropdown">
+        <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu">
+        [%- facet_status = facet_status.hash -%]
+        <li><a href="/qa_control">alles ([% page_info.total_entries %])</a></li>
+        <li><a href="/qa_control?q=[% "status:registered OR status:derivatives_created" | url %]">scan controle ([% facet_status.item("registered") || 0 %])</a></li>
+        <li><a href="/qa_control?q=[% "status:archived" | url %]">archived ([% facet_status.item("archived") || 0 %])</a></li>
+        <li><a href="/qa_control?q=[% "status:published" | url %]">published ([% facet_status.item("published") || 0 %])</a></li>
+      </ul>
+    </div>
+    <div class="pull-right">
+      <label for="sort">sorteer</label>
+      <select name="sort" id="sort">
+          <option value=""></option>
+          [%- FOREACH item IN [["_id","naam"],["user_name", "eigenaar"],["status","status"]] %]
+          <option value="[% item.0 %] asc" [% IF params.item("sort") == ( item.0 _ " asc" ) %]selected="selected"[% END %]>[% item.1 %] oplopend</option>
+          <option value="[% item.0 %] desc" [% IF params.item("sort") == ( item.0 _ " desc" ) %]selected="selected"[% END %]>[% item.1 %] aflopend</option>
+          [%- END %]
+      </select>
+      <label for="num">toon</label>
+      <select name="num" id="num" class="span1">
+          <option value=""></option>
+          [%- FOREACH number IN [5,10,20,50,100] %]
+          <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
+          [%- END %]
+      </select>
+    </div>
 </form>
-<table id="table-scans" class="left">
-    [% IF params.q && params.q != "*" %]
-    <tr>
-        <td colspan="7" style="text-align:left">
-        lijst is gefilterd op <b>[% params.q | html %]</b>
-        </td>
-    </tr>
-    [% END %]
-	<tr>
-		<td colspan="7">
-			[% facet_status = facet_status.hash %]
-			<input type="button" value="alles ([% page_info.total_entries %])" onclick="window.location.href='/qa_control'"/>
-			<!--
-				qa controle
-			-->
-			<input type="button" value="scan controle ([% facet_status.item("registered") || 0 %])" onclick="window.location.href='/qa_control?q=[% "status:registered OR status:derivatives_created" | url %]'"/>
-			<!--
-				gearchiveerde objecten controlen: zijn ze wel goed aangekomen in grep?
-			-->
-			<input type="button" value="archived ([% facet_status.item("archived") || 0 %])" onclick="window.location.href='/qa_control?q=[% "status:archived" | url %]'"/>
-			<!--
-				gepubliceerde objecten: geen fouten in de publicatie?
-			-->
-			<input type="button" value="published ([% facet_status.item("published") || 0 %])" onclick="window.location.href='/qa_control?q=[% "status:published" | url %]'"/>
-		</td>
-	</tr>
+
+[%- IF page_info.last_page > 1 %]
+<div class="pagination">
+  <ul>
+    [%- IF page_info.first_page && page_info.first_page < page_info.current_page %]
+    <li><a href="/qa_control?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a></li>
+    [%- ELSE %]
+    <li class="disabled"><a href="#">eerste</a></li>
+    [%- END %]
+
+    [%- IF page_info.previous_page %]
+    <li><a href="/qa_control?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >vorige</a></li>
+    [%- ELSE %]
+    <li class="disabled"><a href="#">vorige</a></li>
+    [%- END %]
+
+    [%- FOREACH page IN page_info.pages_in_set %]
+    [% IF page == page_info.current_page %]
+    <li class="active"><a href="#">[% page %]</a></li>
+    [%- ELSE %]
+    <li><a href="/qa_control?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">[% page %]</a></li>
+    [%- END %]
+    [%- END %]
+
+    [%- IF page_info.next_page %]
+    <li><a href="/qa_control?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >volgende</a></li>
+    [%- ELSE %]
+    <li class="disabled"><a href="#">volgende</a></li>
+    [%- END %]
+
+    [%- IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
+    <li><a href="/qa_control?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">laatste</a></li>
+    [%- ELSE %]
+    <li class="disabled"><a href="#">laatste</a></li>
+    [%- END %]
+  </ul>
+</div>
+[%- END %]
+
+<table class="table table-striped table-condensed">
+  <caption>
+    [% page_info.first %] tot [% page_info.last %]
+    [%- IF params.q && params.q != "*" %]
+    - lijst is gefilterd op <em>[% params.q | html %]</em>
+    [%- END %]
+  </caption>
 	<tr>
 		<th>naam</th>
 		<th>aantal bestanden</th>
@@ -86,32 +90,28 @@
 		<th>status</th>
 		<th>log</th>
 	</tr>
-    [% FOREACH scan IN scans %]
+  [%- FOREACH scan IN scans %]
 	<tr>
-		<td>
-            <a href="/scans/[% scan.item("_id") %]">
-            [% scan.item("_id") %]
-            </a>
-        </td>
+		<td><a href="/scans/[% scan.item("_id") %]">[% scan.item("_id") %]</a></td>
 		<td>[% scan.item("files").size || 0 %]</td>
 		<td>
-			[% parts = scan.item("status_history").0.split('\$\$') %]
-			[% matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') %]
-            [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
+			[%- parts = scan.item("status_history").0.split('\$\$') -%]
+			[%- matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
+      [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
 		</td>
 		<td>
-            [% matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') %]
-            [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
-        </td>
+      [%- matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
+      [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
+    </td>
 		<td>[% scan.item("user_name") || "-" %]</td>
 		<td>
-			[% status = scan.item("status") %]
+			[%- status = scan.item("status") -%]
 			[% settings.human_readable.${status} || status %]
 		</td>
-        <td>
-			[% SET q = "scan_id:\"" _ scan.item("_id") _ "\"" %]
+    <td>
+			[%- SET q = "scan_id:\"" _ scan.item("_id") _ "\"" -%]
 			<a href="/logs?q=[% q | url %]">view</a>
 		</td>
 	</tr>
-    [% END %]
+  [%- END %]
 </table>
