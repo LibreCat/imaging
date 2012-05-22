@@ -94,9 +94,10 @@ any('/scans',sub {
         });
     }
 });
-any('/scans/view/:_id',sub {
+any('/scans/:_id',sub {
     my $params = params;
     my @errors = ();
+    my @messages = ();
     my $auth = auth;
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
@@ -111,6 +112,84 @@ any('/scans/view/:_id',sub {
         $a->{name} cmp $b->{name};
     } @$files];
     $scan->{files} = $files;
+
+
+    my $action = $params->{action};
+
+    if(is_string($params->{action})){
+        if(!$scan->{busy}){
+            #past metadata_id aan => verwacht dat er 0 of 1 element in 'metadata' zit
+            if($action eq "set_metadata_id"){
+                
+                if(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
+
+                    push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
+
+                }else{
+
+                    my @keys = qw(metadata_id);
+                    foreach my $key(@keys){
+                        if(!is_string($params->{$key})){
+                            push @errors,"$key is niet opgegeven";
+                        }       
+                    }
+                    if(scalar(@errors)==0){
+                        my($result,$total,$error);
+                        try {
+
+                            $result = meercat->search($params->{metadata_id});      
+                            $total = $result->content->{response}->{numFound};
+
+                        }catch{
+                            $error = $_;
+                            print $_;
+                        };
+                        if($error){
+                            push @errors,"query $params->{metadata_id_to} is ongeldig";
+                        }elsif($total > 1){
+                            push @errors,"query $params->{metadata_id_to} leverde meer dan één resultaat op";
+                        }elsif($total == 0){
+                            push @errors,"query $params->{metadata_id_to} leverde geen resultaten op";
+                        }else{
+                            my $doc = $result->content->{response}->{docs}->[0];
+                            $scan->{metadata} = [{
+                                fSYS => $doc->{fSYS},#000000001
+                                source => $doc->{source},#rug01
+                                fXML => $doc->{fXML},
+                                baginfo => marcxml2baginfo($doc->{fXML})            
+                            }];
+                            push @messages,"metadata identifier werd aangepast";
+                        }
+                    }
+                }
+            }
+            #verwijder element met metadata_id uit de lijst (mag resulteren in 0 elementen)
+            elsif($action eq "delete_metadata_id"){
+
+                my @keys = qw(metadata_id);
+                foreach my $key(@keys){
+                    if(!is_string($params->{$key})){
+                        push @errors,"$key is niet opgegeven";
+                    }
+                }
+                if(scalar(@errors)==0){
+                    my $index = first_index { $_->{source}.":".$_->{fSYS} eq $params->{metadata_id} } @{$scan->{metadata}};
+                    if($index >= 0){
+                        splice @{$scan->{metadata}},$index,1;
+                        push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
+                    }
+                }
+            }else{
+
+                push @errors,"actie '$action' is ongeldig";
+
+            }
+            if(scalar(@errors)==0){
+                scans->add($scan);
+                scan2index($scan);
+            }
+        }
+    }
 
     template('scans/view',{
         scan => $scan,
@@ -121,57 +200,31 @@ any('/scans/view/:_id',sub {
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
-
-any('/scans/edit/:_id',sub{
+any('/scans/:_id/json',sub{
     my $params = params;
     my $auth = auth;
+    my $config = config;
     my @errors = ();
     my @messages = ();
     my $scan = scans->get($params->{_id});
-    $scan or return not_found();
 
-    if(!($auth->asa('admin') || $auth->can('scans','edit'))){
-        return forward('/access_denied',{
-            text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
-        });
+    content_type 'json';
+
+    my $response = { };
+
+    if(!$scan){
+        push @errors, "scandirectory $params->{_id} niet gevonden";
+    }else{
+        $response->{data} = $scan;
     }
-
-    my $project;
-    if($scan->{project_id}){
-        $project = projects->get($scan->{project_id});
-    }
-    #edit - start   
-    if(!$scan->{busy}){
-        my($errs,$msgs);
-        ($scan,$errs,$msgs) = edit_scan($scan);
-        push @errors,@$errs;
-        push @messages,@$msgs;
-        if(scalar(@$errs)==0){
-            scans->add($scan);
-            scan2index($scan);
-        }
-    }
-
-    my $files = $scan->{files} || [];
-    our($a,$b);
-    $files = [sort {
-        $a->{name} cmp $b->{name};
-    } @$files];
-    $scan->{files} = $files;
-
-    #edit - end 
-    template('scans/edit',{
-        scan => $scan,
-        auth => $auth,
-        errors => \@errors,
-        messages => \@messages,
-        mount_conf => mount_conf(),
-        project => $project,
-        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
-    });
+    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+    $response->{errors} = \@errors;
+    $response->{messages} = \@messages;
+    return to_json($response);
 
 });
-any('/scans/comments/:_id',,sub{
+
+any('/scans/:_id/comments',,sub{
     my $params = params;
     my @errors = ();
     my @messages = ();
@@ -201,7 +254,7 @@ any('/scans/comments/:_id',,sub{
     return to_json($response);
 });
 
-any('/scans/comments/:_id/add',,sub{
+post('/scans/:_id/comments/add',,sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
@@ -247,62 +300,7 @@ any('/scans/comments/:_id/add',,sub{
 
     return to_json($response);
 });
-#any('/scans/comments/:_id/delete',,sub{
-#    my $params = params;
-#    my $auth = auth;
-#    my $config = config;
-#    my @errors = ();
-#    my @messages = ();
-#    my $scan = scans->get($params->{_id});
-#    
-#    my $comment;
-#
-#    content_type 'json';    
-#
-#    my $response = { };
-#
-#    if(!$scan){
-#
-#        push @errors, "scandirectory $params->{_id} niet gevonden";
-#
-#    }elsif(!$auth->can('scans','comment')){
-#
-#        push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
-#
-#    }elsif(!is_string($params->{comment_id})){
-#        
-#        push @errors,"parameter 'comment_id' is leeg";
-#
-#    }else{
-#        my $index = first_index {
-#            $_->{id} == $params->{comment_id};
-#        } @{ $scan->{comments} || [] };
-#
-#        if($index >= 0){
-#
-#            my $login = session('user')->{login};
-#            if($auth->asa('admin') || $login eq $scan->{comments}->[$index]->{user_name}){
-#
-#                splice(@{ $scan->{comments} },$index,1);
-#                push @messages,"comment is verwijderd";
-#                scans->add($scan);
-#
-#            }else{
-#                push @errors,"U beschikt niet over de nodige rechten om deze comment te verwijderen";
-#            }
-#        }else{
-#            push @errors,"comment niet gevonden";
-#        }
-#
-#    }
-#
-#    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
-#    $response->{errors} = \@errors;
-#    $response->{messages} = \@messages;
-#
-#    return to_json($response);
-#});
-any('/scans/comments/:_id/clear',,sub{
+any('/scans/:_id/comments/clear',,sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
@@ -338,8 +336,113 @@ any('/scans/comments/:_id/clear',,sub{
 
     return to_json($response);
 });
+any('/scans/:_id/baginfo/add',sub{
+    my $params = params;
+    my $auth = auth;
+    my @errors = ();
+    my @messages = ();
+    my $scan = scans->get($params->{_id});
 
-any('/scans/edit/:_id/status',sub{
+    content_type 'json';
+
+    my $response = { };
+
+    if(!$scan){
+
+        push @errors, "scandirectory $params->{_id} niet gevonden";
+
+    }elsif(!($auth->asa('admin') || $auth->can('scans','edit'))){
+        
+        push @errors,"U mist de juiste rechten om de baginfo aan te passen";
+
+    }elsif(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
+
+        push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
+
+    }else{
+
+        my @keys = qw(key value);
+        foreach my $key(@keys){
+            if(!is_string($params->{$key})){
+                push @errors,"gelieve een waarde op te geven";
+                last;
+            }
+        }
+        if(scalar(@errors)==0){
+            my $key = $params->{key};
+            my $value = $params->{value};
+            $scan->{metadata}->[0]->{baginfo}->{$key} ||= [];
+            push @{ $scan->{metadata}->[0]->{baginfo}->{$key} },$value;
+            push @messages,"baginfo werd aangepast";
+            scans->add($scan);
+        }
+
+    }
+
+    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+    $response->{errors} = \@errors;
+    $response->{messages} = \@messages;
+    return to_json($response);
+});
+any('/scans/:_id/baginfo/edit',sub{
+    my $params = params;
+    my $auth = auth;
+    my $config = config;
+    my @errors = ();
+    my @messages = ();
+    my $scan = scans->get($params->{_id});
+
+    content_type 'json';
+
+    my $response = { };
+
+    if(!$scan){
+
+        push @errors, "scandirectory $params->{_id} niet gevonden";
+
+    }elsif(!($auth->asa('admin') || $auth->can('scans','edit'))){
+        
+        push @errors,"U mist de juiste rechten om de baginfo aan te passen";
+
+    }elsif(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
+
+        push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
+
+    }else{
+
+        my $expanded_params = expand_hash($params || {});
+        my $baginfo_params = $expanded_params->{baginfo} || {};
+
+        my @conf_baginfo_keys = do {
+            my $config = config;
+            my @values = ();
+            push @values,$_->{key} foreach(@{$config->{app}->{scans}->{edit}->{baginfo}});
+            @values;
+        };
+
+        my $baginfo = {};
+        foreach my $key(sort keys %$baginfo_params){
+            my $index = first_index { $key eq $_ } @conf_baginfo_keys;
+            if($index >= 0){
+                $baginfo->{$key} = is_array_ref($baginfo_params->{$key}) ? $baginfo_params->{$key}: [$baginfo_params->{$key}];
+            }else{
+                push @errors,"$key is een ongeldige key voor baginfo";
+            }
+        }
+        if(scalar(@errors)==0){
+            $scan->{metadata}->[0]->{baginfo} = $baginfo;
+            push @messages,"baginfo werd aangepast";
+        }
+
+    }
+
+    $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+    $response->{errors} = \@errors;
+    $response->{messages} = \@messages;
+    return to_json($response);
+});
+
+any('/scans/:_id/status',sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
@@ -404,7 +507,7 @@ any('/scans/edit/:_id/status',sub{
                     scans->add($scan);
                 }
                 #redirect
-                return redirect("/scans/view/$scan->{_id}");
+                return redirect("/scans/$scan->{_id}");
             }else{
                 push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
             }
@@ -422,135 +525,5 @@ any('/scans/edit/:_id/status',sub{
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
-
-sub edit_scan {
-    my $scan = shift;
-    my $params = params;
-    my @errors = ();
-    my @messages = ();
-    my $action = $params->{action} || "";
-
-    $scan->{metadata} ||= [];
-
-    #past metadata_id aan => verwacht dat er 0 of 1 element in 'metadata' zit
-    if($action eq "edit_metadata_id"){
-        
-        if(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
-
-            push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
-
-        }else{
-
-            my @keys = qw(metadata_id);
-            foreach my $key(@keys){
-                if(!is_string($params->{$key})){
-                    push @errors,"$key is niet opgegeven";
-                }       
-            }
-            if(scalar(@errors)==0){
-                my($result,$total,$error);
-                try {
-
-                    $result = meercat->search($params->{metadata_id});      
-                    $total = $result->content->{response}->{numFound};
-
-                }catch{
-                    $error = $_;
-                    print $_;
-                };
-                if($error){
-                    push @errors,"query $params->{metadata_id_to} is ongeldig";
-                }elsif($total > 1){
-                    push @errors,"query $params->{metadata_id_to} leverde meer dan één resultaat op";
-                }elsif($total == 0){
-                    push @errors,"query $params->{metadata_id_to} leverde geen resultaten op";
-                }else{
-                    my $doc = $result->content->{response}->{docs}->[0];
-                    $scan->{metadata} = [{
-                        fSYS => $doc->{fSYS},#000000001
-                        source => $doc->{source},#rug01
-                        fXML => $doc->{fXML},
-                        baginfo => marcxml2baginfo($doc->{fXML})            
-                    }];
-                    push @messages,"metadata identifier werd aangepast";
-                }
-            }
-        }
-    }
-    #verwijder element met metadata_id uit de lijst (mag resulteren in 0 elementen)
-    elsif($action eq "delete_metadata_id"){
-
-        my @keys = qw(metadata_id);
-        foreach my $key(@keys){
-            if(!is_string($params->{$key})){
-                push @errors,"$key is niet opgegeven";
-            }
-        }
-        if(scalar(@errors)==0){
-            my $index = first_index { $_->{source}.":".$_->{fSYS} eq $params->{metadata_id} } @{$scan->{metadata}};
-            if($index >= 0){
-                splice @{$scan->{metadata}},$index,1;
-                push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
-            }
-        }
-    }
-    #voeg dc-elementen toe
-    elsif($action eq "add_baginfo_pair"){
-
-        if(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
-
-            push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
-
-        }else{
-
-            my @keys = qw(key value);
-            foreach my $key(@keys){
-                if(!is_string($params->{$key})){
-                    push @errors,"gelieve een waarde op te geven";
-                    last;
-                }
-            }
-            if(scalar(@errors)==0){
-                my $key = $params->{key};
-                my $value = $params->{value};
-                $scan->{metadata}->[0]->{baginfo}->{$key} ||= [];
-                push @{ $scan->{metadata}->[0]->{baginfo}->{$key} },$value;
-                push @messages,"baginfo werd aangepast";
-            }
-
-        }
-    }elsif($action eq "edit_baginfo"){
-        if(is_array_ref($scan->{metadata}) && scalar(@{$scan->{metadata}}) > 1){
-
-            push @errors,"Dit record bevat meerdere metadata records. Verwijder eerst de overbodige.";
-
-        }else{
-            my $expanded_params = expand_hash($params || {});
-            my $baginfo_params = $expanded_params->{baginfo} || {};
-
-            my @conf_baginfo_keys = do {
-                my $config = config;
-                my @values = ();
-                push @values,$_->{key} foreach(@{$config->{app}->{scans}->{edit}->{baginfo}});
-                @values;
-            };
-
-            my $baginfo = {};
-            foreach my $key(sort keys %$baginfo_params){    
-                my $index = first_index { $key eq $_ } @conf_baginfo_keys;
-                if($index >= 0){
-                    $baginfo->{$key} = is_array_ref($baginfo_params->{$key}) ? $baginfo_params->{$key}: [$baginfo_params->{$key}];
-                }else{
-                    push @errors,"$key is een ongeldige key voor baginfo";
-                }
-            }
-            if(scalar(@errors)==0){
-                $scan->{metadata}->[0]->{baginfo} = $baginfo;
-                push @messages,"baginfo werd aangepast";
-            }
-        }
-    }
-    return $scan,\@errors,\@messages;
-}
 
 true;

@@ -24,11 +24,6 @@ any('/ready/:user_login',sub{
     my $params = params;
     my $user = dbi_handle->quick_select('users',{ login => $params->{user_login} });
     $user or return not_found();
-    if(!(auth->asa('admin') || $user->{id} eq session('user')->{id})){
-        return forward('/access_denied',{ 
-            text => "U mist de nodige rechten om de scandirectory van $params->{user_login} te bekijken"
-        });
-    }
     
     my $mount = mount();
     my $subdirectories = subdirectories();
@@ -62,12 +57,6 @@ any('/ready/:user_login/:scan_id',sub{
     my $params = params;
     my $user = dbi_handle->quick_select('users',{ login => $params->{user_login} });
     $user or return not_found();
-    if(!(auth->asa('admin') || $user->{id} eq session('user')->{id})){
-        return forward('/access_denied',{
-            text => "no access to directory ready of user $params->{user_login}"
-        });
-    }
-
 
     my $scan = scans()->get($params->{scan_id});
     $scan or return not_found();

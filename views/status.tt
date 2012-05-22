@@ -28,20 +28,81 @@
   [%- END %]
 
   <dt>Afgeleiden maken</dt>
-  <dd>[% num_reprocess_derivatives || 0 %]</dd>
+  <dd>
+    [% IF num_reprocess_derivatives > 0 %]
+        <a href="/scans?q=[% "status:reprocess_derivatives AND user_login:" _ user_login | url %]">
+            [% num_reprocess_derivatives %]
+        </a>
+    [% ELSE %]  
+        [% num_reprocess_derivatives || 0 %]
+    [% END %]
+  </dd>
 
   <dt>Catalografie</dt>
-  <dd>[% num_reprocess_metadata || 0 %]</dd>
+  <dd>
+    [% IF num_reprocess_metadata > 0 %]
+        <a href="/scans?q=[% "status:reprocess_metadata AND user_login:" _ user_login | url %]">
+            [% num_reprocess_metadata %]
+        </a>
+    [% ELSE %]  
+        [% num_reprocess_metadata || 0 %]
+    [% END %]
+  </dd>
 
   <dt>QA Controle</dt>
-  <dd>[% num_qa_control || 0 %]</dd>
+  <dd>
+    [% states_qa_control = ["registered","derivatives_created","reprocess_scans","reprocess_metadata","reprocess_derivatives","archived"] %]
+    [% IF num_qa_control > 0 %]
+        [% parts = [] %]
+        [% FOREACH status IN states_qa_control %]
+            [% parts.push("status:" _ status) %]
+        [% END %]
+        <a href="/scans?q=[%  parts.join(" OR ") | url %]">
+            [% num_qa_control %]
+        </a>
+    [% ELSE %]
+        [% num_qa_control || 0 %]
+    [% END %]
+  </dd>
 
   <dt>Publicatie</dt>
-  <dd>[% num_publishing || 0 %]</dd>
+  <dd>
+    [% IF num_publishing > 0 %]
+        [% states_publishing = ["qa_control_ok","archived","archived_ok","published"] %]
+        [% parts = [] %]
+        [% FOREACH status IN states_publishing %]
+            [% parts.push("status:" _ status) %]
+        [% END %]
+        <a href="/scans?q=[% parts.join(" OR ") | url %]">
+            [% num_publishing %]
+        </a>
+    [% ELSE %]
+        [% num_publishing || 0 %]
+    [% END %]
+  </dd>
 
   <dt>Archivering</dt>
-  <dd>[% num_archiving || 0 %]</dd>
+  <dd>
+    [% IF num_archiving > 0 %]
+        [% states_archiving = ["qa_control_ok","archived","archived_ok","published","published_ok"] %]
+        [% parts = [] %]
+        [% FOREACH status IN states_archiving %]
+            [% parts.push("status:" _ status) %]
+        [% END %]
+        <a href="/scans?q=[% parts.join(" OR ") | url %]">
+            [% num_archiving %]
+        </a>
+    [% ELSE %]
+        [% num_archiving || 0 %]
+    [% END %]
+  </dd>
 
   <dt>Done</dt>
-  <dd>[% num_done || 0 %]</dd>
+  <dd>
+    [% IF num_done > 0 %]
+        <a href="/scans?q=[% "status:archived_ok AND status:published_ok" | url %]">[% num_done %]</a>
+    [% ELSE %]
+        [% num_done || 0 %]
+    [% END %]
+  </dd>
 </dl>

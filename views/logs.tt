@@ -84,15 +84,19 @@
       [%- matches = log.datetime.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
       [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
     </td>
-    <td><a href="/scans/view/[% log.scan_id %]">[% log.scan_id %]</a></td>
+    <td>
+        <a href="/scans/[% log.scan_id %]">
+            [% log.scan_id %]
+        </a>
+    </td>
     <td>[% log.user_name %]</td>
     <td>
-        <a href="/scans?q=[% "owner:\"" _ log.owner  _ "\"" | uri  %]">
+        <a href="/logs?q=[% "owner:\"" _ log.owner  _ "\"" | uri  %]">
         [% log.owner %]
         </a>
     </td>
     <td>
-        <a href="/scans?q=[% "status:\"" _ log.status  _ "\"" | uri  %]">
+        <a href="/logs?q=[% "status:\"" _ log.status  _ "\"" | uri  %]">
         [% settings.human_readable.${log.status} || log.status %]
         </a>
     </td>

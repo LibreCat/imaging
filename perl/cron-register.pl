@@ -17,7 +17,9 @@ use File::MimeInfo;
 
 BEGIN {
     my $appdir = Cwd::realpath(
-        dirname(dirname(__FILE__))
+        dirname(dirname(
+            Cwd::realpath( __FILE__)
+        ))
     );
     Dancer::Config::setting(appdir => $appdir);
     Dancer::Config::setting(public => "$appdir/public");
@@ -190,8 +192,8 @@ scans()->each(sub{
 foreach my $id(@ids_ok_for_metadata){
     my $scan = scans()->get($id);
     my $query = $scan->{_id};
-    if($query !~ /^RUG01-/o){
-        $query =~ s/^RUG01-/rug01:/o;
+    if($query =~ /^RUG\d{2}-/o){
+        $query =~ s/^RUG(\d{2})-/rug$1:/o;
     }else{
         $query = "location:$query";
     }
@@ -224,6 +226,7 @@ scans()->each(sub{
 say "registering incoming_ok";
 foreach my $id (@incoming_ok){
     my $scan = scans()->get($id);
+    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
     say "\tscan $id:";
 
     #status 'registering'
@@ -242,31 +245,33 @@ foreach my $id (@incoming_ok){
 
     status2index($scan);
 
-    #pas manifest -> maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)
-        
-    #verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
-    unlink($scan->{path}."/manifest.txt") if -f $scan->{path}."/manifest.txt";
-    my $index = first_index { $_ eq $scan->{path}."/manifest.txt" } map { $_->{path} } @{ $scan->{files} };
-    splice(@{ $scan->{files} },$index,1) if $index >= 0;
+    if($user->{profile_id} ne "BAG"){
 
-    say "\tcreating new manifest.txt";
+        #pas manifest -> maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)
+            
+        #verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
+        unlink($scan->{path}."/manifest.txt") if -f $scan->{path}."/manifest.txt";
+        my $index = first_index { $_ eq $scan->{path}."/manifest.txt" } map { $_->{path} } @{ $scan->{files} };
+        splice(@{ $scan->{files} },$index,1) if $index >= 0;
 
-    #maak nieuwe manifest
-    local(*MANIFEST);
-    open MANIFEST,">".$scan->{path}."/manifest.txt" or die($!);
-    foreach my $file(@{ $scan->{files} }){
-        local(*FILE);
-        open FILE,$file->{path} or die($!);
-        my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-        say MANIFEST "$md5sum_file ".File::Basename::basename($file->{path});
-        close FILE;
-    }
-    close MANIFEST;
+        say "\tcreating new manifest.txt";
+        #maak nieuwe manifest
+        local(*MANIFEST);
+        open MANIFEST,">".$scan->{path}."/manifest.txt" or die($!);
+        foreach my $file(@{ $scan->{files} }){
+            local(*FILE);
+            open FILE,$file->{path} or die($!);
+            my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
+            say MANIFEST "$md5sum_file ".File::Basename::basename($file->{path});
+            close FILE;
+        }
+        close MANIFEST;
 
-    #voeg manifest toe aan de lijst
-    push @{ $scan->{files} },file_info($scan->{path}."/manifest.txt");
+        #voeg manifest toe aan de lijst
+        push @{ $scan->{files} },file_info($scan->{path}."/manifest.txt");
     
-
+    }
+    
     #verplaats  
     my $oldpath = $scan->{path};
     my $mount_conf = mount_conf();

@@ -89,7 +89,7 @@
     [% FOREACH scan IN scans %]
 	<tr>
 		<td>
-            <a href="/scans/view/[% scan.item("_id") %]">
+            <a href="/scans/[% scan.item("_id") %]">
             [% scan.item("_id") %]
             </a>
         </td>
