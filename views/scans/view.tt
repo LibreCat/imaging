@@ -13,8 +13,8 @@
 naar status 'registered'.</div>
 [%- ELSIF scan.busy && scan.busy_reason == "move" %]
 <div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
-kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
-Commentaar kan wel nog worden toegevoegd.</div>
+kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd. Wanneer niets wijzigt na vijf minuten
+dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegevoegd.</div>
 [%- END %]
 
 <dl class="dl-horizontal">
