@@ -53,7 +53,7 @@ any('/status',sub {
         "facet.field" => "status"
     );
     my(%facet_counts) = @{ $result->{facets}->{facet_fields}->{status} ||= [] };
-    my @states = qw(registered derivatives_created reprocess_metadata reprocess_derivatives reprocess_scans qa_control_ok archived archived_ok published published_ok);
+    my @states = qw(registering registered derivatives_created reprocess_metadata reprocess_derivatives reprocess_scans qa_control_ok archived archived_ok published published_ok);
     my $facet_status = {};
     foreach my $status(@states){
         $facet_status->{$status} = $facet_counts{$status} || 0;
@@ -90,6 +90,7 @@ any('/status',sub {
         stats => $stats,
         num_reprocess_metadata => $num_reprocess_metadata,
         num_reprocess_derivatives => $num_reprocess_derivatives,
+        num_registering => $facet_status->{registering},
         num_qa_control => $num_qa_control,
         num_publishing => $num_publishing,
         num_archiving => $num_archiving 

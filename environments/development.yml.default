@@ -96,7 +96,7 @@ app:
     - key: "DC-AccessRights"
       values: ["open","closed","ugent"]
     - key: "DC-Subject"
-default_app: "/projects"
+default_app: "/"
 refresh_rate: 5
 all: {}
 mounts:
@@ -114,10 +114,13 @@ mounts:
   ready: 
    #warn 3 days after first arrival
    warn_after: 
-    seconds: 3
+    days: 3
    #delete 1 day after the warning
    delete_after:
     days: 1
+   #how long till directory is processed?
+   upload_idle_time:
+    seconds: 30
 status:
  change:
   all:
@@ -216,22 +219,9 @@ profiles:
    - class: "Imaging::Test::Dir::checkPermissions"
      args: {}
      on_error: "continue"
-   - class: "Imaging::Test::Dir::checkEmpty"
-     args:
-      valid_patterns:
-       - '^RUG01-\d{9}$'
-     on_error: "continue"
    - class: "Imaging::Test::Dir::checkBag"
      args: {}
      on_error: "stop"
-   - class: "Imaging::Test::Dir::BAG::checkNARA"
-     args: {}
-     on_error: "continue"
-   - class: "Imaging::Test::Dir::BAG::checkAleph"
-     args:
-      lookup: "data"
-      solr_args: *meercatindex
-     on_error: "continue"
  TAR:
   packages:
    - class: "Imaging::Test::Dir::scan"

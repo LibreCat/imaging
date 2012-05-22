@@ -243,7 +243,7 @@ foreach my $id (@incoming_ok){
     scans->add($scan);
     scan2index($scan);
 
-    status2index($scan);
+    status2index($scan,-1);
 
     if($user->{profile_id} ne "BAG"){
 
@@ -278,6 +278,7 @@ foreach my $id (@incoming_ok){
     my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".File::Basename::basename($oldpath);
     say "\tmoving from $oldpath to $newpath";
     move($oldpath,$newpath);
+    chmod(0755,$newpath);
     $scan->{path} = $newpath;
     foreach my $file(@{ $scan->{files} }){
         $file->{path} =~ s/^$oldpath/$newpath/;
@@ -301,7 +302,7 @@ foreach my $id (@incoming_ok){
     
     scans->add($scan);
     scan2index($scan);
-    status2index($scan);
+    status2index($scan,-1);
 }
 
 index_log->store->solr->optimize();

@@ -512,7 +512,7 @@ any('/scans/:_id/status',sub{
                 #scan
                 scan2index($scan);
                 #log
-                status2index($scan);
+                status2index($scan,-1);
 
                 if($status_to eq "reprocess_scans"){
                     $scan->{busy} = 1;

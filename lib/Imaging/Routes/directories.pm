@@ -12,6 +12,7 @@ use File::Path qw(mkpath rmtree);
 use Try::Tiny;
 use Data::Pageset;
 use URI::Escape qw(uri_escape);
+use IO::CaptureOutput qw(capture_exec);
 
 hook before => sub {
     if(request->path =~ /^\/directories/o){
@@ -90,7 +91,10 @@ any('/directories/:id/edit',sub {
         foreach(qw(ready reprocessing)){
             try{
                 my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
+                my $error;
                 mkpath($path);
+                my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 0777 $path");
+                die($stderr) if !$success;
                 push @messages,"directory '$_' is ok nu";
                 dbi_handle->quick_update('users',{ id => $user->{id} },{ has_dir => 1 });
             }catch{

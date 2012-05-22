@@ -45,16 +45,19 @@ sub local_time {
     );
 }
 sub status2index {
-    my $scan = shift;
+    my($scan,$history_index) = @_;
     my $doc;
     my $index_log = index_log();
     my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
 
-    #delete old states (enkel laatste incoming_error wordt bewaard!)
-    $index_log->delete_by_query(query => "scan_id:\"".$scan->{_id}."\"");
+    my $history_objects;
+    if(is_integer($history_index)){
+        $history_objects = [ $scan->{status_history}->[$history_index] ];
+    }else{
+        $history_objects = $scan->{status_history};
+    }
 
-    #send new states
-    foreach my $history(@{ $scan->{status_history} || [] }){
+    foreach my $history(@$history_objects){
         $doc = clone($history);
         $doc->{datetime} = formatted_date($doc->{datetime});
         $doc->{scan_id} = $scan->{_id};

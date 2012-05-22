@@ -28,6 +28,7 @@ any('/qa_control',sub {
     }
 
     my $params = params;
+    my @errors = ();
     my $index_scan = index_scan();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
 
@@ -38,17 +39,35 @@ any('/qa_control',sub {
     my $offset = ($page - 1)*$num;
     my $sort = $params->{sort};
 
+    my $result;
     my @states = qw(registered derivatives_created archived published);
     my $fq = join(' OR ',map {
         "status:$_"
     } @states);
+
+    my $facet_status;
+    my $total_qa_control = 0;
+    #facets opvragen over de hele index
+    try{
+        $result = index_scan->search(
+            query => "*:*",
+            fq => $fq,
+            facet => "true",
+            "facet.field" => "status",
+            limit => 0
+        );
+        $facet_status = $result->{facets}->{facet_fields}->{status} || [];
+        $total_qa_control = $result->total;
+    }catch{
+        push @errors,"ongeldige zoekvraag";
+    };
+
+    #zoekresultaten ophalen
     my %opts = (
         query => $q,
         fq => $fq,
         start => $offset,
         limit => $num,
-        facet => "true",
-        "facet.field" => "status"
     );
     if(is_string($sort)){
         $opts{sort} = [ $sort ] if $sort =~ /^\w+\s(?:asc|desc)$/o;
@@ -64,8 +83,6 @@ any('/qa_control',sub {
             $opts{sort} = $sort;
         }
     }
-    my @errors = ();
-    my($result);
     try {
         $result= index_scan->search(%opts);
     }catch{
@@ -83,7 +100,8 @@ any('/qa_control',sub {
             scans => $result->hits,
             page_info => $page_info,
             auth => auth(),
-            facet_status => $result->{facets}->{facet_fields}->{status} || [],
+            facet_status => $facet_status,
+            total_qa_control => $total_qa_control,
             mount_conf => mount_conf()
         });
     }else{

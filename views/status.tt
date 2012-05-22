@@ -1,6 +1,6 @@
 <h1>Status werklijsten</h1>
 <dl class="dl-horizontal">
-	[%- FOREACH user_login IN stats.ready.keys.sort %]
+  [%- FOREACH user_login IN stats.ready.keys.sort %]
   <dt>
     [% settings.mounts.directories.subdirectories.ready _ "/" _ user_login %]	
   </dt>
@@ -11,7 +11,7 @@
       [% stats.ready.${user_login} %]
     [%- END %]
   </dd>
-	[%- END %]
+  [%- END %]
 
   [%- FOREACH user_login IN stats.reprocessing.keys.sort %]
   <dt>
@@ -26,7 +26,16 @@
     [%- END %]
   </dd>
   [%- END %]
-
+  <dt>In registratie proces</dt>
+  <dd>
+    [% IF num_registering > 0 %]
+        <a href="/scans?q=[% "status:registering AND user_login:" _ user_login | url %]">
+            [% num_registering %]
+        </a>
+    [% ELSE %]
+        [% num_registering || 0 %]
+    [% END %]
+  </dd>
   <dt>Afgeleiden maken</dt>
   <dd>
     [% IF num_reprocess_derivatives > 0 %]

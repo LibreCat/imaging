@@ -252,7 +252,7 @@ Commentaar kan wel nog worden toegevoegd.</div>
 
     <div class="tab-pane" id="tab-comments">
       [% IF auth.can('scans','comment') %]
-      <form action="/scans/comments/[% scan.item("_id") %]/add" method="POST" id="add-comment">
+      <form action="/scans/[% scan.item("_id") %]/comments/add" method="POST" id="add-comment">
         <textarea class="span6" name="text"></textarea>
         <div><input class="btn btn-primary" type="submit" name="submit" value="Add"/></div>
       </form>
@@ -276,7 +276,7 @@ Commentaar kan wel nog worden toegevoegd.</div>
         textInput = f.find(':input[name="text"]'),
         text = textInput.val();
     textInput.val("");
-    $.post(f.attr('action'), {text: text}, function(res) {console.log(res);
+    $.post(f.attr('action'), {text: text}, function(res) {
       if (!res.status === 'ok') return;
       var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
         res.data.user_name+' at '+res.data.datetime+

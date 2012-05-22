@@ -248,7 +248,7 @@ foreach my $user(@users){
             }
             #update index_scan en index_log
             scan2index($scan);
-            status2index($scan);
+            status2index($scan,-1);
 
             push @scan_ids_ready,$scan->{_id};
         }
@@ -311,25 +311,18 @@ foreach my $scan_id(@scan_ids_ready){
     ){
         push @scan_ids_test,$scan->{_id};
     }
-    #check slechte en goede indien iets gewijzigd
+    #check slechte en goede indien iets gewijzigd sinds laatste check
     elsif(
         $scan->{status} eq "incoming_error" ||
         $scan->{status} eq "incoming_ok"
     ){
-        push @scan_ids_test,$scan->{_id} if $mtime > $scan->{datetime_directory_last_modified};
+        push @scan_ids_test,$scan->{_id} if $mtime > $scan->{datetime_last_modified};
     }
 
 };
 
 foreach my $scan_id(@scan_ids_test){
     my $scan = $scans->get($scan_id);
-
-    #directory is ondertussen riebedebie
-    if(!(-d $scan->{path})){
-        say "$scan->{path} is gone, deleting from database";
-        $scans->delete($scan->{_id});
-        next;
-    }
 
     say "checking $scan_id at $scan->{path}";
     my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
@@ -370,28 +363,15 @@ foreach my $scan_id(@scan_ids_test){
         }
     }
 
-    my $index_last_error = List::MoreUtils::last_index {
-        $_->{status} eq "incoming_error";
-    } @{$scan->{status_history}};
-
+    #nu worden enkel gewijzigde mappen meegenomen, dus niet meer nodig om laatste incoming_error te overschrijven
     $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
-    
     my $status_history_object = {
         user_name =>"-",
         status => $scan->{status},
         datetime => Time::HiRes::time,
         comments => ""
     };
-
-    if($index_last_error >= 0){
-
-        $scan->{status_history}->[$index_last_error] = $status_history_object;
-    
-    }else{
-
-        push @{ $scan->{status_history} },$status_history_object;
-
-    }
+    push @{ $scan->{status_history} },$status_history_object;
 
     $scan->{files} = \@files;
 
@@ -399,7 +379,7 @@ foreach my $scan_id(@scan_ids_test){
 
     #update index_scan en index_log
     scan2index($scan);
-    status2index($scan);
+    status2index($scan,-1);
 
     $scans->add($scan);
 }

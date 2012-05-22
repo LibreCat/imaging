@@ -12,7 +12,7 @@
       </button>
       <ul class="dropdown-menu">
         [%- facet_status = facet_status.hash -%]
-        <li><a href="/qa_control">alles ([% page_info.total_entries %])</a></li>
+        <li><a href="/qa_control">alles ([% total_qa_control %])</a></li>
         <li><a href="/qa_control?q=[% "status:registered OR status:derivatives_created" | url %]">scan controle ([% facet_status.item("registered") || 0 %])</a></li>
         <li><a href="/qa_control?q=[% "status:archived" | url %]">archived ([% facet_status.item("archived") || 0 %])</a></li>
         <li><a href="/qa_control?q=[% "status:published" | url %]">published ([% facet_status.item("published") || 0 %])</a></li>

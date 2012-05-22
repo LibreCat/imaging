@@ -5,11 +5,10 @@ use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
-use Catmandu    qw(store);
+use Catmandu qw(store);
 use Catmandu::Util  qw(:is);
 use URI::Escape qw(uri_escape);
 use Digest::MD5 qw(md5_hex);
-use File::Path  qw(mkpath   rmtree);
 use Try::Tiny;
 
 hook before => sub {
@@ -41,9 +40,9 @@ any('/users/add',sub{
     my(@errors,@messages);
     if($params->{submit}){
         my($success,$errs)=check_params_new_user();
-        push    @errors,@$errs;
+        push @errors,@$errs;
         if(!(
-            is_string($params->{password1}) &&  is_string($params->{password2}) &&
+            is_string($params->{password1}) && is_string($params->{password2}) &&
             $params->{password1} eq  $params->{password2}
             )
         ){

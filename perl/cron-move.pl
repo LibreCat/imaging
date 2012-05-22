@@ -11,6 +11,7 @@ use Cwd qw(abs_path);
 use File::Spec;
 use Try::Tiny;
 use File::MimeInfo;
+use IO::CaptureOutput qw(capture_exec);
 
 BEGIN {
     my $appdir = Cwd::realpath(
@@ -73,6 +74,12 @@ foreach my $id(@ids_to_be_moved){
 
     mkpath($newpath);
     if(move($oldpath,$newpath)){
+        #change file mod   
+        my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 0777 $newpath");
+        if(!$success){
+            say STDERR $stderr;
+        }
+
         say "\tmoved from $oldpath to $newpath";
         $scan->{path} = $newpath;
         foreach my $file(@{ $scan->{files} }){
