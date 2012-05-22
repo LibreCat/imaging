@@ -35,7 +35,8 @@ my $requires = {
 	'Template::Plugin::POSIX' => 0,
     'Template::Plugin::JSON' => 0,
     'Time::Interval' => 0,
-    'File::MimeInfo' => 0
+    'File::MimeInfo' => 0,
+    'IO::CaptureOutput' => 0
 };
 my $recommends = {
 	'Starman' => 0,
