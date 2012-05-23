@@ -61,7 +61,7 @@
                 [%- IF session.user.has_dir %]
                 <li><a href="/ready/[% session.user.login %]">ready</a></li>
                 <li>
-                    [%- q = "status:reprocess_scans" _ " AND user_name:" _ session.user.login -%]
+                    [%- q = "status:reprocess_scans" _ " AND user_login:" _ session.user.login -%]
                     <a href="/scans?q=[% q | url %]">reprocessing</a>
                 </li>
                 [%- END %]
