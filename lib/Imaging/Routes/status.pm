@@ -30,6 +30,7 @@ any('/status',sub {
     });
     my $mount_conf = mount_conf;    
     my $stats = {};
+    my $config = config;
 
     #aantal directories in 01_ready
     my $mount_ready = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{ready};
@@ -53,7 +54,7 @@ any('/status',sub {
         "facet.field" => "status"
     );
     my(%facet_counts) = @{ $result->{facets}->{facet_fields}->{status} ||= [] };
-    my @states = qw(registering registered derivatives_created reprocess_metadata reprocess_derivatives reprocess_scans qa_control_ok archived archived_ok published published_ok);
+    my @states = @{ $config->{status}->{collection}->{status_page} || [] };
     my $facet_status = {};
     foreach my $status(@states){
         $facet_status->{$status} = $facet_counts{$status} || 0;
@@ -65,21 +66,21 @@ any('/status',sub {
     my $num_reprocess_derivatives = $facet_status->{reprocess_derivatives};
 
     #aantal voor qa_controle
-    my @states_qa_control = qw(registered derivatives_created reprocess_scans reprocess_metadata reprocess_derivatives archived);
+    my @states_qa_control = @{ $config->{status}->{collection}->{qa_control} || [] };
     my $num_qa_control = 0;
     foreach my $status(@states_qa_control){
         $num_qa_control += $facet_status->{$status};
     }
     
     #aantal in publicatieproces (qa_control_ok -> published)
-    my @states_publishing = qw(qa_control_ok archived archived_ok published);
+    my @states_publishing = @{ $config->{status}->{collection}->{publishing} || [] };
     my $num_publishing = 0;
     foreach my $status(@states_publishing){
         $num_publishing += $facet_status->{$status};
     }
 
     #aantal in archiveringsproces (qa_control_ok -> published_ok)
-    my @states_archiving = qw(qa_control_ok archived archived_ok published published_ok);
+    my @states_archiving = @{ $config->{status}->{collection}->{archiving} || [] };
     my $num_archiving = 0;
     foreach my $status(@states_archiving){
         $num_archiving += $facet_status->{$status};

@@ -30,8 +30,8 @@ sub test {
     my(@errors) = ();
     my $query = basename($topdir);
 
-    if($query =~ /^RUG01-(\d{9})$/o){
-        $query = "rug01:$1";
+    if($query =~ /^RUG(\d{2})-(\d{9})$/o){
+        $query = "rug$1:$2";
     }
 
     try{

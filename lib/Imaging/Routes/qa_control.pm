@@ -28,6 +28,7 @@ any('/qa_control',sub {
     }
 
     my $params = params;
+    my $config = config;
     my @errors = ();
     my $index_scan = index_scan();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
@@ -40,7 +41,7 @@ any('/qa_control',sub {
     my $sort = $params->{sort};
 
     my $result;
-    my @states = qw(registered derivatives_created archived published);
+    my @states = @{ $config->{status}->{collection}->{qa_control} || [] };
     my $fq = join(' OR ',map {
         "status:$_"
     } @states);
@@ -69,20 +70,13 @@ any('/qa_control',sub {
         start => $offset,
         limit => $num,
     );
-    if(is_string($sort)){
-        $opts{sort} = [ $sort ] if $sort =~ /^\w+\s(?:asc|desc)$/o;
-    }elsif(is_array_ref($sort)){
-        my $ok = 1;
-        foreach(@$sort){
-            if($_ !~ /^\w+\s(?:asc|desc)$/o){
-                $ok = 0;
-                last;
-            }
-        }
-        if($ok){
-            $opts{sort} = $sort;
-        }
+
+    if($sort =~ /^\w+\s(?:asc|desc)$/o){
+        $opts{sort} = $sort;
+    }else{
+        $opts{sort} = $config->{app}->{qa_control}->{default_sort} if $config->{app}->{qa_control} && $config->{app}->{qa_control}->{default_sort};
     }
+
     try {
         $result= index_scan->search(%opts);
     }catch{

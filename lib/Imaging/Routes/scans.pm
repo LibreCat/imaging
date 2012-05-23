@@ -28,6 +28,7 @@ hook before => sub {
 };
 any('/scans',sub {
     my $params = params;
+    my $config = config;
     my $index_scan = index_scan();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
 
@@ -43,20 +44,13 @@ any('/scans',sub {
         start => $offset,
         limit => $num
     );
-    if(is_string($sort)){
-        $opts{sort} = [ $sort ] if $sort =~ /^\w+\s(?:asc|desc)$/o;
-    }elsif(is_array_ref($sort)){
-        my $ok = 1;
-        foreach(@$sort){
-            if($_ !~ /^\w+\s(?:asc|desc)$/o){
-                $ok = 0;
-                last;
-            }
-        }
-        if($ok){
-            $opts{sort} = $sort;
-        }
+
+    if($sort =~ /^\w+\s(?:asc|desc)$/o){
+        $opts{sort} = $sort;
+    }else{
+        $opts{sort} = $config->{app}->{scans}->{default_sort} if $config->{app}->{scans} && $config->{app}->{scans}->{default_sort};
     }
+
     my @errors = ();
     my($result);
     my $facets = [];
@@ -207,7 +201,7 @@ any('/scans/:_id',sub {
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
-any('/scans/:_id/json',sub{
+get('/scans/:_id/json',sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
@@ -231,7 +225,7 @@ any('/scans/:_id/json',sub{
 
 });
 
-any('/scans/:_id/comments',,sub{
+get('/scans/:_id/comments',,sub{
     my $params = params;
     my @errors = ();
     my @messages = ();
@@ -307,7 +301,7 @@ post('/scans/:_id/comments/add',,sub{
 
     return to_json($response,{pretty => 0});
 });
-any('/scans/:_id/comments/clear',,sub{
+post('/scans/:_id/comments/clear',,sub{
     my $params = params;
     my $auth = auth;
     my $config = config;
@@ -343,7 +337,7 @@ any('/scans/:_id/comments/clear',,sub{
 
     return to_json($response,{pretty => 0});
 });
-any('/scans/:_id/baginfo/add',sub{
+post('/scans/:_id/baginfo/add',sub{
     my $params = params;
     my $auth = auth;
     my @errors = ();
@@ -400,7 +394,7 @@ any('/scans/:_id/baginfo/add',sub{
     $response->{messages} = \@messages;
     return to_json($response,{pretty => 0});
 });
-any('/scans/:_id/baginfo/edit',sub{
+post('/scans/:_id/baginfo/edit',sub{
     my $params = params;
     my $auth = auth;
     my $config = config;

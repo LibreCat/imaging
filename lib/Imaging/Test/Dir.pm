@@ -34,6 +34,7 @@ sub _load_file_info {
         find({
             wanted => sub{
                 return if abs_path($_) eq abs_path($lookup_dir);
+                return if -d abs_path($_);
                 push @file_info,{
                     dirname => abs_path($File::Find::dir),
                     basename => basename($_),

@@ -66,8 +66,8 @@ sub status2index {
         $doc->{_id} = md5_hex($blob);
         $index_log->add($doc);
     }
-    $index_log->commit;
-    $doc;
+    my($success,$error ) = $index_log->commit;
+    $success,$error;
 }
 sub marcxml_flatten {
     my $xml = shift;
@@ -131,8 +131,8 @@ sub scan2index {
     }
     
     index_scan()->add($doc);
-    index_scan()->commit;
-    $doc;
+    my($success,$error) = index_scan()->commit;
+    $success,$error;
 }
 
 register local_time => \&local_time;

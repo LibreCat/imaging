@@ -6,6 +6,7 @@
     </div>
     <div class="pull-right">
       <label for="sort">sorteer</label>
+      [% SET params.item("sort") = settings.app.logs.default_sort IF params.item("sort") == "" %]
       <select name="sort" id="sort">
           <option value=""></option>
           [%- FOREACH item IN [["datetime","datum"],["scan_id","naam"],["user_name", "gebruiker"],["owner","eigenaar"],["status","status"]] %]
@@ -72,7 +73,7 @@
   <tr>
     <th>datum</th>
     <th>naam</th>
-    <th>gebruiker</th>
+    <th>gewijzigd door</th>
     <th>eigenaar</th>
     <th>status</th>
     <th>commentaar</th>

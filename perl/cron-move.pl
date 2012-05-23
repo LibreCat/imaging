@@ -51,6 +51,11 @@ sub file_info {
         }
     }
 }
+
+
+my $this_file = File::Basename::basename(__FILE__);
+say "$this_file started at ".local_time;
+
 my $scans = scans();
 
 my @ids_to_be_moved = ();
@@ -75,7 +80,7 @@ foreach my $id(@ids_to_be_moved){
     mkpath($newpath);
     if(move($oldpath,$newpath)){
         #change file mod   
-        my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 0777 $newpath");
+        my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 777 $newpath");
         if(!$success){
             say STDERR $stderr;
         }
@@ -100,3 +105,5 @@ foreach my $id(@ids_to_be_moved){
         say STDERR "unable to move $oldpath to $newpath:$!";
     }
 }
+
+say "$this_file ended at ".local_time;

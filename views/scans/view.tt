@@ -137,14 +137,15 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
         <tr>
         [% IF !file.error %]
           <td>
+            [% file_name = file.path.replace(scan.path _ "/","") %]
             [%- IF do_open %]
-            [%- link = "file://" _ dir_processed_windows _ "/" _ file.name -%]
-            <a href="[% link %]">[% file.name | html %]</a>
+                [%- link = "file://" _ dir_processed_windows _ "/" _ file_name -%]
+                <a href="[% link %]">[% file_name | html %]</a>
             [%- ELSE %]
-            [% file.name | html %]
+                [% file_name | html %]
             [%- END %]
           </td>
-          <td>[% file.size.size_pretty %]</td>
+          <td><span class="tip" title="[% file.size %] bytes">[% file.size.size_pretty %]</span></td>
           <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
           <td>[% file.content_type %]</td>
         [%- ELSE %]

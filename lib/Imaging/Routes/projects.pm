@@ -2,6 +2,7 @@ package Imaging::Routes::projects;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Imaging::Routes::Utils;
+use Dancer::Plugin::Imaging::Routes::Meercat;
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -12,6 +13,7 @@ use DateTime::Format::Strptime;
 use Time::HiRes;
 use Try::Tiny;
 use List::MoreUtils qw(first_index);
+use Digest::MD5 qw(md5_hex);
 
 hook before => sub {
     if(request->path =~ /^\/project(.*)$/o){
@@ -121,21 +123,45 @@ any('/projects/add',sub{
                 push @errors,$error if !$success;
             }
         }
+
+        #check query
+        my($m_result,$m_total,$m_error);
+        try {
+            $m_result = meercat->search($params->{query});
+            $m_total = $m_result->content->{response}->{numFound};
+        }catch{
+            $m_error = $_;
+        };
+        if($m_error){
+            push @errors,"query $params->{query} is een ongeldige query";
+        }elsif($m_total <= 0){
+            push @errors,"query $params->{query} leverde geen resultaten op";
+        }
         #insert
         if(scalar(@errors)==0){
-            $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
-            my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));
-            my $project = projects->add({
-                name => $params->{name},
-                name_subproject => $params->{name_subproject},
-                description => $params->{description},
-                datetime_start => $datetime->epoch,
-                datetime_last_modified => Time::HiRes::time,
-                query => $params->{query},
-                locked => 0,
-                list => []
-            });
-            redirect(uri_for("/projects"));
+            #bestaat reeds?
+            my $_id = md5_hex($params->{name}.$params->{name_subproject});
+            my $other_project = projects->get($_id);
+            if($other_project){
+                push @errors,"Er bestaat reeds een project met naam '$params->{name}' en subproject '$params->{name_subproject}'";
+            }else{
+
+                $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
+                my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));
+                my $project = projects->add({
+                    _id => $_id,
+                    name => $params->{name},
+                    name_subproject => $params->{name_subproject},
+                    description => $params->{description},
+                    datetime_start => $datetime->epoch,
+                    datetime_last_modified => Time::HiRes::time,
+                    query => $params->{query},
+                    locked => 0,
+                    num_hits => $m_total,
+                    list => []
+                });
+                redirect(uri_for("/projects"));
+            }
         }
     }
 

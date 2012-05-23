@@ -4,7 +4,7 @@
 
 <div class="clearfix">
   [%- IF auth.can('projects','edit') %]
-  <a class="btn btn-primary" href="/projects/add"><i class="icon-plus icon-white"></i> nieuw project</a>
+  <a class="btn btn-primary" href="/projects/add"><i class="icon-plus icon-white"></i>nieuw project</a>
   [%- END %]
 
   [%- IF projects.size %]
@@ -68,7 +68,13 @@
         [%- END %]
       </td>
       <td>[% project.item("name_subproject") | html %]</td>
-      <td>[% project.item("list").size || 0 %]</td>
+      <td>
+        [% IF project.item("list").size <= 0 %]
+            <a title="Aantal hits in meercat, niet het aantal objecten! Aantal objecten wordt later opgehaald.">[% project.num_hits %]&nbsp;<i class="icon-warning-sign"></i></a>
+        [% ELSE %]
+          [% project.item("list").size %]
+        [% END %]
+      </td>
       <td>[% project.item("done") || 0 %]</td>
       <td>[% date.format(POSIX.floor(project.datetime_last_modified),format = '%d-%m-%Y') %]</td>
       <td>[% date.format(POSIX.floor(project.datetime_start),format = '%d-%m-%Y') %]</td>

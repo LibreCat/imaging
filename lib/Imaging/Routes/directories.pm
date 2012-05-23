@@ -93,7 +93,7 @@ any('/directories/:id/edit',sub {
                 my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
                 my $error;
                 mkpath($path);
-                my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 0777 $path");
+                my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 777 $path");
                 die($stderr) if !$success;
                 push @messages,"directory '$_' is ok nu";
                 dbi_handle->quick_update('users',{ id => $user->{id} },{ has_dir => 1 });

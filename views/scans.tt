@@ -7,6 +7,7 @@
     </div>
     <div class="pull-right">
       <label for="sort">sorteer</label>
+      [% SET params.item("sort") = settings.app.scans.default_sort IF params.item("sort") == "" %]
       <select name="sort" id="sort">
           <option value=""></option>
           [%- FOREACH item IN [["_id","naam"],["user_name","gebruiker"],["status","status"],["datetime_last_modified","laatst gewijzigd"]] %]
@@ -88,7 +89,7 @@
         </a>
     </td>
     <td>
-        <a href="/scans?q=[% "project_id:\"" _ scan.item("project_id") _ "\"" %]">
+        <a href="/scans?q=[% "project_id:\"" _ scan.item("project_id") _ "\"" | uri %]">
         [% scan.item("project_name") || "-" %]
         </a>
     </td>

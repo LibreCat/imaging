@@ -1,4 +1,4 @@
-package Imaging::Test::Dir::BAG::checkAleph;
+package Imaging::Test::Dir::TAR::checkAleph;
 use Moo;
 use WebService::Solr;
 use Try::Tiny;

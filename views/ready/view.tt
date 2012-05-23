@@ -2,7 +2,6 @@
 [%- USE SizePretty -%]
 
 [% PROCESS inc/errors_messages.tt %]
-
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
 
@@ -30,10 +29,11 @@
         [%- FOREACH file IN scan.files %]
         <tr>
           <td>
-            [%- link = "file://" _ dir_processed_windows _ '/' _ file.name -%]
-            <a href="[% link %]">[% file.path.replace(scan.path _ "/","") %]</a>
+            [%- file_name = file.path.replace(scan.path _ "/","") -%]
+            [%- link = "file://" _ dir_processed_windows _ '/' _ file_name -%]
+            <a href="[% link %]">[% file_name %]</a>
           </td>
-          <td>[% file.size.size_pretty %]</td>
+          <td><span class="tip" title="[% file.size %] bytes">[% file.size.size_pretty %]</span></td>
           <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
           <td>[% file.content_type %]</td>
         </tr>

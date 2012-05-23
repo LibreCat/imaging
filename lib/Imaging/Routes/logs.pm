@@ -20,6 +20,7 @@ hook before => sub {
 };
 any('/logs',sub {
     my $params = params;
+    my $config = config;
     my $index_log = index_log();
     my $q = is_string($params->{q}) ? $params->{q} : "*";
 
@@ -35,21 +36,11 @@ any('/logs',sub {
         start => $offset,
         limit => $num
     );
-    if(is_string($sort)){
-        $opts{sort} = [ $sort ] if $sort =~ /^\w+\s(?:asc|desc)$/o;
-    }elsif(is_array_ref($sort)){
-        my $ok = 1;
-        foreach(@$sort){
-            if($_ !~ /^\w+\s(?:asc|desc)$/o){
-                $ok = 0;
-                last;
-            }
-        }
-        if($ok){
-            $opts{sort} = $sort;
-        }
+
+    if($sort =~ /^\w+\s(?:asc|desc)$/o){
+        $opts{sort} = $sort;
     }else{
-        $opts{sort} = ["datetime desc","scan_id desc"];
+        $opts{sort} = $config->{app}->{logs}->{default_sort} if $config->{app}->{logs} && $config->{app}->{logs}->{default_sort};
     }
     my($result,$error);
     try {

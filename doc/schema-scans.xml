@@ -494,7 +494,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="check_log" type="string" indexed="true" stored="true" multiValued="true" />
     <field name="comments" type="lupetext" indexed="true" stored="true" />
     <dynamicField name="datetime_*" type="date" indexed="true" stored="true" />
-	<field name="metadata_id" type="string" indexed="true" stored="true" />
+	<field name="metadata_id" type="string" indexed="true" stored="true" multiValued="true" />
 
     <!-- table users -->
 	<field name="user_id" type="string" indexed="true" stored="true" />

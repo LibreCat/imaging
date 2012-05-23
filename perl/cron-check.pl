@@ -150,6 +150,9 @@ sub file_info {
 my $mount_conf = mount_conf;
 my $scans = scans;
 
+my $this_file = File::Basename::basename(__FILE__);
+say "$this_file started at ".local_time;
+
 #stap 1: zoek scans
 # 1. lijst mappen
 # 2. Map staat niet in databank: voeg nieuw record toe
@@ -247,8 +250,11 @@ foreach my $user(@users){
 
             }
             #update index_scan en index_log
-            scan2index($scan);
-            status2index($scan,-1);
+            my($success,$error);
+            ($success,$error) = scan2index($scan);
+            die($error) if !$success;
+            ($success,$error) = status2index($scan,-1);
+            die($error) if !$success;
 
             push @scan_ids_ready,$scan->{_id};
         }
@@ -378,8 +384,11 @@ foreach my $scan_id(@scan_ids_test){
     $scan->{datetime_last_modified} = Time::HiRes::time;
 
     #update index_scan en index_log
-    scan2index($scan);
-    status2index($scan,-1);
+    my($success,$error);
+    ($success,$error) = scan2index($scan);
+    die($error) if !$success;
+    ($success,$error) = status2index($scan,-1);
+    die($error) if !$success;
 
     $scans->add($scan);
 }
@@ -387,3 +396,5 @@ if(scalar(@scan_ids_ready) > 0){
     index_log->store->solr->optimize();
     index_scan->store->solr->optimize()
 }
+say "$this_file ended at ".local_time;
+

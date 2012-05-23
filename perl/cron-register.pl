@@ -59,6 +59,9 @@ sub mount_conf {
     config->{mounts}->{directories} ||= {};
 }
 
+my $this_file = File::Basename::basename(__FILE__);
+say "$this_file started at ".local_time;
+
 #stap 1: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
 say "updating list scans for projects";
 my @project_ids = ();
@@ -105,7 +108,7 @@ foreach my $project_id(@project_ids){
                             $item->{"number"} = $1;
                         }
                     }
-                    say join(',',values %$item);
+                    say "\t".join(',',values %$item);
                     push @items,$item;
                 }
             }
@@ -159,19 +162,28 @@ projects()->each(sub{
 
             #directory nog niet aanwezig
             if(!$scan){
-                say "\tproject ".$project->{_id}.":scan $id not found";
                 next;
             }
-
-            #scan toekennen aan project
-            if(!$scan->{project_id}){
-                $scan->{name} = $scan_name;
-                $scan->{project_id} = $project->{_id};
+            #scan reeds toegewezen: enkel opnieuw toewijzen indien project verwijderd
+            if($scan->{project_id}){
+                if($scan->{project_id} ne $project->{_id}){
+                    my $other_project = projects->get($scan->{project_id});
+                    next if $other_project;
+                }else{
+                    next;
+                }
             }
+            #scan toekennen aan project
+            $scan->{name} = $scan_name;
+            $scan->{project_id} = $project->{_id};
 
-            say "\tproject ".$project->{_id}.":scan $id assigned to project";
+            say "\tscan $id assigned to project $project->{_id}";
             scans()->add($scan);
+            
+            my($success,$error) = scan2index($scan);
+            die($error) if !$success;
 
+            #indien 1 is gevonden, dan niet meer de andere
             last;
         }
     }
@@ -179,7 +191,7 @@ projects()->each(sub{
 
 #stap 3: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
 #wijziging/update moet gebeuren door qa_manager
-say "\nretrieving metadata for good scans";
+say "retrieving metadata for good scans";
 my @ids_ok_for_metadata = ();
 scans()->each(sub{
     my $scan = shift;
@@ -215,6 +227,8 @@ foreach my $id(@ids_ok_for_metadata){
     my $num = scalar(@{$scan->{metadata}});
     say "\tscan ".$scan->{_id}." has $num metadata-records";
     scans()->add($scan);
+    my($success,$error) = scan2index($scan);
+    die($error) if !$success;
 }
 
 #stap 4: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest indien nog niet aanwezig)
@@ -241,9 +255,11 @@ foreach my $id (@incoming_ok){
     #=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /scans is terug te vinden
     #=> daarom opnemen in databank én indexeren
     scans->add($scan);
-    scan2index($scan);
-
-    status2index($scan,-1);
+    my($success,$error);
+    ($success,$error) = scan2index($scan);
+    die($error) if !$success;
+    ($success,$error) = status2index($scan,-1);
+    die($error) if !$success;
 
     if($user->{profile_id} ne "BAG"){
 
@@ -301,9 +317,13 @@ foreach my $id (@incoming_ok){
     $scan->{datetime_last_modified} = Time::HiRes::time;
     
     scans->add($scan);
-    scan2index($scan);
-    status2index($scan,-1);
+    ($success,$error) = scan2index($scan);
+    die($error) if !$success;
+    ($success,$error) = status2index($scan,-1);
+    die($error) if !$success;
 }
 
 index_log->store->solr->optimize();
 index_scan->store->solr->optimize();
+
+say "$this_file ended at ".local_time;

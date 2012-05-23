@@ -1,4 +1,8 @@
 <h1>Status werklijsten</h1>
+<style type="text/css">
+    .dl-horizontal dt { width: 180px; }
+    .dl-horizontal dd { margin-left: 200px; }
+</style>
 <dl class="dl-horizontal">
   [%- FOREACH user_login IN stats.ready.keys.sort %]
   <dt>
@@ -60,7 +64,7 @@
 
   <dt>QA Controle</dt>
   <dd>
-    [% states_qa_control = ["registered","derivatives_created","reprocess_scans","reprocess_metadata","reprocess_derivatives","archived"] %]
+    [% states_qa_control = settings.status.collection.qa_control %]
     [% IF num_qa_control > 0 %]
         [% parts = [] %]
         [% FOREACH status IN states_qa_control %]
@@ -77,7 +81,7 @@
   <dt>Publicatie</dt>
   <dd>
     [% IF num_publishing > 0 %]
-        [% states_publishing = ["qa_control_ok","archived","archived_ok","published"] %]
+        [% states_publishing = settings.status.collection.publishing %]
         [% parts = [] %]
         [% FOREACH status IN states_publishing %]
             [% parts.push("status:" _ status) %]
@@ -93,7 +97,7 @@
   <dt>Archivering</dt>
   <dd>
     [% IF num_archiving > 0 %]
-        [% states_archiving = ["qa_control_ok","archived","archived_ok","published","published_ok"] %]
+        [% states_archiving = settings.status.collection.archiving %]
         [% parts = [] %]
         [% FOREACH status IN states_archiving %]
             [% parts.push("status:" _ status) %]
@@ -109,7 +113,11 @@
   <dt>Done</dt>
   <dd>
     [% IF num_done > 0 %]
-        <a href="/scans?q=[% "status:archived_ok AND status:published_ok" | url %]">[% num_done %]</a>
+        [% states_done = settings.status.collection.done %]
+        [% FOREACH status IN states_done %]
+            [% parts.push("status:" _ status) %]
+        [% END %]
+        <a href="/scans?q=[% parts.join(" AND ") | url %]">[% num_done %]</a>
     [% ELSE %]
         [% num_done || 0 %]
     [% END %]
