@@ -9,7 +9,7 @@
       [% SET params.item("sort") = settings.app.logs.default_sort IF params.item("sort") == "" %]
       <select name="sort" id="sort">
           <option value=""></option>
-          [%- FOREACH item IN [["datetime","datum"],["scan_id","naam"],["user_name", "gebruiker"],["owner","eigenaar"],["status","status"]] %]
+          [%- FOREACH item IN [["datetime","datum"],["scan_id","naam"],["user_login", "gebruiker"],["owner","eigenaar"],["status","status"]] %]
           <option value="[% item.0 %] asc" [% IF params.item("sort") == ( item.0 _ " asc" ) %]selected="selected"[% END %]>[% item.1 %] oplopend</option>
           <option value="[% item.0 %] desc" [% IF params.item("sort") == ( item.0 _ " desc" ) %]selected="selected"[% END %]>[% item.1 %] aflopend</option>
           [%- END %]
@@ -90,8 +90,8 @@
         </a>
     </td>
     <td>
-        <a href="/logs?q=[% "user_name:\"" _ log.user_name  _ "\"" | uri  %]">
-        [% log.user_name %]
+        <a href="/logs?q=[% "user_login:\"" _ log.user_login  _ "\"" | uri  %]">
+        [% log.user_login %]
         </a>
     </td>
     <td>

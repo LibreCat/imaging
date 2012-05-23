@@ -12,31 +12,31 @@ use Digest::MD5 qw(md5_hex);
 use Try::Tiny;
 
 hook before => sub {
-    if(request->path    =~  /^\/user/o){
-        my  $auth   =   auth;
-        my  $authd  =   authd;
+    if(request->path =~ /^\/user/o){
+        my $auth = auth;
+        my $authd = authd;
         if(!$authd){
-            my  $service    =   uri_escape(uri_for(request->path));
-            return  redirect(uri_for("/login")."?service=$service");
+            my $service = uri_escape(uri_for(request->path));
+            return redirect(uri_for("/login")."?service=$service");
         }elsif(!$auth->can('manage_accounts','edit')){
             request->path_info('/access_denied');
-            my  $params =   params;
-            $params->{text} =   "U  beschikt    niet    over    de  nodige  rechten om  gebruikersinformatie    aan te  passen";
+            my $params = params;
+            $params->{text} = "U beschikt niet over de nodige rechten om gebruikersinformatie aan te passen";
         }
     }
 };  
 any('/users',sub{
 
-    my  @users  =   dbi_handle->quick_select('users',{},{   order_by    =>  'id'    });
+    my @users = dbi_handle->quick_select('users',{},{   order_by    =>  'id'    });
     template('users',{
-        users   =>  \@users,
-        auth    =>  auth()
+        users => \@users,
+        auth  => auth()
     });
 
 });
 any('/users/add',sub{
 
-    my  $params =   params;
+    my $params = params;
     my(@errors,@messages);
     if($params->{submit}){
         my($success,$errs)=check_params_new_user();
@@ -169,6 +169,12 @@ sub check_params_new_user {
         }
         if(!(scalar(@{$params->{$key}}) > 0)){
             push @errors,"$key is niet opgegeven"
+        }
+    }
+    @keys = qw(login);
+    foreach my $key(@keys){
+        if($params->{$key} !~ /^\w+$/o){
+            push @errors,"$key moet alfanumeriek zijn";
         }
     }
     if(scalar(@errors)==0){

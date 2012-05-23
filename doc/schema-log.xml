@@ -483,7 +483,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <field name="status" type="string" indexed="true" stored="true" />
     <field name="comments" type="lupetext" indexed="true" stored="true" />
     <field name="datetime" type="date" indexed="true" stored="true" />
-	<field name="user_name" type="string" indexed="true" stored="true" />
+	<field name="user_login" type="string" indexed="true" stored="true" />
 	<field name="owner" type="string" indexed="true" stored="true" />
 
     <!--DEFAULT-->
@@ -511,7 +511,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<copyField source="scan_id" dest="text" />
 	<copyField source="status" dest="text" />
     <copyField source="datetime" dest="text" />
-	<copyField source="user_name" dest="text" />
+	<copyField source="user_login" dest="text" />
 	<copyField source="owner" dest="text" />
 
    <!-- Above, multiple source fields are copied to the [text] field. 

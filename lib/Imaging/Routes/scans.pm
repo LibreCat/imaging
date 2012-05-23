@@ -286,7 +286,7 @@ post('/scans/:_id/comments/add',,sub{
         $comment = {
             datetime => local_time(),
             text => $params->{text},
-            user_name => session('user')->{login},
+            user_login => session('user')->{login},
             id => Data::UUID->new->create_str
         };
         push @{ $scan->{comments} ||= [] },$comment;
@@ -487,7 +487,7 @@ any('/scans/:_id/status',sub{
                 $scan->{status} = $status_to;
                 #voeg toe aan status history    
                 push @{ $scan->{status_history} ||= [] },{
-                    user_name => session('user')->{login},
+                    user_login => session('user')->{login},
                     status => $status_to,
                     datetime => Time::HiRes::time,
                     comments => $comments
@@ -498,7 +498,7 @@ any('/scans/:_id/status',sub{
                 push @{ $scan->{comments} ||= [] },{
                     datetime => local_time(),
                     text => $text,
-                    user_name => session('user')->{login},
+                    user_login => session('user')->{login},
                     id => Data::UUID->new->create_str
                 };
                 $scan->{datetime_last_modified} = Time::HiRes::time;

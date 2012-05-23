@@ -23,7 +23,7 @@
       <select name="sort" id="sort">
           [% SET params.item("sort") = settings.app.qa_control.default_sort IF params.item("sort") == "" %]
           <option value=""></option>
-          [%- FOREACH item IN [["_id","naam"],["user_name", "eigenaar"],["status","status"],["datetime_last_modified","laatst gewijzigd"]] %]
+          [%- FOREACH item IN [["_id","naam"],["user_login", "eigenaar"],["status","status"],["datetime_last_modified","laatst gewijzigd"]] %]
           <option value="[% item.0 %] asc" [% IF params.item("sort") == ( item.0 _ " asc" ) %]selected="selected"[% END %]>[% item.1 %] oplopend</option>
           <option value="[% item.0 %] desc" [% IF params.item("sort") == ( item.0 _ " desc" ) %]selected="selected"[% END %]>[% item.1 %] aflopend</option>
           [%- END %]

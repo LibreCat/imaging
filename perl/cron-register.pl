@@ -246,7 +246,7 @@ foreach my $id (@incoming_ok){
     #status 'registering'
     $scan->{status} = "registering";
     push @{ $scan->{status_history} },{
-        user_name =>"-",
+        user_login =>"-",
         status => "registering",
         datetime => Time::HiRes::time,
         comments => ""
@@ -309,7 +309,7 @@ foreach my $id (@incoming_ok){
     #status 'registered'
     $scan->{status} = "registered";
     push @{ $scan->{status_history} },{
-        user_name =>"-",
+        user_login =>"-",
         status => "registered",
         datetime => Time::HiRes::time,
         comments => ""

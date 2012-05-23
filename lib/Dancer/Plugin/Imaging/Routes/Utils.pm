@@ -103,7 +103,7 @@ sub scan2index {
 
     for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
         my $item = $doc->{status_history}->[$i];
-        $doc->{status_history}->[$i] = $item->{user_name}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
+        $doc->{status_history}->[$i] = $item->{user_login}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
     }
 
     my $project;

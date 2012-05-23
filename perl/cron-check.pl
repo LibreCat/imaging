@@ -195,7 +195,7 @@ foreach my $user(@users){
                     path => $dir,
                     status => "incoming",
                     status_history => [{
-                        user_name => $user->{login},
+                        user_login => $user->{login},
                         status => "incoming",
                         datetime => Time::HiRes::time,
                         comments => ""
@@ -235,7 +235,7 @@ foreach my $user(@users){
                 #status op 'incoming_back'
                 $scan->{status} = "incoming_back";
                 push @{ $scan->{status_history} },{
-                    user_name => $user->{login},
+                    user_login => $user->{login},
                     status => "incoming_back",
                     datetime => Time::HiRes::time,
                     comments => ""
@@ -372,7 +372,7 @@ foreach my $scan_id(@scan_ids_test){
     #nu worden enkel gewijzigde mappen meegenomen, dus niet meer nodig om laatste incoming_error te overschrijven
     $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
     my $status_history_object = {
-        user_name =>"-",
+        user_login => "-",
         status => $scan->{status},
         datetime => Time::HiRes::time,
         comments => ""

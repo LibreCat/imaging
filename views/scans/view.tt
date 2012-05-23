@@ -105,7 +105,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
         </tr>
         [%- FOREACH status_entry IN scan.item("status_history") %]
         <tr>
-          <td>[% status_entry.user_name %]</td>
+          <td>[% status_entry.user_login %]</td>
           <td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
           <td>[% date.format(POSIX.floor(status_entry.datetime),'%d-%m-%Y %H:%M:%S') %]</td>
           <td>[% status_entry.comments || "-"%]</td>
@@ -262,7 +262,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
       [% FOREACH comment IN scan.comments.reverse %]
         <blockquote>
           [% comment.text | html %]
-          <small>posted by [% comment.user_name %] at [% comment.datetime %]</small>
+          <small>posted by [% comment.user_login %] at [% comment.datetime %]</small>
         </
       [% END %]
       </div>
@@ -280,7 +280,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
     $.post(f.attr('action'), {text: text}, function(res) {
       if (!res.status === 'ok') return;
       var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
-        res.data.user_name+' at '+res.data.datetime+
+        res.data.user_login + ' at '+res.data.datetime+
         '</small></blockquote>');
       comment.hide();
       $("#comments").prepend(comment);
