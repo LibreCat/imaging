@@ -104,7 +104,7 @@
       [%- matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
       [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
     </td>
-		<td>[% scan.item("user_name") || "-" %]</td>
+		<td>[% scan.item("user_login") || "-" %]</td>
 		<td>
 			[%- status = scan.item("status") -%]
 			[% settings.human_readable.${status} || status %]

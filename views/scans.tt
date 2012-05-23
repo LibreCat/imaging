@@ -72,7 +72,7 @@
   </caption>
   <tr>
     <th>naam</th>
-    <th>gebruiker</th>
+    <th>eigenaar</th>
     <th>project</th>
     <th>deelproject</th>
     <th>status</th>
@@ -82,11 +82,19 @@
   [%- FOREACH scan IN scans %]
   <tr>
     <td><a href="/scans/[% scan.item("_id") %]">[% scan.item("_id") %]</a></td>
-    <td>[% scan.item("user_name") || "-" %]</td>
-    <td>[% scan.item("project_name") || "-" %]</td>
+    <td>
+        <a href="/scans?q=[% "user_login:\"" _ scan.item("user_login") _ "\"" | uri %]">
+        [% scan.item("user_login") || "-" %]
+        </a>
+    </td>
+    <td>
+        <a href="/scans?q=[% "project_id:\"" _ scan.item("project_id") _ "\"" %]">
+        [% scan.item("project_name") || "-" %]
+        </a>
+    </td>
     <td>[% scan.item("project_name_subproject") %]</td>
     <td>
-				[% status = scan.item("status") %]
+		[% status = scan.item("status") %]
         <a href="/scans?q=[% "status:\"" _ status _ "\"" | html  %]">[% settings.human_readable.${status} || status %]</a>
     </td>
     <td>
