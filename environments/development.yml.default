@@ -83,7 +83,12 @@ index:
  meercat: &meercatindex
   url: "http://localhost:4000/solr"
 app:
+ qa_control:
+  default_sort: "datetime_last_modified desc"
+ logs:
+  default_sort: "datetime desc"
  scans:
+  default_sort: "datetime_last_modified desc"
   facet_fields: ["project_name","status"]
   edit:
    baginfo:
