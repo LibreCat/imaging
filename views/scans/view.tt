@@ -115,15 +115,35 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
     </div>
 
     <div class="tab-pane" id="tab-files">
-      [%- states_processed = ["registered","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published","published_ok"] -%]
-      [%- do_open = 0 -%]
-      [%- IF states_processed.grep(scan.status).size > 0 -%]
-        [%- dir_processed_windows = settings.mounts.directories.network_directories.processed.windows _ scan.item("_id") -%]
-        [%- do_open = 1 -%]
-      [%- END -%]
+      [%- states_in_processed = settings.status.collection.in_processed -%]
+      [%- states_in_ready = settings.status.collection.in_ready-%]
+      [%- states_in_reprocessing = settings.status.collection.in_reprocessing -%]
+
+      [%- do_open = 1 -%]
+      [% IF scan.busy %]
+        [% do_open = 0 %]
+      [% ELSIF states_in_ready.grep(scan.status).size > 0 -%]
+
+        [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
+        [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login _ "/"  _ scan.item("_id") %]
+
+      [% ELSIF states_in_processed.grep(scan.status).size > 0 %]
+
+        [%# file:///V:/processed/BHSL-PAP-0064  %]
+        [% scan_system_directory = settings.mounts.directories.network_directories.processed.windows _ "/"  _ scan.item("_id") %]
+
+      [% ELSIF states_in_reprocessing.grep(scan.status).size > 0 %]
+
+        [%# file:///W:/reprocessing/geert/BHSL-PAP-0064 %]
+        [% scan_system_directory = settings.mounts.directories.network_directories.reprocessing.windows _ "/" _ user.login _ "/" _ scan.item("_id") %]
+
+      [% ELSE %]
+          [% do_open = 0 %]
+      [% END %]
+
       [% IF do_open %]
       <p>
-        <a class="btn btn-mini" href="file://[% dir_processed_windows %]">open map</a>
+        <a class="btn btn-mini" href="file://[% scan_system_directory %]">open map</a>
       </p>
       [% END %]
       <table class="table table-striped">
@@ -139,7 +159,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
           <td>
             [% file_name = file.path.replace(scan.path _ "/","") %]
             [%- IF do_open %]
-                [%- link = "file://" _ dir_processed_windows _ "/" _ file_name -%]
+                [%- link = "file://" _ scan_system_directory _ "/" _ file_name -%]
                 <a href="[% link %]">[% file_name | html %]</a>
             [%- ELSE %]
                 [% file_name | html %]

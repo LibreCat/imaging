@@ -11,6 +11,7 @@ locations:
 								- 'registering'
 								- 'registered'
 								- 'derivatives_created'
+                                - 'to_reprocess_scans'
 								- 'reprocess_scans'
                                 - 'reprocess_derivatives'
 								- 'reprocess_metadata'

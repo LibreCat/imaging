@@ -191,9 +191,9 @@ any('/scans/:_id',sub {
             }
         }
     }
-
     template('scans/view',{
         scan => $scan,
+        user => $scan ? dbi_handle->quick_select('users',{ id => $scan->{user_id} }) : undef,
         auth => $auth,
         errors => \@errors,
         mount_conf => mount_conf(),

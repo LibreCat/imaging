@@ -17,3 +17,5 @@ store:
   package: "Catmandu::Store::Solr"
   options:
    url: "http://localhost:8983/solr/core1"
+fix_files:
+ marc2dublincore: "fix/marc2dublincore"

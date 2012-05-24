@@ -85,6 +85,7 @@ any('/ready/:user_login/:scan_id',sub{
     
     template('ready/view',{
         scan => $scan,
+        user => $user,
         errors => \@errors,
         auth => auth()
     });

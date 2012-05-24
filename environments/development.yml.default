@@ -112,10 +112,12 @@ mounts:
    processed: "02_processed"
    reprocessing: "03_reprocessing"
   network_directories:
-   processed:
-    windows: "/I:/"
    ready:
-    windows: "/J:/"
+    windows: "/U:/ready"
+   processed:
+    windows: "/V:/processed"
+   reprocessing:
+    windows: "/W:/reprocessing"
   ready: 
    #warn 3 days after first arrival
    warn_after: 
@@ -133,6 +135,9 @@ status:
   publishing: ["qa_control_ok","archived","archived_ok","published"]
   archiving: ["qa_control_ok","archived","archived_ok","published","published_ok"]
   done: ["archived_ok","published_ok"]
+  in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
+  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published"]
+  in_reprocessing: ["reprocess_scans"]
  change:
   all:
    incoming: ["incoming_error","incoming_ok"]
@@ -183,6 +188,7 @@ human_readable:
  incoming_ok: "automatische check successvol"
  registering: "registratie bezig"
  registered: "registratie voltooid"
+ to_reprocess_scans: "terug naar scanner (bezig)"
  reprocess_scans: "terug naar scanner"
  reprocess_metadata: "terug naar catalografie"
  reprocess_derivatives: "afgeleiden foutief"
