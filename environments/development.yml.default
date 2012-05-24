@@ -113,11 +113,11 @@ mounts:
    reprocessing: "03_reprocessing"
   network_directories:
    ready:
-    windows: "/U:/ready"
+    windows: "file:///U:"
    processed:
-    windows: "/V:/processed"
+    windows: "file:///V:"
    reprocessing:
-    windows: "/W:/reprocessing"
+    windows: "file:///W:"
   ready: 
    #warn 3 days after first arrival
    warn_after: 

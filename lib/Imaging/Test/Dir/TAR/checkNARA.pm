@@ -13,6 +13,18 @@ has _nara_conf  => (
             }
          },
          {
+            class => "Imaging::Test::Dir::checkTIFF",
+            args => {
+                valid_patterns => ['\.tif$']
+            }
+         },
+         {
+            class => "Imaging::Test::Dir::checkJPEG",
+            args => {
+                valid_patterns => ['\.(?:jpg|jpeg)$']
+            }
+         },
+         {
             class => "Imaging::Test::Dir::TAR::checkFilename",
             args => {}
         }];

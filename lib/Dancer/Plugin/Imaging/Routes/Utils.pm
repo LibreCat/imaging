@@ -119,8 +119,8 @@ sub scan2index {
     if($scan->{user_id}){
         my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
         if($user){
-            $doc->{user_name} = $user->{name};
-            $doc->{user_login} = $user->{login};
+            my @keys = qw(name login profile_id);
+            $doc->{"user_$_"} = $user->{$_} foreach(@keys);
             $doc->{user_roles} = [split(',',$user->{roles})];
         }
     }

@@ -70,7 +70,10 @@
       <td>[% project.item("name_subproject") | html %]</td>
       <td>
         [% IF project.item("list").size <= 0 %]
+            <span class="label label-warning" title="Aantal gevonden records in meercat, niet het aantal objecten! Aantal objecten wordt later opgehaald.">[% project.num_hits %]</span>
+            <!--
             <a title="Aantal hits in meercat, niet het aantal objecten! Aantal objecten wordt later opgehaald.">[% project.num_hits %]&nbsp;<i class="icon-warning-sign"></i></a>
+            -->
         [% ELSE %]
           [% project.item("list").size %]
         [% END %]

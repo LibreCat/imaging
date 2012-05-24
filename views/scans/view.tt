@@ -193,11 +193,11 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
         [%- IF auth.can('scans','edit') %]
         <a class="btn tip"
           title="Herstel originele metadata"
-          href="/scans/[% scan.item('_id') %]?action=add_metadata&metadata_id=[% metadata_id %]"
+          href="/scans/[% scan.item('_id') %]?action=add_metadata&metadata_id=[% metadata_id %]#tab-metadata"
           data-confirm="Hierdoor wordt de metadata overschreven. Bent je zeker?"><i class="icon-repeat"></i></a>
         <a class="btn tip"
           title="Verwijder metadata"
-          href="/scans/[% scan.item('_id') %]?action=delete_metadata&metadata_id=[% metadata_id %]"
+          href="/scans/[% scan.item('_id') %]?action=delete_metadata&metadata_id=[% metadata_id %]#tab-metadata"
           data-confirm="De metadata wordt onherroepelijk verwijderd. Ben je zeker?"><i class="icon-trash"></i></a>
         [%- END %]
       </p>
@@ -245,7 +245,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
               [%- END %]
               <div class="form-actions">
                 <input type="hidden" name="metadata_id" value="[% metadata_id %]"/>
-                <button class="btn btn-primary" type="submit" name="submit">Bewaar</button>
+                <button class="btn btn-primary" type="submit" name="submit" data-loading-text="saving..">Bewaar</button>
               </div>
             </form>
           [%- ELSE %]
@@ -291,6 +291,18 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
   </div>
 </div>
 <script type="text/javascript" charset="utf-8">
+    /* goto tab */
+    // Javascript to enable link to tab
+    var url = document.location.toString();
+    if (url.match('#')) {
+        $('.nav-tabs a[href=#'+url.split('#')[1]+']').tab('show') ;
+    } 
+
+    // Change hash for page-reload
+    $('.nav-tabs a').on('shown', function (e) {
+        window.location.hash = e.target.hash;
+    })
+
   $('#add-comment').submit(function(evt) {
     evt.preventDefault();
     var f = $(this),
@@ -353,11 +365,13 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
     var f = $(this);
     $.post(f.attr('action'), f.serialize(), function(data) {
       var btn = f.find(':button[type="submit"]');
+      btn.button("loading");
       if (data.status === 'ok') {
         btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
       } else {
         btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
       }
+      btn.button("reset");
     }, 'json');
   });
 </script>

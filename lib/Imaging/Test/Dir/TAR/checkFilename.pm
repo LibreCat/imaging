@@ -16,21 +16,19 @@ sub test {
     if(scalar(@$file_info)<=0){
         push @errors,"Deze map is leeg";
     }
-
-    my $re = qr/^${basename_topdir}_(\d{4})_0001_MA\.pdf$/;
-
-    my @pdfs = grep {
+    my $re = qr/^${basename_topdir}_\d{4}_0001_AC\.\w+$/;
+    my @acs = grep {
         $_->{basename} =~ $re;
     } @$file_info;
 
-    my $num = scalar(@pdfs);
+    my $num = scalar(@acs);
     if($num <=0){
 
-        push @errors,"$basename_topdir: ${basename_topdir}_<jaartal>_0001_MA.pdf niet gevonden"; 
+        push @errors,"$basename_topdir: ${basename_topdir}_<jaartal>_0001_AC.<extension> niet gevonden"; 
 
     }elsif($num > 1){
 
-        push @errors,"$basename_topdir: meer dan één master tif gevonden, maar van ander jaartal";
+        push @errors,"$basename_topdir: meer dan één AC gevonden:".join(',',@acs);
 
     }
 
