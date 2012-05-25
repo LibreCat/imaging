@@ -2,6 +2,7 @@
 [%- USE POSIX -%]
 [%- USE SizePretty -%]
 [%- USE JSON -%]
+[%- USE MARCTools -%]
 
 [% PROCESS inc/errors_messages.tt %]
 
@@ -203,14 +204,42 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
       </p>
       <div class="tabbable">
         <ul class="nav nav-tabs">
-          <li class="active"><a href="#tab-marc-[% loop.index %]" data-toggle="tab">marc</a></li>
-          <li><a href="#tab-baginfo-[% loop.index %]" data-toggle="tab">bag info</a></li>
+            <li class="active"><a href="#tab-baginfo-[% loop.index %]" data-toggle="tab">bag info</a></li>
+            <li><a href="#tab-marc-[% loop.index %]" data-toggle="tab">marc</a></li>
         </ul>
         <div class="tab-content">
-          <div class="tab-pane active" id="tab-marc-[% loop.index %]">
-            <pre style="max-height:300px;overflow:auto;"><code>[% metadata.fXML | html %]</code></pre>
+          <div class="tab-pane" id="tab-marc-[% loop.index %]">
+            <!--
+            <pre style="max-height:300px;overflow:auto;"><code>[% metadata.fXML.xml_to_aleph_sequential() | html %]</code></pre>
+            -->
+                    [% SET marc_aleph_seq = metadata.fXML.xml_to_aleph_sequential() %]
+                    <table class="table">
+                    [%- FOREACH line IN marc_aleph_seq %]
+                        [% SET tag = line.1 %]
+                        [% SET subfields = line.5 %]
+                        
+                        <tr>
+                            <th>[% tag %]</th>
+                            <td>
+                            [% IF subfields.size % 2 == 0 %]
+                                [% data = [] %]
+                                [% FOREACH val IN subfields %]
+                                    [% IF loop.index % 2 == 0 %]
+                                        [% data.push("|" _ val) %]
+                                    [% ELSE %]
+                                        [% data.push(val) %]
+                                    [% END %]
+                                [% END %]                                
+                                [% data.join(" ") | html %]
+                            [% ELSE %]
+                                [% subfields.join(" ") | html %]
+                            [% END %]
+                            </td>
+                        </tr>
+                    [%- END %]
+                    </table>
           </div>
-          <div class="tab-pane" id="tab-baginfo-[% loop.index %]">
+          <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
           [%- IF auth.can('scans','edit') %]
             <form action="/scans/[% scan.item('_id')%]/baginfo/edit" method="POST" class="form-horizontal edit-baginfo">
               <div class="btn-group pull-right">
@@ -293,15 +322,14 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
 <script type="text/javascript" charset="utf-8">
     /* goto tab */
     // Javascript to enable link to tab
-    var url = document.location.toString();
-    if (url.match('#')) {
-        $('.nav-tabs a[href=#'+url.split('#')[1]+']').tab('show') ;
+    if (window.location.hash && window.location.hash != "") {
+        $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
     } 
 
     // Change hash for page-reload
     $('.nav-tabs a').on('shown', function (e) {
         window.location.hash = e.target.hash;
-    })
+    });
 
   $('#add-comment').submit(function(evt) {
     evt.preventDefault();

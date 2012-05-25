@@ -1,6 +1,8 @@
 #!/usr/bin/env perl
 use Catmandu::Sane;
+use Catmandu::Util qw(:is);
 use XML::XPath;
+use open qw(:std :utf8);
 
 local($/);
 $/ = undef;
@@ -31,6 +33,9 @@ sub process_xml {
         my $tag   = $data->findvalue('@tag')->value();
         my $ind1  = $data->findvalue('@ind1')->value();
         my $ind2  = $data->findvalue('@ind2')->value();
+
+        $ind1 = is_string($ind1) ? $ind1 : " ";
+        $ind2 = is_string($ind2) ? $ind2 : " ";
 
         my @subf = ();
           foreach my $subf ($data->find('.//subfield')->get_nodelist) {

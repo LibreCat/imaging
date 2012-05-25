@@ -358,6 +358,7 @@ foreach my $scan_id(@scan_ids_test){
             foreach my $stats(@{ $ref->file_info() }){
                 push @files,file_info($stats->{path});
             }
+            $scan->{size} = $ref->size();
         }
         if(!$success){
             if($test->{on_error} eq "stop"){

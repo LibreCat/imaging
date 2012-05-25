@@ -96,7 +96,7 @@ app:
     - key: "DC-Identifier"
     - key: "DC-Description"
     - key: "DC-Type"
-      values: ["Text","audio","Sound","Image","Dataset","MovingImage","Sound","MovingImage"]
+      values: ["Text","audio","Sound","Image","Dataset","MovingImage"]
     - key: "DC-Creator"
     - key: "DC-AccessRights"
       values: ["open","closed","ugent"]
@@ -199,6 +199,21 @@ human_readable:
  published_ok: "publicatie ok"
 profiles:
  NARA:
+  description: |
+   <ol>
+    <li>map bevat enkel bestanden</li>
+    <li>naamgeving map: ofwel de plaatsnaam, ofwel het rug01-nummer van het object gebruikt. De naam moet opzoekbaar zijn in Aleph. Bij het maken van de map, moet elke . of / vervangen worden door een -</li>
+    <li>bestanden zijn groter dan 0KB</li>
+    <li>mimetype van bestanden is image/tiff</li>
+    <li>elk bestand voldoet aan de volgende naamgeving: <b>&lt;map&gt;_&lt;jaar&gt;_&lt;volgnummer&gt;_&lt;type&gt;.&lt;extensie&gt;</b>
+     <ol>
+      <li><b>&lt;map&gt;</b>: naam van de deze map.</li>
+      <li><b>&lt;volgnummer&gt;</b>: getal vanaf 0001. Steeds vier karakters lang, eventueel vooraf gegaan door nullen. vb. 0001.</li>
+      <li><b>&lt;type&gt;</b>: 'MA'</li>
+      <li><b>&lt;extensie&gt;</b>: 'tif'</li>
+     </ol>
+    </li>
+   </ol>
   packages:
    - class: "Imaging::Test::Dir::scan"
      args: {}
@@ -229,6 +244,10 @@ profiles:
       solr_args: *meercatindex
      on_error: "continue"
  BAG:
+  description: |
+   <ol>
+    <li>geldige bagit directory</li>
+   </ol>
   packages:
    - class: "Imaging::Test::Dir::scan"
      args: {}
@@ -240,6 +259,19 @@ profiles:
      args: {}
      on_error: "stop"
  TAR:
+  description: |
+   <ol>
+    <li>naamgeving map: ofwel de plaatsnaam, ofwel het rug01-nummer van het object. De naam moet opzoekbaar zijn in Aleph. Bij het maken van de map, moet elke . of / vervangen worden door een -</li>
+    <li>bestanden zijn groter dan 0KB</li>
+    <li>ten minste één bestand voldoet aan de volgende naamgeving: <b>&lt;map&gt;_&lt;jaar&gt;_&lt;volgnummer&gt;_&lt;type&gt;.&lt;extensie&gt;</b>
+     <ol>
+      <li><b>&lt;map&gt;</b>: naam van de bovenliggende map.</li>
+      <li><b>&lt;volgnummer&gt;</b>: 0001</li>
+      <li><b>&lt;type&gt;</b>: 'AC'</li>
+      <li><b>&lt;extensie&gt;</b>: onbepaald</li>
+     </ol>
+    </li>
+   </ol>
   packages:
    - class: "Imaging::Test::Dir::scan"
      args: {}

@@ -153,7 +153,11 @@ any('/scans/:_id',sub {
                         fSYS => $doc->{fSYS},#000000001
                         source => $doc->{source},#rug01
                         fXML => $doc->{fXML},
-                        baginfo => marcxml2baginfo($doc->{fXML})            
+                        baginfo => create_baginfo(
+                            xml => $doc->{fXML},
+                            size => $scan->{size},
+                            num_files => scalar(@{$scan->{files}})
+                        )            
                     };
                     if($index_metadata_id >= 0){
                         $scan->{metadata}->[$index_metadata_id] = $metadata;

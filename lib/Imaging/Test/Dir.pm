@@ -26,15 +26,19 @@ sub _load_file_info {
     my $lookup_dir = $self->dir;
     my $lookup = $self->lookup();
     if(is_string($lookup) && $lookup ne "."){
-
         $lookup_dir = Cwd::realpath(File::Spec->catdir($lookup_dir,$lookup));
-
+    }else{
+        $lookup_dir = abs_path($lookup_dir);
     }
+
+    my $size = 0;
     try{
         find({
             wanted => sub{
-                return if abs_path($_) eq abs_path($lookup_dir);
-                return if -d abs_path($_);
+                my $path = abs_path($_);
+                return if $path eq $lookup_dir;
+                return if -d $path;
+                $size += -s $path;
                 push @file_info,{
                     dirname => abs_path($File::Find::dir),
                     basename => basename($_),
@@ -44,6 +48,7 @@ sub _load_file_info {
             no_chdir => 1
         },$lookup_dir);
     };
+    $self->size($size);
     $self->file_info(\@file_info);
 }
 sub is_valid_basename {
@@ -76,6 +81,10 @@ has file_info => (
     isa => sub{ array_ref($_[0]); },
     lazy => 1,
     default => sub{ []; }
+);
+has size => (
+    is => 'rw',
+    default => sub { 0; }
 );
 has valid_patterns => (
     is => 'rw',

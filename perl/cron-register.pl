@@ -219,7 +219,11 @@ foreach my $id(@ids_ok_for_metadata){
                 fSYS => $doc->{fSYS},#000000001
                 source => $doc->{source},#rug01
                 fXML => $doc->{fXML},
-                baginfo => marcxml2baginfo($doc->{fXML})
+                baginfo => create_baginfo(
+                    xml => $doc->{fXML},
+                    size => $scan->{size},
+                    num_files => scalar(@{$scan->{files}})
+                )
             };
         }
 
