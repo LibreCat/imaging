@@ -66,8 +66,8 @@ sub status2index {
         $doc->{_id} = md5_hex($blob);
         $index_log->add($doc);
     }
-    my($success,$error ) = $index_log->commit;
-    $success,$error;
+    #my($success,$error ) = $index_log->commit;
+    #$success,$error;
 }
 sub marcxml_flatten {
     my $xml = shift;
@@ -92,8 +92,8 @@ sub scan2index {
     my @metadata_ids = ();
     push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $scan->{metadata} }); 
     
-    $doc->{text} = [];
-    push @{ $doc->{text} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
+    $doc->{marc} = [];
+    push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
     my @deletes = qw(metadata comments busy busy_reason warnings);
     delete $doc->{$_} foreach(@deletes);
@@ -131,8 +131,8 @@ sub scan2index {
     }
     
     index_scan()->add($doc);
-    my($success,$error) = index_scan()->commit;
-    $success,$error;
+    #my($success,$error) = index_scan()->commit;
+    #$success,$error;
 }
 
 register local_time => \&local_time;

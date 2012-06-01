@@ -159,12 +159,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
         [% IF !file.error %]
           <td>
             [% file_name = file.path.replace(scan.path _ "/","") %]
-            [%- IF do_open %]
-                [%- link = "file://" _ scan_system_directory _ "/" _ file_name -%]
-                <a href="[% link %]">[% file_name | html %]</a>
-            [%- ELSE %]
-                [% file_name | html %]
-            [%- END %]
+            [%- file_name | html -%]
           </td>
           <td><span class="tip" title="[% file.size %] bytes">[% file.size.size_pretty %]</span></td>
           <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
@@ -258,7 +253,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
                   <div class="controls">
                   [%- IF element.item("values") %]
                     <select name="[% element.key %]">
-                    [%- FOREACH conf_value IN element.item("values").sort %]
+                    [%- FOREACH conf_value IN element.item("values") %]
                       <option value="[% conf_value %]"[% IF value == conf_value %] selected="selected"[% END %]>
                         [% conf_value %]
                       </option>

@@ -1,0 +1,32 @@
+[% PROCESS inc/errors_messages.tt %]
+
+[%- IF scan %]
+    <h1>Wijzig naam [% scan.item("_id") %]</h1>
+    [%- IF scan.status == "registering" %]
+        <div class="alert"><strong>opgelet!</strong> een automatisch script registreert dit record, en zal later geupdated worden
+        naar status 'registered'.</div>
+    [%- ELSIF scan.busy && scan.busy_reason == "move" %]
+        <div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
+        kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
+        Commentaar kan wel nog worden toegevoegd.</div>
+    [%- END %]
+
+    <form method="POST" accept-charset="UTF-8" class="form-horizontal">
+      <div class="control-group">
+        <label for="new-id" class="control-label">nieuwe naam</label>
+        <div class="controls">
+          <input type="text" name="new_id" id="new_id" value="[% params.new_id | html %]" />
+        </div>
+      </div>
+      <div class="control-group">
+        <label for="comments" class="control-label">opmerkingen</label>
+        <div class="controls">
+          <textarea name="comments" class="span6">[% params.comments | html %]</textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+          <input type="submit" value="Wijzig" name="submit" id="submit" class="btn btn-primary"/>
+          <a href="/scans/[% scan.item('_id') %]" class="btn">Annuleer</a>
+      </div>
+    </form>
+[%- END %]

@@ -518,6 +518,9 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<dynamicField name="project_datetime_*" type="date" indexed="true" stored="true" />
 	<field name="project_locked" type="int" indexed="true" stored="true" />
 
+    <!-- marc -->
+    <field name="marc" type="lupetext" indexed="true" stored="false" multiValued="true" />
+
     <!--DEFAULT-->
     <field name="text" type="lupetext" indexed="true" stored="false" multiValued="true"/>
 	<field name="spelling" type="spell" indexed="true" stored="false" multiValued="true" />
@@ -550,7 +553,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <copyField source="check_log" dest="text" />
 	<copyField source="status_history" dest="text" />
     <copyField source="comments" dest="text" />
-
+    <copyField source="marc" dest="text"/>
     <copyField source="user_*" dest="spelling"/>
     <copyField source="project_*" dest="spelling"/>
     <copyField source="comments" dest="spelling" />

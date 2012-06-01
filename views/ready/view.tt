@@ -33,8 +33,7 @@
         <tr>
           <td>
             [%- file_name = file.path.replace(scan.path _ "/","") -%]
-            [%- link = "file://" _ scan_system_directory _ '/' _ file_name -%]
-            <a href="[% link %]">[% file_name %]</a>
+            [%- file_name | html -%]
           </td>
           <td><span class="tip" title="[% file.size %] bytes">[% file.size.size_pretty %]</span></td>
           <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>

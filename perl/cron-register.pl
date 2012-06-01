@@ -179,8 +179,9 @@ projects()->each(sub{
 
             say "\tscan $id assigned to project $project->{_id}";
             scans()->add($scan);
-            
-            my($success,$error) = scan2index($scan);
+
+            scan2index($scan);    
+            my($success,$error) = index_scan->commit;
             die($error) if !$success;
 
             #indien 1 is gevonden, dan niet meer de andere
@@ -231,7 +232,9 @@ foreach my $id(@ids_ok_for_metadata){
     my $num = scalar(@{$scan->{metadata}});
     say "\tscan ".$scan->{_id}." has $num metadata-records";
     scans()->add($scan);
-    my($success,$error) = scan2index($scan);
+    scan2index($scan);
+
+    my($success,$error) = index_scan->commit;
     die($error) if !$success;
 }
 
@@ -259,10 +262,12 @@ foreach my $id (@incoming_ok){
     #=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /scans is terug te vinden
     #=> daarom opnemen in databank én indexeren
     scans->add($scan);
-    my($success,$error);
-    ($success,$error) = scan2index($scan);
+    scan2index($scan);
+    my($success,$error) = index_scan->commit;
     die($error) if !$success;
-    ($success,$error) = status2index($scan,-1);
+
+    status2index($scan,-1);
+    ($success,$error) = index_log->commit;
     die($error) if !$success;
 
     if($user->{profile_id} ne "BAG"){
@@ -282,7 +287,7 @@ foreach my $id (@incoming_ok){
             local(*FILE);
             open FILE,$file->{path} or die($!);
             my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-            say MANIFEST "$md5sum_file ".File::Basename::basename($file->{path});
+            print MANIFEST "$md5sum_file ".File::Basename::basename($file->{path})."\r\n";
             close FILE;
         }
         close MANIFEST;
@@ -321,9 +326,11 @@ foreach my $id (@incoming_ok){
     $scan->{datetime_last_modified} = Time::HiRes::time;
     
     scans->add($scan);
-    ($success,$error) = scan2index($scan);
+    scan2index($scan);
+    ($success,$error) = index_scan->commit;
     die($error) if !$success;
-    ($success,$error) = status2index($scan,-1);
+    status2index($scan,-1);
+    ($success,$error) = index_scan->commit;
     die($error) if !$success;
 }
 

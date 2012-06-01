@@ -250,10 +250,11 @@ foreach my $user(@users){
 
             }
             #update index_scan en index_log
-            my($success,$error);
-            ($success,$error) = scan2index($scan);
+            scan2index($scan);
+            my($success,$error)= index_scan->commit;
             die($error) if !$success;
-            ($success,$error) = status2index($scan,-1);
+            status2index($scan,-1);
+            ($success,$error) = index_log->commit;
             die($error) if !$success;
 
             push @scan_ids_ready,$scan->{_id};
@@ -313,7 +314,8 @@ foreach my $scan_id(@scan_ids_ready){
     #check nieuwe directories
     if(
         $scan->{status} eq "incoming" || 
-        $scan->{status} eq "incoming_back"
+        $scan->{status} eq "incoming_back" ||
+        $scan->{status} eq "incoming_renamed"
     ){
         push @scan_ids_test,$scan->{_id};
     }
@@ -385,10 +387,12 @@ foreach my $scan_id(@scan_ids_test){
     $scan->{datetime_last_modified} = Time::HiRes::time;
 
     #update index_scan en index_log
-    my($success,$error);
-    ($success,$error) = scan2index($scan);
+    scan2index($scan);
+    my($success,$error) = index_scan->commit;
     die($error) if !$success;
-    ($success,$error) = status2index($scan,-1);
+
+    status2index($scan,-1);
+    ($success,$error) = index_log->commit;
     die($error) if !$success;
 
     $scans->add($scan);
