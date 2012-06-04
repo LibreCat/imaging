@@ -65,7 +65,7 @@
                     <a href="/scans?q=[% q | url %]">reprocessing</a>
                 </li>
                 [%- END %]
-                [%- IF auth.asa('qa_manager') %]
+                [%- IF auth.asa('admin') ||  auth.asa('qa_manager') %]
                 <li><a href="/qa_control">qa_controle</a></li>
                 [%- END %]
               [%- END %]
