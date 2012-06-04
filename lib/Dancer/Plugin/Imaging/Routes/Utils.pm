@@ -28,6 +28,9 @@ sub index_scan {
 sub index_log {
     state $index_log = store("index_log")->bag;
 }
+sub index_project {
+    state $index_project = store("index_project")->bag;
+}
 sub dbi_handle {
     state $dbi_handle = database;
 }
@@ -43,6 +46,35 @@ sub local_time {
     DateTime::Format::Strptime::strftime(
         '%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
     );
+}
+sub project2index {
+    my $project = shift;
+    my $doc = {};
+    $doc->{$_} = $project->{$_} foreach(qw(_id name name_subproject description query num_hits));
+    foreach my $key(keys %$project){
+        next if $key !~ /datetime/o;
+        $doc->{$key} = formatted_date($project->{$key});
+    }
+
+    my @list = ();
+    foreach my $item(@{ $project->{list} || [] }){
+        # id: plaatsnummer of rug01 mogelijk (verschil met name: letters verwisseld, en bijkomende nummering mogelijk bij plaatsnummers)
+        if($item->{location}){
+            my $id = $item->{location};
+            $id =~ s/[\.\/]/-/go;
+            if(defined($item->{number})){
+                $id .= "-".$item->{number};
+            }
+            push @list,$id;
+        }
+        push @list,uc($item->{source})."-".$item->{fSYS};
+    }
+    $doc->{list} = \@list;
+    # doc.list.length != project.list.size
+    # doc.list => "lijst van mogelijke items"
+    # project.list => "lijst van items"
+    $doc->{total} = scalar(@{ $project->{list} });
+    index_project->add($doc);
 }
 sub status2index {
     my($scan,$history_index) = @_;
@@ -66,8 +98,6 @@ sub status2index {
         $doc->{_id} = md5_hex($blob);
         $index_log->add($doc);
     }
-    #my($success,$error ) = $index_log->commit;
-    #$success,$error;
 }
 sub marcxml_flatten {
     my $xml = shift;
@@ -95,7 +125,7 @@ sub scan2index {
     $doc->{marc} = [];
     push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
-    my @deletes = qw(metadata comments busy busy_reason warnings);
+    my @deletes = qw(metadata comments busy busy_reason warnings project_id);
     delete $doc->{$_} foreach(@deletes);
     $doc->{metadata_id} = \@metadata_ids;
 
@@ -106,13 +136,17 @@ sub scan2index {
         $doc->{status_history}->[$i] = $item->{user_login}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
     }
 
-    my $project;
-    if($scan->{project_id} && ($project = projects()->get($scan->{project_id}))){
-        foreach my $key(keys %$project){
-            next if $key eq "list";
-            my $subkey = "project_$key";
-            $subkey =~ s/_{2,}/_/go;
-            $doc->{$subkey} = $project->{$key};
+    if(is_array_ref($scan->{project_id}) && scalar(@{$scan->{project_id}}) > 0){
+        foreach my $project_id(@{$scan->{project_id}}){
+            my $project = projects->get($project_id);
+            next if !is_hash_ref($project);
+            foreach my $key(keys %$project){
+                next if $key eq "list";
+                my $subkey = "project_$key";
+                $subkey =~ s/_{2,}/_/go;
+                $doc->{$subkey} ||= [];
+                push @{$doc->{$subkey}},$project->{$key};
+            }
         }
     }
 
@@ -124,15 +158,15 @@ sub scan2index {
             $doc->{user_roles} = [split(',',$user->{roles})];
         }
     }
-
     foreach my $key(keys %$doc){
         next if $key !~ /datetime/o;
-        $doc->{$key} = formatted_date($doc->{$key});
+        if(is_array_ref($doc->{$key})){
+            $_ = formatted_date($_) foreach(@{ $doc->{$key} });
+        }else{
+            $doc->{$key} = formatted_date($doc->{$key});
+        }
     }
-    
     index_scan()->add($doc);
-    #my($success,$error) = index_scan()->commit;
-    #$success,$error;
 }
 
 register local_time => \&local_time;
@@ -142,9 +176,13 @@ register projects => \&projects;
 register dbi_handle => \&dbi_handle;
 register index_scan => \&index_scan;
 register index_log => \&index_log;
+register index_project => \&index_project;
+
 
 register scan2index => \&scan2index;
 register status2index => \&status2index;
+register project2index => \&project2index;
+
 
 register_plugin;
 

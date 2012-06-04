@@ -89,11 +89,21 @@
         </a>
     </td>
     <td>
-        <a href="/scans?q=[% "project_id:\"" _ scan.item("project_id") _ "\"" | uri %]">
-        [% scan.item("project_name") || "-" %]
+        [% IF scan.project_id.size > 1 %]
+            (meerdere)
+        [% ELSE %]
+            <a href="/scans?q=[% "project_id:\"" _ scan.project_id.0 _ "\"" | uri %]">
+            [% scan.project_name.0 || "-" %]
         </a>
+        [% END %]
     </td>
-    <td>[% scan.item("project_name_subproject") %]</td>
+    <td>
+        [% IF scan.project_id.size > 1 %]
+            (meerdere)
+        [% ELSE %]
+            [% scan.project_name_subproject.0 || "-" %]
+        [% END %]
+    </td>
     <td>
 		[% status = scan.item("status") %]
         <a href="/scans?q=[% "status:\"" _ status _ "\"" | html  %]">[% settings.human_readable.${status} || status %]</a>

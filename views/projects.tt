@@ -53,34 +53,38 @@
     <th>gedaan</th>
     <th>laatst gewijzigd</th>
     <th>start datum</th>
+    <th>acties</th>
   </tr>
   </thead>
   <tbody>
   [%- FOREACH project IN projects %]
     <tr>
       <td>
-        <a href="/scans?q=project_id:[% project.item("_id") %]">[% project.item("name") | html %]</a>
+        <a href="/project/[% project.item("_id") %]">[% project.name | html %]</a>
         [%- IF auth.can('projects','edit') %]
         <div class="btn-group actions">
-          <a class="btn btn-small" href="/project/[% project.item("_id") %]/edit"><i class="icon-pencil"></i></a>
           <a class="btn btn-small" href="/project/[% project.item("_id") %]/delete"><i class="icon-trash"></i></a>
         </div>
         [%- END %]
       </td>
       <td>[% project.item("name_subproject") | html %]</td>
       <td>
-        [% IF project.item("list").size <= 0 %]
+        [% IF project.total <= 0 %]
             <span class="label label-warning" title="Aantal gevonden records in meercat, niet het aantal objecten! Aantal objecten wordt later opgehaald.">[% project.num_hits %]</span>
-            <!--
-            <a title="Aantal hits in meercat, niet het aantal objecten! Aantal objecten wordt later opgehaald.">[% project.num_hits %]&nbsp;<i class="icon-warning-sign"></i></a>
-            -->
         [% ELSE %]
-          [% project.item("list").size %]
+          [% project.total %]
         [% END %]
       </td>
-      <td>[% project.item("done") || 0 %]</td>
-      <td>[% date.format(POSIX.floor(project.datetime_last_modified),format = '%d-%m-%Y') %]</td>
-      <td>[% date.format(POSIX.floor(project.datetime_start),format = '%d-%m-%Y') %]</td>
+      <td>[% project.done || 0 %]</td>
+      <td>
+            [%- matches = project.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
+            [%- matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
+      <td>
+            [%- matches = project.datetime_start.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
+            [%- matches.2 _ "-" _ matches.1 _ "-" _ matches.0 %]
+      <td>
+        <a href="/scans?q=project_id:[% project.item("_id") %]">lijst</a>
+      </td>
     </tr>
   [%- END %]
   </tbody>

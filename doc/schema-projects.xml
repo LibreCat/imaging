@@ -456,73 +456,25 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
      default: a value that should be used if no value is specified
        when adding a document.
    -->
-    <!-- table locations is core, the rest is aggregated from other tables by use of foreign keys-->
-
     <field name="_bag" type="string" indexed="true" stored="true" /> 
-    <!-- table locations -->
 	<!--
-		_id: BHSL-PAP-0064-BIS-1 (afgeleid op basis van mapnaam)
+			md5_hex( name + name_subproject)
 	-->
     <field name="_id" type="string" indexed="true" stored="true" />
-	<!--
-		name: BHSL.PAP.0064/BIS/1 (enkel in  meercat-index te vinden)
-	-->
-	<field name="name" type="string" indexed="true" stored="true" />
-	<!--
-		status:
-			- 'incoming'
-			- 'incoming_error'
-			- 'incoming_ok'
-			- 'registering'
-			- 'registered'
-			- 'derivatives_created'
-			- 'reprocess_scans'
-			- 'reprocess_metadata'
-			- 'qa_control_ok'
-			- 'archived'
-  			- 'archived_ok'
-			- 'published'
-            - 'published_ok'
-	-->
-    <field name="status" type="string" indexed="true" stored="true" />
-	<!--
-		incoming_error 2012-12-31T23:59:59.999Z
-	-->
-    <field name="status_history" type="string" indexed="true" stored="true" multiValued="true"/>
-	<field name="path" type="string" indexed="true" stored="true" />
-    <field name="files" type="string" indexed="true" stored="true" multiValued="true" />
-    <field name="size" type="int" indexed="true" stored="true" />
-
-	<field name="check_log" type="string" indexed="true" stored="true" multiValued="true" />
-    <field name="comments" type="lupetext" indexed="true" stored="true" />
+	<field name="name" type="lupetext" indexed="true" stored="true" />
+    <field name="name_subproject" type="lupetext" indexed="true" stored="true" />
+    <field name="description" type="lupetext" indexed="true" stored="true" />
     <dynamicField name="datetime_*" type="date" indexed="true" stored="true" />
-	<field name="metadata_id" type="string" indexed="true" stored="true" multiValued="true" />
+    <field name="list" type="string" indexed="true" stored="false" multiValued="true" />
 
-    <!-- table users -->
-	<field name="user_id" type="string" indexed="true" stored="true" />
-	<field name="user_login" type="string" indexed="true" stored="true" />
-	<field name="user_name" type="string" indexed="true" stored="true" />
-    <field name="user_profile_id" type="string" indexed="true" stored="true" />
-	<field name="user_roles" type="string" indexed="true" stored="true" multiValued="true" />
+	<field name="query" type="string" stored="true" />
+	<field name="num_hits" type="int" stored="true" />
+    <field name="total" type="int" stored="true" />
+    <field name="done" type="int" stored="true" />
 
-    <!-- table projects -->
-    <field name="project_id" type="string" indexed="true" stored="true" multiValued="true"/>
-	<field name="project_name" type="lupetext" indexed="true" stored="true" multiValued="true"/>
-	<field name="project_name_subproject" type="lupetext" indexed="true" stored="true" multiValued="true"/>
-	<field name="project_description" type="lupetext" indexed="true" stored="true" multiValued="true"/>
-    <field name="project_date_start" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="project_query" type="lupetext" indexed="true" stored="true" multiValued="true"/>
-	<field name="project_total" type="int" indexed="true" stored="true" multiValued="true"/>
-    <field name="project_num_hits" type="int" indexed="true" stored="true" multiValued="true"/>
-	<field name="project_done" type="int" indexed="true" stored="true" multiValued="true"/>
-	<dynamicField name="project_datetime_*" type="date" indexed="true" stored="true" multiValued="true"/>
-
-    <!-- marc -->
-    <field name="marc" type="lupetext" indexed="true" multiValued="true" />
 
     <!--DEFAULT-->
     <field name="text" type="lupetext" indexed="true" stored="false" multiValued="true"/>
-	<field name="spelling" type="spell" indexed="true" stored="false" multiValued="true" />
 </fields>
 
  <!-- Field to use to determine and enforce document uniqueness. 
@@ -542,22 +494,12 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <!--copy naar 'text'-->
 
     <!--identifiers-->
-    <copyField source="user_*" dest="text"/>
-    <copyField source="project_*" dest="text"/>
     <copyField source="_id" dest="text" />
 	<copyField source="name" dest="text" />
-    <copyField source="status" dest="text" />
-    <copyField source="path" dest="text" />
-    <copyField source="files" dest="text" />
-    <copyField source="check_log" dest="text" />
-	<copyField source="status_history" dest="text" />
-    <copyField source="comments" dest="text" />
+	<copyField source="name_subproject" dest="text" />
+    <copyField source="description" dest="text" />
+	<copyField source="list" dest="text" />
 
-    <copyField source="user_*" dest="spelling"/>
-    <copyField source="project_*" dest="spelling"/>
-    <copyField source="comments" dest="spelling" />
-    
-	
    <!-- Above, multiple source fields are copied to the [text] field. 
 	  Another way to map multiple source fields to the same 
 	  destination field is to use the dynamic field syntax. 

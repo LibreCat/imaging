@@ -23,7 +23,7 @@ hook before => sub {
         if(!$authd){
             my $service = uri_escape(uri_for(request->path));
             return redirect(uri_for("/login")."?service=$service");
-        }elsif($subpath =~ /(?:add|edit|delete)/o && !$auth->can('projects','edit')){
+        }elsif($subpath =~ /(?:add|delete)/o && !$auth->can('projects','edit')){
             request->path_info('/access_denied');
             my $params = params;
             $params->{text} = "U beschikt niet over de nodige rechten om projectinformatie aan te passen"
@@ -36,35 +36,23 @@ any('/projects',sub {
     my $config = config;
     my $params = params;
 
+   
+    my $q = $params->{q} || "*";
     my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
     $params->{page} = $page;
     my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
     $params->{num} = $num;
     my $offset = ($page - 1)*$num;
-
-    my $projects = projects->to_array();
-
-    if(is_string($params->{'sort'}) && $params->{'sort'} =~ /^(\w+)\s(asc|desc)$/o){
-        my($sort_key,$sort_dir)=($1,$2);
-        if(is_string($projects->[0]->{$sort_key})){
-            our($a,$b); 
-            $projects = [ sort {
-                if(is_number($a->{$sort_key})){
-                    return ( $a->{$sort_key} <=> $b->{$sort_key} );       
-                }else{
-                    return ( $a->{$sort_key} cmp $b->{$sort_key} );
-                }
-            } @$projects ];
-        }
-        if($sort_dir eq "desc"){
-            $projects = [reverse(@$projects)];
-        }
-    }
     
-    $projects =  [splice(@$projects,$offset,$num)];
+    my %opts = (query => $q,offset => $offset,limit => $num); 
+    if(is_string($params->{'sort'}) && $params->{'sort'} =~ /^(\w+)\s(asc|desc)$/o){
+        $opts{sort} = $params->{sort};
+    }
+
+    my $result = index_project->search(%opts);
 
     my $page_info = Data::Pageset->new({
-        'total_entries'       => projects->count,
+        'total_entries'       => $result->total,
         'entries_per_page'    => $num,
         'current_page'        => $page,
         'pages_per_set'       => 8,
@@ -72,7 +60,7 @@ any('/projects',sub {
     });
     template('projects',{
         page_info => $page_info,
-        projects => $projects,
+        projects => $result->hits,
         auth => auth()
     }); 
 });
@@ -156,10 +144,11 @@ any('/projects/add',sub{
                     datetime_start => $datetime->epoch,
                     datetime_last_modified => Time::HiRes::time,
                     query => $params->{query},
-                    locked => 0,
                     num_hits => $m_total,
                     list => []
                 });
+                project2index($project);
+                index_project->commit;
                 redirect(uri_for("/projects"));
             }
         }
@@ -172,9 +161,10 @@ any('/projects/add',sub{
         auth => auth()
     });
 });
-any('/project/:_id/edit',sub{
+any('/project/:_id',sub{
     my $config = config;
     my $params = params;
+    my $auth = auth;
     my(@messages,@errors);
     my $success = 0;
 
@@ -185,71 +175,72 @@ any('/project/:_id/edit',sub{
             requested_path => request->path
         });
     }
+    if($params->{submit} && !$auth->can("projects","edit")){
 
-    if($params->{submit}){
-        if(!$project->{locked}){
-            #check empty string
-            my @keys = qw(name name_subproject description datetime_start query);
-            foreach my $key(@keys){
-                if(!is_string($params->{$key})){
-                    push @errors,"$key is niet opgegeven";
-                }
+        push @errors,"U beschikt niet over de nodige rechten om projectinformatie aan te passen";       
+
+    }elsif($params->{submit}){
+        #check empty string
+        my @keys = qw(name name_subproject description datetime_start query);
+        foreach my $key(@keys){
+            if(!is_string($params->{$key})){
+                push @errors,"$key is niet opgegeven";
             }
-            #check empty array
-            @keys = qw();
-            foreach my $key(@keys){
-                if(is_string($params->{$key})){
-                    $params->{$key} = [$params->{$key}];
-                }elsif(!is_array_ref($params->{$key})){
-                    $params->{$key} = [];
-                }
-                if(scalar( @{ $params->{$key} } ) == 0){
-                    push @errors,"$key is niet opgegeven (een of meerdere)";
-                }
+        }
+        #check empty array
+        @keys = qw();
+        foreach my $key(@keys){
+            if(is_string($params->{$key})){
+                $params->{$key} = [$params->{$key}];
+            }elsif(!is_array_ref($params->{$key})){
+                $params->{$key} = [];
             }
-            #check format
-            my %check = (
-                datetime_start => sub{
-                    my $value = shift;
-                    my($success,$error)=(1,undef);
-                    try{
-                        my $datetime = DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
-                        
-                    }catch{
-                        $success = 0;
-                        $error = "startdatum is ongeldig (dag-maand-jaar)";
-                    };
-                    return $success,$error;
-                }
-            );
-            if(scalar(@errors)==0){
-                foreach my $key(keys %check){
-                    my($success,$error) = $check{$key}->($params->{$key});
-                    push @errors,$error if !$success;
-                }
+            if(scalar( @{ $params->{$key} } ) == 0){
+                push @errors,"$key is niet opgegeven (een of meerdere)";
             }
-            #insert
-            if(scalar(@errors)==0){
-                $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
-                my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));
-                my $new = {
-                    name => $params->{name},
-                    name_subproject => $params->{name_subproject},
-                    description => $params->{description},
-                    datetime_start => $datetime->epoch,
-                    datetime_last_modified => Time::HiRes::time,
-                    query => $params->{query}
+        }
+        #check format
+        my %check = (
+            datetime_start => sub{
+                my $value = shift;
+                my($success,$error)=(1,undef);
+                try{
+                    my $datetime = DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
+                    
+                }catch{
+                    $success = 0;
+                    $error = "startdatum is ongeldig (dag-maand-jaar)";
                 };
-                $project = { %$project,%$new };
-                projects->add($project);
-                redirect(uri_for("/projects"));
+                return $success,$error;
             }
-        }else{
-            push @errors,"Sorry, dit project kan niet meer gewijzigd worden. Er zijn reeds scanobjecten aan gekoppeld.";
+        );
+        if(scalar(@errors)==0){
+            foreach my $key(keys %check){
+                my($success,$error) = $check{$key}->($params->{$key});
+                push @errors,$error if !$success;
+            }
+        }
+        #insert
+        if(scalar(@errors)==0){
+            $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
+            my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));
+            my $new = {
+                name => $params->{name},
+                name_subproject => $params->{name_subproject},
+                description => $params->{description},
+                datetime_start => $datetime->epoch,
+                datetime_last_modified => Time::HiRes::time,
+                query => $params->{query}
+            };
+            $project = { %$project,%$new };
+            projects->add($project);
+            project2index($project);
+            index_project->commit;
+            redirect(uri_for("/projects"));
         }
     }
 
-    template('project/edit',{
+    template('project/view',{
         errors => \@errors,
         messages => \@messages,
         success => $success,
@@ -275,6 +266,8 @@ any('/project/:_id/delete',sub{
     #delete?
     if(scalar(@errors) == 0 && $params->{submit}){
         projects->delete($params->{_id});
+        index_project->delete($params->{_id});
+        index_project->commit;
         return redirect(uri_for("/projects"));  
     }
 

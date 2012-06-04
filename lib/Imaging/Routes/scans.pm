@@ -97,9 +97,12 @@ any('/scans/:_id',sub {
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
 
-    my $project;
-    if($scan->{project_id}){
-        $project = projects->get($scan->{project_id});
+    my @projects;
+    if(is_array_ref($scan->{project_id})){
+        foreach(@{ $scan->{project_id} }){
+            my $project = projects->get($_);
+            push @projects,$project if is_hash_ref($project);
+        }
     }
     my $files = $scan->{files} || [];
     our($a,$b);
@@ -202,7 +205,7 @@ any('/scans/:_id',sub {
         auth => $auth,
         errors => \@errors,
         mount_conf => mount_conf(),
-        project => $project,
+        projects => \@projects,
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
@@ -553,11 +556,6 @@ any('/scans/:_id/status',sub{
         });
     }
 
-    my $project;
-    if($scan->{project_id}){
-        $project = projects->get($scan->{project_id});
-    }
-
     #edit status - begin
     if($params->{submit} && !$scan->{busy}){
         my $comments = $params->{comments} // "";
@@ -619,7 +617,6 @@ any('/scans/:_id/status',sub{
         errors => \@errors,
         messages => \@messages,
         mount_conf => mount_conf(),
-        project => $project,
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });

@@ -19,8 +19,6 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
 [%- END %]
 
 <dl class="dl-horizontal">
-  <dt>naam</dt>
-  <dd>[% scan.item("name") || "-" %]</dd>
   <dt>status</dt>
   <dd>
     <a href="/scans?q=status:&quot;[% scan.status | url %]&quot;">[% settings.human_readable.${scan.status} || scan.status %]</a>
@@ -30,24 +28,28 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
     <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
   </dd>
   [%- END %]
-  <dt>project</dt>
-  <dd>
-    [%- IF project %]
-    [%- q = "project_name:\"" _ project.name _ "\"" -%]
-    <a href="/scans?q=[% q | uri %]">[% project.name %]</a>
-    [%- ELSE %]
-    -
-    [%- END %]
-  </dd>
-  <dt>deelproject</dt>
-  <dd>
-    [%- IF project %]
-    [%- q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" -%]
-    <a href="/scans?q=[% q | uri %]">[% project.name_subproject %]</a>
-    [%- ELSE %]
-    -
-    [%- END %]
-  </dd>
+  [% IF projects && projects.size > 0 %]
+    [% FOREACH project IN projects %]
+      [% IF loop.index == 0 %]
+      <dt>projecten</dt>
+      [% ELSE %]
+      <dt></dt>
+      [% END %]
+      <dd>
+        [%- IF project %]
+        [%- q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" -%]
+        <a href="/scans?q=[% q | uri %]">[% project.name %] - [% project.name_subproject %]</a>
+        [%- ELSE %]
+        -
+        [%- END %]
+      </dd>
+    [% END %]
+  [% ELSE %]
+
+    <dt>projecten</dt>
+    <dd>-</dd>
+
+  [% END %]
   <dt>gebruiker</dt>
   <dd>
     [%- IF user %]

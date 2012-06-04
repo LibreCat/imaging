@@ -1,41 +1,46 @@
 [%- USE POSIX -%]
 [%- USE date -%]
 [% PROCESS inc/errors_messages.tt %]
-[% PROCESS inc/datepicker.tt %]
-<h1>Edit project</h1>
+[% SET edit = auth.can("projects","edit") %]
+[% IF edit %]
+    [% PROCESS inc/datepicker.tt %]
+[% END %]
+<h1>Project [% "\"" _ project.name _ " - " _ project.name_subproject _ "\"" | html %]</h1>
 <form method="POST" accept-charset="UTF-8" class="form-horizontal">
   <div class="control-group">
     <label for="name" class="control-label">naam project:</label>
     <div class="controls">
-      <input type="text" name="name" id="name" class="span6" value="[% project.name | html %]"/>
+      <input type="text" name="name" id="name" class="span6" value="[% project.name | html %]" [% IF !edit %]readonly="readonly" [% END %]/>
     </div>
   </div>
   <div class="control-group">
     <label for="name_subproject" class="control-label">naam deelproject:</label>
     <div class="controls">
-      <input type="text" name="name_subproject" id="name_subproject" class="span6" value="[% project.name_subproject | html %]"/>
+      <input type="text" name="name_subproject" id="name_subproject" class="span6" value="[% project.name_subproject | html %]" [% IF !edit %]readonly="readonly" [% END %]/>
     </div>
   </div>
   <div class="control-group">
     <label for="description" class="control-label">beschrijving:</label>
     <div class="controls">
-      <textarea name="description" id="description" class="span6">[% project.description | html %]</textarea>
+      <textarea name="description" id="description" class="span6" [% IF !edit %]readonly="readonly" [% END %]>[% project.description | html %]</textarea>
     </div>
   </div>
   <div class="control-group">
     <label for="datetime_start" class="control-label">start project:</label>
     <div class="controls">
-      <input type="text" name="datetime_start" id="datetime_start" class="datepicker" value="[% date.format(POSIX.floor(project.datetime_start), format='%d-%m-%Y') %]"/>
+      <input type="text" name="datetime_start" id="datetime_start" class="datepicker" value="[% date.format(POSIX.floor(project.datetime_start), format='%d-%m-%Y') %]" [% IF !edit %]readonly="readonly" [% END %]/>
       <span class="help-inline">dag-maand-jaar</span>
     </div>
   </div>
   <div class="control-group">
     <label for="query" class="control-label">query:</label>
     <div class="controls">
-      <textarea name="query" id="query" class="span6">[% project.query | html %]</textarea>
+      <textarea name="query" id="query" class="span6" [% IF !edit %]readonly="readonly" [% END %]>[% project.query | html %]</textarea>
     </div>
   </div>
+  [% IF edit %]
   <div class="form-actions">
 	  <input type="submit" value="Update" name="submit" id="submit" class="btn btn-large btn-primary"/>
   </div>
+  [% END %]
 </form>

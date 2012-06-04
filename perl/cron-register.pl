@@ -119,76 +119,36 @@ foreach my $project_id(@project_ids){
 
     $project->{list} = \@list;
     $project->{datetime_last_modified} = Time::HiRes::time;
-    $project->{locked} = 1;
 
     projects()->add($project);
+    project2index($project);
 };
-
+{
+    my($success,$error) = index_project->commit;   
+    die($error) if !$success;
+}
 #stap 2: ken scans toe aan projects
 say "assigning scans to projects";
-projects()->each(sub{
-    my $project = shift;
-    if(!is_array_ref($project->{list})){
-        say "\tproject $project->{_id}: no list available";
-        return;
+my @scan_ids = ();
+scans->each(sub{ push @scan_ids,$_[0]->{_id}; });
+foreach my $scan_id(@scan_ids){
+    my $scan = scans->get($scan_id);
+    my $result = index_project->search(query => "list:\"".$scan->{_id}."\"",limit => 1000);
+    if($result->total > 0){        
+        my @project_ids = map { $_->{_id} } @{ $result->hits };
+        $scan->{project_id} = \@project_ids;
+        say "assigning project $_ to scan ".$scan->{_id} foreach(@project_ids);
+    }else{
+        $scan->{project_id} = [];
     }
-    foreach my $item(@{ $project->{list} }){
-        
-        my($scan_name);
-        my @ids = ();
+    scans->add($scan);
+    scan2index($scan);
+}
 
-        # name: liefst het plaatsnummer, en indien niet mogelijk het rug01-nummer
-        if($item->{location}){
-            $scan_name = $item->{location};
-        }else{
-            $scan_name = $item->{source}.":".$item->{fSYS};
-        }
-
-        # id: plaatsnummer of rug01 mogelijk (verschil met name: letters verwisseld, en bijkomende nummering mogelijk bij plaatsnummers)
-        if($item->{location}){
-            my $scan_id = $item->{location};
-            $scan_id =~ s/[\.\/]/-/go;
-            if(defined($item->{number})){
-                $scan_id .= "-".$item->{number};        
-            }
-            push @ids,$scan_id;         
-
-        }
-        push @ids,uc($item->{source})."-".$item->{fSYS};
-
-        foreach my $id(@ids){
-
-            my $scan = scans()->get($id);
-
-            #directory nog niet aanwezig
-            if(!$scan){
-                next;
-            }
-            #scan reeds toegewezen: enkel opnieuw toewijzen indien project verwijderd
-            if($scan->{project_id}){
-                if($scan->{project_id} ne $project->{_id}){
-                    my $other_project = projects->get($scan->{project_id});
-                    next if $other_project;
-                }else{
-                    next;
-                }
-            }
-            #scan toekennen aan project
-            $scan->{name} = $scan_name;
-            $scan->{project_id} = $project->{_id};
-
-            say "\tscan $id assigned to project $project->{_id}";
-            scans()->add($scan);
-
-            scan2index($scan);    
-            my($success,$error) = index_scan->commit;
-            die($error) if !$success;
-
-            #indien 1 is gevonden, dan niet meer de andere
-            last;
-        }
-    }
-});
+{
+    my($success,$error) = index_scan->commit;   
+    die($error) if !$success;
+}
 
 #stap 3: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
 #wijziging/update moet gebeuren door qa_manager
@@ -330,11 +290,12 @@ foreach my $id (@incoming_ok){
     ($success,$error) = index_scan->commit;
     die($error) if !$success;
     status2index($scan,-1);
-    ($success,$error) = index_scan->commit;
+    ($success,$error) = index_log->commit;
     die($error) if !$success;
 }
 
 index_log->store->solr->optimize();
 index_scan->store->solr->optimize();
+index_project->store->solr->optimize();
 
 say "$this_file ended at ".local_time;
