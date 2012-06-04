@@ -92,14 +92,17 @@ app:
   facet_fields: ["project_name","status"]
   edit:
    baginfo:
+    - key: "Bag-Size"
+    - key: "Bagging-Date"
+    - key: "Payload-Oxum"
     - key: "DC-Title"
     - key: "DC-Identifier"
     - key: "DC-Description"
     - key: "DC-Type"
-      values: ["Text","audio","Sound","Image","Dataset","MovingImage"]
+      values: ["Text","Audio","Sound","Image","Dataset","MovingImage"]
     - key: "DC-Creator"
     - key: "DC-AccessRights"
-      values: ["open","closed","ugent"]
+      values: ["open","closed","ugent","media ugent","media closed"]
     - key: "DC-Subject"
 default_app: "/"
 refresh_rate: 5
@@ -188,6 +191,9 @@ human_readable:
  incoming_ok: "automatische check successvol"
  registering: "registratie bezig"
  registered: "registratie voltooid"
+ rename_directory: "map hernoemen aangevraagd"
+ renaming_directory: "map hernoemen bezig"
+ incoming_renamed: "hernoemde map aangeboden"
  to_reprocess_scans: "terug naar scanner (bezig)"
  reprocess_scans: "terug naar scanner"
  reprocess_metadata: "terug naar catalografie"
