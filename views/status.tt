@@ -30,46 +30,49 @@
     [%- END %]
   </dd>
   [%- END %]
+
   <dt>In registratie proces</dt>
   <dd>
-    [% IF num_registering > 0 %]
-        <a href="/scans?q=[% "status:registering AND user_login:" _ user_login | url %]">
-            [% num_registering %]
+    [% IF facet_status.registering > 0 %]
+        <a href="/scans?q=[% "status:registering" | url %]">
+            [% facet_status.registering %]
         </a>
     [% ELSE %]
-        [% num_registering || 0 %]
+        [% facet_status.registering || 0 %]
     [% END %]
   </dd>
   <dt>Afgeleiden maken</dt>
   <dd>
-    [% IF num_reprocess_derivatives > 0 %]
-        <a href="/scans?q=[% "status:reprocess_derivatives AND user_login:" _ user_login | url %]">
-            [% num_reprocess_derivatives %]
+    [% IF facet_status.reprocess_derivatives > 0 %]
+        <a href="/scans?q=[% "status:reprocess_derivatives" | url %]">
+            [% facet_status.reprocess_derivatives %]
         </a>
     [% ELSE %]  
-        [% num_reprocess_derivatives || 0 %]
+        [% facet_status.reprocess_derivatives || 0 %]
     [% END %]
   </dd>
 
   <dt>Catalografie</dt>
   <dd>
-    [% IF num_reprocess_metadata > 0 %]
-        <a href="/scans?q=[% "status:reprocess_metadata AND user_login:" _ user_login | url %]">
-            [% num_reprocess_metadata %]
+    [% IF facet_status.reprocess_metadata > 0 %]
+        <a href="/scans?q=[% "status:reprocess_metadata" | url %]">
+            [% facet_status.reprocess_metadata %]
         </a>
     [% ELSE %]  
-        [% num_reprocess_metadata || 0 %]
+        [% facet_status.reprocess_metadata || 0 %]
     [% END %]
   </dd>
 
   <dt>QA Controle</dt>
   <dd>
     [% states_qa_control = settings.status.collection.qa_control %]
+    [% parts = [] %]
+    [% num_qa_control = 0 %]
+    [% FOREACH status IN states_qa_control %]
+        [% parts.push("status:" _ status) %]
+        [% num_qa_control = num_qa_control + facet_status.item(status) %]
+    [% END %]
     [% IF num_qa_control > 0 %]
-        [% parts = [] %]
-        [% FOREACH status IN states_qa_control %]
-            [% parts.push("status:" _ status) %]
-        [% END %]
         <a href="/scans?q=[%  parts.join(" OR ") | url %]">
             [% num_qa_control %]
         </a>
@@ -78,35 +81,57 @@
     [% END %]
   </dd>
 
-  <dt>Publicatie</dt>
+  <dt>QA Controle OK</dt>
   <dd>
-    [% IF num_publishing > 0 %]
-        [% states_publishing = settings.status.collection.publishing %]
-        [% parts = [] %]
-        [% FOREACH status IN states_publishing %]
-            [% parts.push("status:" _ status) %]
-        [% END %]
-        <a href="/scans?q=[% parts.join(" OR ") | url %]">
-            [% num_publishing %]
+    [% IF facet_status.qa_control_ok > 0 %]
+        <a href="/scans?q=[% "status:qa_control_ok" | url %]">
+            [% facet_status.qa_control_ok %]
         </a>
     [% ELSE %]
-        [% num_publishing || 0 %]
+        [% facet_status.qa_control_ok || 0 %]
+    [% END %]
+  </dd>
+  
+
+  <dt>Gearchiveerd</dt>
+  <dd>
+    [% IF facet_status.archived > 0 %]
+        <a href="/scans?q=[% "status:archived" | url %]">
+            [% facet_status.archived %]
+        </a>
+    [% ELSE %]
+        [% facet_status.archived || 0 %]
     [% END %]
   </dd>
 
-  <dt>Archivering</dt>
+  <dt>Archivering OK</dt>
   <dd>
-    [% IF num_archiving > 0 %]
-        [% states_archiving = settings.status.collection.archiving %]
-        [% parts = [] %]
-        [% FOREACH status IN states_archiving %]
-            [% parts.push("status:" _ status) %]
-        [% END %]
-        <a href="/scans?q=[% parts.join(" OR ") | url %]">
-            [% num_archiving %]
+    [% IF facet_status.archived_ok > 0 %]
+        <a href="/scans?q=[% "status:archived_ok" | url %]">
+            [% facet_status.archived_ok %]
         </a>
     [% ELSE %]
-        [% num_archiving || 0 %]
+        [% facet_status.archived_ok || 0 %]
+    [% END %]
+  </dd>
+  <dt>Gepubliceerd</dt>
+  <dd>
+    [% IF facet_status.published > 0 %]
+        <a href="/scans?q=[% "status:published" | url %]">
+            [% facet_status.published %]
+        </a>
+    [% ELSE %]
+        [% facet_status.published || 0 %]
+    [% END %]
+  </dd>
+  <dt>Publicatie OK</dt>
+  <dd>
+    [% IF facet_status.published_ok > 0 %]
+        <a href="/scans?q=[% "status:published_ok" | url %]">
+            [% facet_status.published_ok %]
+        </a>
+    [% ELSE %]
+        [% facet_status.published_ok || 0 %]
     [% END %]
   </dd>
 

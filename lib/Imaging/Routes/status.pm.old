@@ -49,7 +49,7 @@ any('/status',sub {
     #status facet
     my $result = index_scan->search(
         query => "*",
-        limit => 0,
+        limit => 1,
         facet => "true",
         "facet.field" => "status"
     );
@@ -59,10 +59,42 @@ any('/status',sub {
     foreach my $status(@states){
         $facet_status->{$status} = $facet_counts{$status} || 0;
     }
+    #aantal met status:reprocess_metadata
+    my $num_reprocess_metadata = $facet_status->{reprocess_metadata};
+
+    #aantal met status:reprocess_derivatives
+    my $num_reprocess_derivatives = $facet_status->{reprocess_derivatives};
+
+    #aantal voor qa_controle
+    my @states_qa_control = @{ $config->{status}->{collection}->{qa_control} || [] };
+    my $num_qa_control = 0;
+    foreach my $status(@states_qa_control){
+        $num_qa_control += $facet_status->{$status};
+    }
+    
+    #aantal in publicatieproces (qa_control_ok -> published)
+    my @states_publishing = @{ $config->{status}->{collection}->{publishing} || [] };
+    my $num_publishing = 0;
+    foreach my $status(@states_publishing){
+        $num_publishing += $facet_status->{$status};
+    }
+
+    #aantal in archiveringsproces (qa_control_ok -> published_ok)
+    my @states_archiving = @{ $config->{status}->{collection}->{archiving} || [] };
+    my $num_archiving = 0;
+    foreach my $status(@states_archiving){
+        $num_archiving += $facet_status->{$status};
+    }
+    
     template('status',{
         auth => auth(),
         stats => $stats,
-        facet_status => $facet_status
+        num_reprocess_metadata => $num_reprocess_metadata,
+        num_reprocess_derivatives => $num_reprocess_derivatives,
+        num_registering => $facet_status->{registering},
+        num_qa_control => $num_qa_control,
+        num_publishing => $num_publishing,
+        num_archiving => $num_archiving 
     });
 });
 

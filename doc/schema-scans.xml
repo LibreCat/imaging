@@ -491,7 +491,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <field name="status_history" type="string" indexed="true" stored="true" multiValued="true"/>
 	<field name="path" type="string" indexed="true" stored="true" />
     <field name="files" type="string" indexed="true" stored="true" multiValued="true" />
-    <field name="size" type="int" indexed="true" stored="true" />
+    <field name="size" type="long" indexed="true" stored="true" />
 
 	<field name="check_log" type="string" indexed="true" stored="true" multiValued="true" />
     <field name="comments" type="lupetext" indexed="true" stored="true" />
@@ -512,9 +512,9 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="project_description" type="lupetext" indexed="true" stored="true" multiValued="true"/>
     <field name="project_date_start" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="project_query" type="lupetext" indexed="true" stored="true" multiValued="true"/>
-	<field name="project_total" type="int" indexed="true" stored="true" multiValued="true"/>
-    <field name="project_num_hits" type="int" indexed="true" stored="true" multiValued="true"/>
-	<field name="project_done" type="int" indexed="true" stored="true" multiValued="true"/>
+	<field name="project_total" type="long" indexed="true" stored="true" multiValued="true"/>
+    <field name="project_num_hits" type="long" indexed="true" stored="true" multiValued="true"/>
+	<field name="project_done" type="long" indexed="true" stored="true" multiValued="true"/>
 	<dynamicField name="project_datetime_*" type="date" indexed="true" stored="true" multiValued="true"/>
 
     <!-- marc -->
