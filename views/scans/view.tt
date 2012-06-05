@@ -146,7 +146,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
 
       [% IF do_open %]
       <p>
-        <a class="btn btn-mini" href="file://[% scan_system_directory %]">open map</a>
+        <a class="btn btn-mini" href="[% scan_system_directory %]">open map</a>
       </p>
       [% END %]
       <table class="table table-striped">
