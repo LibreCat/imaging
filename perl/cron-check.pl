@@ -397,9 +397,29 @@ foreach my $scan_id(@scan_ids_test){
 
     $scans->add($scan);
 }
-if(scalar(@scan_ids_ready) > 0){
-    index_log->store->solr->optimize();
-    index_scan->store->solr->optimize()
+
+#check of alle incoming_* er nog staan
+say "checking if all incoming are still there..";
+my $result = index_scan->search(query => "status:incoming_*",limit => 0);
+{
+    my $total_incoming = $result->total;
+    my($offset,$limit) = (0,1000);
+    while($offset <= $total_incoming){
+        $result = index_scan->search(query => "status:incoming_*",limit => $limit,offset=>$offset);
+        foreach my $hit(@{ $result->hits }){
+            my $scan = scans->get($hit->{_id});            
+            if(!-d $scan->{path}){
+                say "\t".$scan->{_id}." removed or renamed";
+                index_scan->delete($scan->{_id});
+                index_scan->commit;
+                index_log->delete_by_query(query => "scan_id:\"".$scan->{_id}."\"");
+                index_log->commit;
+                scans->delete($scan->{_id});
+            }else{
+                say "\t".$scan->{_id}." still there";
+            }
+        }
+        $offset += $limit;
+    }    
 }
 say "$this_file ended at ".local_time;
-
