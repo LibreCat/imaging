@@ -36,7 +36,9 @@ my $requires = {
     'Template::Plugin::JSON' => 0,
     'Time::Interval' => 0,
     'File::MimeInfo' => 0,
-    'IO::CaptureOutput' => 0
+    'IO::CaptureOutput' => 0,
+    'CAM::PDF' => 0,
+    'PDF::API2' => 0
 };
 my $recommends = {
 	'Starman' => 0,

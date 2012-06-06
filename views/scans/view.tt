@@ -26,6 +26,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
   [%- IF auth.can('scans','edit') %]
   <dd>
     <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
+    <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/rename">Wijzig naam</a>
   </dd>
   [%- END %]
   [% IF projects && projects.size > 0 %]
