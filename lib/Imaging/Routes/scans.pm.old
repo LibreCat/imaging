@@ -122,17 +122,18 @@ any('/scans/:_id',sub {
         
             if($action eq "add_metadata"){
 
-                if(scalar(@{ $scan->{metadata} }) > 1){
-
-                    push @errors,"Deze scan bevat meer dan één metadata-record! Gelieve de foutieve eerst te verwijderen.";
-
-                }else{
                 
                     my $metadata_id = $params->{metadata_id} || "";
 
+                    my $index_metadata_id = first_index {
+                        my $id = $_->{source}.":".$_->{fSYS};
+                        $id eq $metadata_id;
+                    }  @{ $scan->{metadata} };
+
+
                     my($result,$total,$error);
                     try {
-                        $result = meercat->search($metadata_id,{rows => 1});     
+                        $result = meercat->search($metadata_id);      
                         $total = $result->content->{response}->{numFound};
 
                     }catch{
@@ -153,7 +154,7 @@ any('/scans/:_id',sub {
                     }else{
 
                         my $doc = $result->content->{response}->{docs}->[0];
-                        $scan->{metadata}->[0] = {
+                        my $metadata = {
                             fSYS => $doc->{fSYS},#000000001
                             source => $doc->{source},#rug01
                             fXML => $doc->{fXML},
@@ -163,10 +164,13 @@ any('/scans/:_id',sub {
                                 num_files => scalar(@{$scan->{files}})
                             )            
                         };
+                        if($index_metadata_id >= 0){
+                            $scan->{metadata}->[$index_metadata_id] = $metadata;
+                        }else{
+                            push @{ $scan->{metadata} },$metadata;
+                        }
                         push @messages,"metadata $metadata_id werd aangepast";
-
                     }
-                }                    
             }
             #verwijder element met metadata_id uit de lijst (mag resulteren in 0 elementen)
             elsif($action eq "delete_metadata"){
@@ -184,14 +188,11 @@ any('/scans/:_id',sub {
                         push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
                     }
                 }
-
             }else{
 
                 push @errors,"actie '$action' is ongeldig";
 
             }
-
-            #einde: herindexeer
             if(scalar(@errors)==0){
                 scans->add($scan);
                 scan2index($scan);
@@ -445,17 +446,6 @@ post('/scans/:_id/baginfo/edit',sub{
             push @errors,@$errs if !$baginfo;
 
             if(scalar(@errors)==0){
-
-                my $old_baginfo = $scan->{metadata}->[$index_metadata_id]->{baginfo};
-                my $baginfo_restricted_keys = baginfo_restricted_keys();
-
-                #kopiëer restricted keys
-                my $restricted = {};
-                foreach(@$baginfo_restricted_keys){
-                    $restricted->{$_} = $old_baginfo->{$_};
-                }
-                $baginfo = { %$baginfo,%$restricted };
-                
                 $scan->{metadata}->[$index_metadata_id]->{baginfo} = $baginfo;
                 push @messages,"baginfo werd aangepast";
                 scans->add($scan);
@@ -634,16 +624,6 @@ any('/scans/:_id/status',sub{
 sub conf_baginfo {
     state $conf_baginfo = config->{app}->{scans}->{edit}->{baginfo};
 }
-sub baginfo_restricted_keys {
-    state $keys = do{
-        my @keys = ();
-        my $conf = conf_baginfo();
-        foreach(@$conf){
-            push @keys,$_->{key} unless($_->{edit});
-        }
-        \@keys;
-    };
-}
 sub validate_baginfo_pair {
     my($key,$value) = @_;
     my @errors = ();
@@ -662,14 +642,9 @@ sub validate_baginfo_pair {
         my $index_baginfo_key = first_index {
             $_->{key} eq $key;
         } @$conf_baginfo;
+
         if($index_baginfo_key < 0){
-
             push @errors,"$key is een ongeldige baginfo sleutel";
-
-        }elsif( ! $conf_baginfo->[$index_baginfo_key]->{edit} ){
-
-            push @errors,"$key kan niet worden aangepast";
-
         }else{
             my $conf_baginfo_key = $conf_baginfo->[$index_baginfo_key];
             my $values = $conf_baginfo_key->{'values'};
@@ -689,7 +664,12 @@ sub validate_baginfo {
     my $good_baginfo = {};
 
     foreach my $key(keys %$baginfo){
-        my $values = is_array_ref($baginfo->{$key}) ? $baginfo->{$key} : [ $baginfo->{$key} ];
+        my $values;
+        if(!is_array_ref($baginfo->{$key})){
+            $values = [$baginfo->{$key}];       
+        }else{
+             $values = $baginfo->{$key};
+        }
         foreach my $value(@$values){
             my($success,$errs) = validate_baginfo_pair($key,$value);
             if($success){

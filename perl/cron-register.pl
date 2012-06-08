@@ -2,7 +2,6 @@
 use Catmandu qw(store);
 use Dancer qw(:script);
 use Imaging::Util;
-
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is);
 use List::MoreUtils qw(first_index);
@@ -14,6 +13,7 @@ use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 use Time::HiRes;
 use File::MimeInfo;
+use all qw(Imaging::Dir::Query::*);
 
 BEGIN {
     my $appdir = Cwd::realpath(
@@ -57,6 +57,59 @@ sub file_info {
 }
 sub mount_conf {
     config->{mounts}->{directories} ||= {};
+}
+sub directory_translator_packages {
+    state $c = do {
+        my $config = config;
+        my $list = [];
+        if(is_array_ref($config->{directory_to_query})){
+            $list = $config->{directory_to_query};
+        }
+        $list;
+    };
+}
+sub directory_translator {
+    state $translators = {};
+    my $package = shift;
+    $translators->{$package} ||= $package->new;
+}
+sub directory_to_queries {
+    my $path = shift;
+    my $packages = directory_translator_packages();    
+    my @queries = ();
+    foreach my $p(@$packages){
+        my $trans = directory_translator($p);
+        if($trans->check($path)){
+            @queries = $trans->queries($path);
+            last;
+        }
+    }
+    @queries;
+}
+sub has_manifest {
+    my $path = shift;
+    defined $path && -f "$path/manifest-md5.txt";
+}
+sub has_valid_manifest {
+    my $path = shift;    
+    has_manifest($path) && do {
+        my $valid = 0;
+        try{                        
+            local(*FILE);
+            my $line;
+            open FILE,"$path/manifest-md5.txt" or die($!);
+            while($line = <FILE>){
+                $line =~ s/\r\n$/\n/;
+                chomp($line);
+                utf8::decode($line);
+                if($line !~ /^[0-9a-fA-F]+\s+.*$/o){
+                    last;
+                }
+            }
+            close FILE;
+        };
+        $valid;
+    };
 }
 
 my $this_file = File::Basename::basename(__FILE__);
@@ -127,6 +180,8 @@ foreach my $project_id(@project_ids){
     my($success,$error) = index_project->commit;   
     die($error) if !$success;
 }
+
+
 #stap 2: ken scans toe aan projects
 say "assigning scans to projects";
 my @scan_ids = ();
@@ -164,28 +219,29 @@ scans()->each(sub{
 });
 foreach my $id(@ids_ok_for_metadata){
     my $scan = scans()->get($id);
-    my $query = $scan->{_id};
-    if($query =~ /^RUG\d{2}-/o){
-        $query =~ s/^RUG(\d{2})-/rug$1:/o;
-    }else{
-        $query = "location:$query";
-    }
-    my $res = meercat()->search($query,{rows=>1000});
-    $scan->{metadata} = [];
-    if($res->content->{response}->{numFound} > 0){
+    my $path = $scan->{path};
+    my @queries = directory_to_queries($path);
+    
+    foreach my $query(@queries){
+        my $res = meercat()->search($query,{});
+        $scan->{metadata} = [];
+        if($res->content->{response}->{numFound} > 0){
 
-        my $docs = $res->content->{response}->{docs};
-        foreach my $doc(@$docs){
-            push @{ $scan->{metadata} },{
-                fSYS => $doc->{fSYS},#000000001
-                source => $doc->{source},#rug01
-                fXML => $doc->{fXML},
-                baginfo => create_baginfo(
-                    xml => $doc->{fXML},
-                    size => $scan->{size},
-                    num_files => scalar(@{$scan->{files}})
-                )
-            };
+            my $docs = $res->content->{response}->{docs};
+            foreach my $doc(@$docs){
+                push @{ $scan->{metadata} },{
+                    fSYS => $doc->{fSYS},#000000001
+                    source => $doc->{source},#rug01
+                    fXML => $doc->{fXML},
+                    baginfo => create_baginfo(
+                        xml => $doc->{fXML},
+                        size => $scan->{size},
+                        num_files => scalar(@{$scan->{files}})
+                    )
+                };
+            }
+            last;
+
         }
 
     }
@@ -207,7 +263,6 @@ scans()->each(sub{
 say "registering incoming_ok";
 foreach my $id (@incoming_ok){
     my $scan = scans()->get($id);
-    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
     say "\tscan $id:";
 
     #status 'registering'
@@ -230,19 +285,19 @@ foreach my $id (@incoming_ok){
     ($success,$error) = index_log->commit;
     die($error) if !$success;
 
-    if($user->{profile_id} ne "BAG"){
+    if(!has_valid_manifest($scan->{path})){
 
-        #pas manifest -> maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)
-            
-        #verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest.txt
-        unlink($scan->{path}."/manifest.txt") if -f $scan->{path}."/manifest.txt";
-        my $index = first_index { $_ eq $scan->{path}."/manifest.txt" } map { $_->{path} } @{ $scan->{files} };
+        #verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest-md5.txt
+        unlink($scan->{path}."/manifest-md5.txt") if -f $scan->{path}."/manifest-md5.txt";
+        my $index = first_index { $_ eq $scan->{path}."/manifest-md5.txt" } map { $_->{path} } @{ $scan->{files} };
         splice(@{ $scan->{files} },$index,1) if $index >= 0;
 
-        say "\tcreating new manifest.txt";
+        #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
+        say "\tcreating manifest-md5.txt";
+
         #maak nieuwe manifest
         local(*MANIFEST);
-        open MANIFEST,">".$scan->{path}."/manifest.txt" or die($!);
+        open MANIFEST,">".$scan->{path}."/manifest-md5.txt" or die($!);
         foreach my $file(@{ $scan->{files} }){
             local(*FILE);
             open FILE,$file->{path} or die($!);
@@ -253,7 +308,7 @@ foreach my $id (@incoming_ok){
         close MANIFEST;
 
         #voeg manifest toe aan de lijst
-        push @{ $scan->{files} },file_info($scan->{path}."/manifest.txt");
+        push @{ $scan->{files} },file_info($scan->{path}."/manifest-md5.txt");
     
     }
     

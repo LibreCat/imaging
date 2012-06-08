@@ -18,6 +18,14 @@
             display: inline-block;
             vertical-align: middle;
           }
+          #dialog {
+            position:fixed;
+            z-index:100;
+            width:150px;
+            left:5px;
+            top:50px;
+            display:none;
+          }
         </style>
         <!--[if lt IE 9]>
         <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -44,6 +52,9 @@
       <div class="navbar navbar-fixed-top">
         <div class="navbar-inner">
           <div class="container">
+
+            <div class="alert" id="dialog"></div>
+
             <a class="brand" href="[% request.uri_base %]">Imaging</a>
             <div class="nav-collapse">
               <ul class="nav">

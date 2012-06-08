@@ -12,7 +12,6 @@ use Clone qw(clone);
 use Digest::MD5 qw(md5_hex);
 use Dancer::Plugin::Database;
 
-
 sub core {
     state $core = store("core");
 }

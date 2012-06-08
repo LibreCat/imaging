@@ -32,7 +32,18 @@ BEGIN {
     Catmandu->load($appdir);
 }
 use Dancer::Plugin::Imaging::Routes::Utils;
-
+sub list_files {
+    my @files;
+    find({
+        wanted => sub{
+            my $path = abs_path($_);
+            return if -d $path;
+            push @files,$path;
+        },
+        no_chdir => 1
+    },@_);
+    \@files;
+}
 sub profiles {
     config->{profiles} ||= {};
 }
@@ -415,11 +426,44 @@ my $result = index_scan->search(query => "status:incoming_*",limit => 0);
                 index_log->delete_by_query(query => "scan_id:\"".$scan->{_id}."\"");
                 index_log->commit;
                 scans->delete($scan->{_id});
-            }else{
-                say "\t".$scan->{_id}." still there";
             }
         }
         $offset += $limit;
     }    
 }
+
+#check of een directory gewijzigd is in 02_processed (wacht uiteraard)
+say "checking changed directories in processed";
+my $processed = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed};
+if(! -d $processed ){
+    say STDERR "directory $processed does not exist";
+    next;
+}
+try{
+    open CMD,"find $processed -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
+    while(my $dir = <CMD>){
+        chomp($dir);
+        my $basename = File::Basename::basename($dir);
+        my $scan = $scans->get($basename);
+        my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($dir);
+        #wacht totdat er lange tijd niets met de map is gebeurt!!
+        my $seconds_since_modified = time - $mtime;
+        if($seconds_since_modified <= upload_idle_time()){
+            say "directory $basename probably busy (last modified $seconds_since_modified seconds ago)";
+            next;
+        }elsif($mtime > $scan->{datetime_last_modified}){
+            my $list = list_files($scan->{path});
+            my $size = 0;
+            my @files = ();
+            foreach(@$list){
+                my $info = file_info($_);
+                $size += $info->{size};
+            }
+            $scan->{size} = $size;
+            $scan->{files} = \@files;
+            
+        }        
+    }
+};
+
 say "$this_file ended at ".local_time;

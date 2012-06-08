@@ -8,12 +8,16 @@
 
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
+[%- IF auth.can('scans','edit') %]
+    <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
+    <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/rename">Wijzig naam</a>
+[% END %]
 
 [%- IF scan.status == "registering" %]
-<div class="alert"><strong>opgelet!</strong> een automatisch script registreert dit record, en zal later geupdated worden
+    <div class="alert"><strong>opgelet!</strong> een automatisch script registreert dit record, en zal later geupdated worden
 naar status 'registered'.</div>
 [%- ELSIF scan.busy && scan.busy_reason == "move" %]
-<div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
+    <div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
 kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd. Wanneer niets wijzigt na vijf minuten
 dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegevoegd.</div>
 [%- END %]
@@ -23,12 +27,6 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
   <dd>
     <a href="/scans?q=status:&quot;[% scan.status | url %]&quot;">[% settings.human_readable.${scan.status} || scan.status %]</a>
   </dd>
-  [%- IF auth.can('scans','edit') %]
-  <dd>
-    <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
-    <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/rename">Wijzig naam</a>
-  </dd>
-  [%- END %]
   [% IF projects && projects.size > 0 %]
     [% FOREACH project IN projects %]
       [% IF loop.index == 0 %]
@@ -177,9 +175,9 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
 
     <div class="tab-pane" id="tab-metadata">
       [%- IF auth.can('scans','edit') %]
-      <form method="post" class="form-inline pull-right">
+      <form method="post" class="form-inline pull-right" action="[% request.request_uri %]#tab-metadata">
           <input type="hidden" name="action" value="add_metadata"/>
-          <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata id"/><button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button></div>
+          <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata identifier"/><button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button></div>
       </form>
       [%- END %]
       [%- FOREACH metadata IN scan.metadata %]
@@ -244,7 +242,8 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
                 <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
                 <ul class="dropdown-menu">
                 [%- FOREACH element IN settings.app.scans.edit.baginfo %]
-                  <li><a href="#" class="baginfo-add">[% element.key %]</a></li>
+                    [% NEXT UNLESS element.edit %]
+                    <li><a href="#" class="baginfo-add">[% element.key %]</a></li>
                 [%- END %]
                 </ul>
               </div>
@@ -252,20 +251,24 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
                 [%- NEXT IF !(metadata.baginfo.${element.key} && metadata.baginfo.${element.key}.size > 0) -%]
                 [%- FOREACH value IN metadata.baginfo.${element.key} %]
                 <div class="control-group baginfo">
-                  <label class="control-label">[% element.key %]</label>
+                  <label class="control-label"><b>[% element.key %]</b></label>
                   <div class="controls">
-                  [%- IF element.item("values") %]
-                    <select name="[% element.key %]">
-                    [%- FOREACH conf_value IN element.item("values") %]
-                      <option value="[% conf_value %]"[% IF value == conf_value %] selected="selected"[% END %]>
-                        [% conf_value %]
-                      </option>
+                  [% IF element.edit %]
+                    [%- IF element.item("values") %]
+                      <select name="[% element.key %]">
+                      [%- FOREACH conf_value IN element.item("values") %]
+                        <option value="[% conf_value %]"[% IF value == conf_value %] selected="selected"[% END %]>
+                          [% conf_value %]
+                        </option>
+                      [%- END %]
+                      </select>
+                    [%- ELSE %]
+                      <input type="text" name="[% element.key %]" value="[% value %]"/>
                     [%- END %]
-                    </select>
-                  [%- ELSE %]
-                    <input type="text" name="[% element.key %]" value="[% value %]"/>
-                  [%- END %]
                     <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button>
+                  [% ELSE %]
+                    [% val | html %]
+                  [% END %]
                   </div>
                 </div>
                 [%- END %]
@@ -386,20 +389,33 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
     btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
   });
 
-  $('form.edit-baginfo').submit(function(evt) {
-    evt.preventDefault();
-    var f = $(this);
-    $.post(f.attr('action'), f.serialize(), function(data) {
-      var btn = f.find(':button[type="submit"]');
-      btn.button("loading");
-      if (data.status === 'ok') {
-        btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
-      } else {
-        btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
-      }
-      btn.button("reset");
-    }, 'json');
-  });
+    $('form.edit-baginfo').submit(function(evt) {
+        evt.preventDefault();
+        var $dialog = $("#dialog");
+        $dialog.hide();
+        var f = $(this);
+        $.post(f.attr('action'), f.serialize(), function(data) {
+            var btn = f.find(':button[type="submit"]');
+            btn.button("loading");
+            if (data.status === 'ok') {
+                btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
+            }else{
+                btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
+                var $dialog = $("#dialog");                
+                var html = ["<p>Fout:<a class=\"close\">x</a></p><ul>"];
+                for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
+                html.push("</ul>");
+                $dialog.html(html.join(''));
+                $dialog.removeClass("alert-info").addClass("alert-error");
+                $dialog.fadeIn('fast',function(){
+                    $(this).find(".close").click(function(){
+                        $dialog.hide();
+                    });
+                });
+            }
+            btn.button("reset");
+        }, 'json');
+    });
 </script>
 [%- END %]
 
