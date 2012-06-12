@@ -117,24 +117,27 @@ sub marcxml_flatten {
 sub scan2index {
     my $scan = shift;       
 
+    #default doc
     my $doc = clone($scan);
+
+    #metadata
     my @metadata_ids = ();
     push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $scan->{metadata} }); 
-    
+    $doc->{metadata_id} = \@metadata_ids;
     $doc->{marc} = [];
     push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
-    my @deletes = qw(metadata comments busy busy_reason warnings project_id newpath);
-    delete $doc->{$_} foreach(@deletes);
-    $doc->{metadata_id} = \@metadata_ids;
-
+    #files
     $doc->{files} = [ map { $_->{path} } @{ $scan->{files} || [] } ];
 
+
+    #status history
     for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
         my $item = $doc->{status_history}->[$i];
         $doc->{status_history}->[$i] = $item->{user_login}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
     }
 
+    #project info
     if(is_array_ref($scan->{project_id}) && scalar(@{$scan->{project_id}}) > 0){
         foreach my $project_id(@{$scan->{project_id}}){
             my $project = projects->get($project_id);
@@ -149,6 +152,7 @@ sub scan2index {
         }
     }
 
+    #user info
     if($scan->{user_id}){
         my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
         if($user){
@@ -157,14 +161,21 @@ sub scan2index {
             $doc->{user_roles} = [split(',',$user->{roles})];
         }
     }
+    
+    #convert datetime to iso
     foreach my $key(keys %$doc){
         next if $key !~ /datetime/o;
         if(is_array_ref($doc->{$key})){
-            $_ = formatted_date($_) foreach(@{ $doc->{$key} });
+            $_ = formatted_date($_) for(@{ $doc->{$key} });
         }else{
             $doc->{$key} = formatted_date($doc->{$key});
         }
     }
+
+    #opkuisen
+    my @deletes = qw(metadata comments busy busy_reason warnings newpath);
+    delete $doc->{$_} for(@deletes);
+
     index_scan()->add($doc);
 }
 

@@ -3,7 +3,7 @@ use Catmandu qw(store);
 use Dancer qw(:script);
 use Imaging::Util;
 use Catmandu::Sane;
-use Catmandu::Util qw(require_package :is);
+use Catmandu::Util qw(require_package :is :array);
 use List::MoreUtils qw(first_index);
 use File::Basename qw();
 use File::Copy qw(copy move);
@@ -88,7 +88,7 @@ sub directory_to_queries {
 }
 sub has_manifest {
     my $path = shift;
-    defined $path && -f "$path/manifest-md5.txt";
+    is_string($path) && -f "$path/manifest-md5.txt";
 }
 sub has_valid_manifest {
     my $path = shift;    
@@ -213,7 +213,11 @@ scans()->each(sub{
     my $scan = shift;
     my $status = $scan->{status};
     my $metadata = $scan->{metadata};
-    if( $status ne "incoming" && $status ne "incoming_error" && !(is_array_ref($metadata) && scalar(@$metadata) > 0 )){
+    if( 
+        !array_includes(["incoming","incoming_error"],$status) && 
+        !(is_array_ref($metadata) && scalar(@$metadata) > 0 )
+    ){
+
         push @ids_ok_for_metadata,$scan->{_id};
     }
 });

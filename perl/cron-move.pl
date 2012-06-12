@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use Catmandu;
 use Dancer qw(:script);
-
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use File::Basename qw();

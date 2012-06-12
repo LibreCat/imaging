@@ -192,13 +192,13 @@ foreach my $user(@users){
         next;
     }
     try{
+        local(*CMD);
         open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
         while(my $dir = <CMD>){
             chomp($dir);    
             my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
-            my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($dir);
-
+            my $time = mtime($dir);
             #wacht totdat er lange tijd niets met de map is gebeurt!!
             if(file_is_busy($dir)){
                 say "directory $basename probably busy";
@@ -349,7 +349,7 @@ foreach my $scan_id(@scan_ids_test){
 
     say "checking $scan_id at $scan->{path}";
     my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
-    if(!defined($user->{profile_id})){
+    if(!is_string($user->{profile_id})){
         say STDERR "no profile defined for $user->{login}";
         next;
     }
@@ -415,8 +415,8 @@ foreach my $scan_id(@scan_ids_test){
 
 #check of alle incoming_* er nog staan
 say "checking if all incoming are still there..";
-my $result = index_scan->search(query => "status:incoming_*",limit => 0);
 {
+    my $result = index_scan->search(query => "status:incoming_*",limit => 0);
     my $total_incoming = $result->total;
     my($offset,$limit) = (0,1000);
     while($offset <= $total_incoming){
@@ -437,37 +437,39 @@ my $result = index_scan->search(query => "status:incoming_*",limit => 0);
 }
 
 #check of een directory gewijzigd is in 02_processed (wacht uiteraard)
-say "checking changed directories in processed";
-my $processed = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed};
-if(! -d $processed ){
-    say STDERR "directory $processed does not exist";
-    next;
-}
-try{
-    open CMD,"find $processed -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
-    while(my $dir = <CMD>){
-        chomp($dir);
-        my $basename = File::Basename::basename($dir);
-        my $scan = $scans->get($basename);
-        my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($dir);
-        #wacht totdat er lange tijd niets met de map is gebeurt!!
-        my $seconds_since_modified = time - $mtime;
-        if($seconds_since_modified <= upload_idle_time()){
-            say "directory $basename probably busy (last modified $seconds_since_modified seconds ago)";
-            next;
-        }elsif($mtime > $scan->{datetime_last_modified}){
-            my $list = list_files($scan->{path});
-            my $size = 0;
-            my @files = ();
-            foreach(@$list){
-                my $info = file_info($_);
-                $size += $info->{size};
-            }
-            $scan->{size} = $size;
-            $scan->{files} = \@files;
-            
-        }        
-    }
-};
+
+# => onzeker: wss niet!!
+
+#say "checking changed directories in processed";
+#my $processed = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed};
+#if(! -d $processed ){
+#    say STDERR "directory $processed does not exist";
+#    next;
+#}
+#try{
+#    local(*CMD);
+#    open CMD,"find $processed -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
+#    while(my $dir = <CMD>){
+#        chomp($dir);
+#        my $basename = File::Basename::basename($dir);
+#        my $scan = $scans->get($basename);
+#        my $mtime = mtime($dir);
+#        #wacht totdat er lange tijd niets met de map is gebeurt!!
+#        if(file_is_busy($dir)){
+#            say "directory $basename probably busy";
+#            next;
+#        }elsif($mtime > $scan->{datetime_last_modified}){
+#            my $list = list_files($scan->{path});
+#            my $size = 0;
+#            my @files = ();
+#            foreach(@$list){
+#                my $info = file_info($_);
+#                $size += $info->{size};
+#            }
+#            $scan->{size} = $size;
+#            $scan->{files} = \@files;
+#        }        
+#    }
+#};
 
 say "$this_file ended at ".local_time;
