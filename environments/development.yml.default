@@ -136,7 +136,7 @@ mounts:
     days: 1
    #how long till directory is processed?
    upload_idle_time:
-    seconds: 30
+    seconds: 15
 status:
  collection:
   status_page: ["registering","registered","derivatives_created","reprocess_metadata","reprocess_derivatives","reprocess_scans","qa_control_ok","archived","archived_ok","published","published_ok"]
@@ -148,30 +148,14 @@ status:
   in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published"]
   in_reprocessing: ["reprocess_scans"]
  change:
-#  all:
-#   incoming: ["incoming_error","incoming_ok"]
-#   incoming_back: ["incoming_error","incoming_ok"]
-#   incoming_error: ["incoming_ok"]
-#   incoming_ok: ["incoming_error","registering"]
-#   registering: ["registered"]
-#   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok"]
-#   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_ok"]
-#   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_ok"]
-#   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_ok"]
-#   reprocess_scans_qa_manager: ["incoming_back"]
-#   qa_control_ok: ["registered","archived"]
-#   archived: ["archived_ok"]
-#   archived_ok: ["archived","published"]
-#   published: ["published_ok"]
-#   published_ok: ["published"]
   scanner:
    reprocess_scans: 
-    values: ["incoming"]
+    values: ["to_incoming"]
     messages:
      incoming: "Hiermee verplaatst u de map terug in 01_ready ! Bent u zeker?"
   qa_manager: &statuschangeqamanager
    reprocess_scans_qa_manager: 
-    values: ["incoming"]
+    values: ["to_incoming"]
     messages:
      incoming: "Hiermee verplaatst u de map terug in 01_ready ! Bent u zeker?"
    registered: 
@@ -204,6 +188,7 @@ status:
   admin: *statuschangeqamanager
 human_readable:
  incoming: "aangeboden scan"
+ to_incoming: "verplaats naar ready"
  incoming_back: "opnieuw aangeboden scan"
  incoming_error: "automatische check gefaald"
  incoming_ok: "automatische check successvol"
@@ -244,12 +229,12 @@ profiles:
    - class: "Imaging::Test::Dir::checkTIFF"
      args:
       valid_patterns:
-       - '^(?!manifest\.txt$)'
+       - '^(?!manifest-md5\.txt$)'
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkFilename"
      args:
       valid_patterns:
-       - '^(?!manifest\.txt$)'
+       - '^(?!manifest-md5\.txt$)'
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkAleph"
      args:
