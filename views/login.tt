@@ -1,9 +1,9 @@
 [% PROCESS inc/errors_messages.tt %]
 <form method="POST" accept-charset="UTF-8">
   <input type="hidden" value="[% params.service | html %]" name="service" id="service"/>
-  <label for="user">username:</label>
+  <label for="user">gebruikersnaam:</label>
   <input type="text" name="user" id="user" value="[% params.user | html %]"/>
-  <label for="password">password:</label>
+  <label for="password">paswoord:</label>
   <input type="password" name="password" id="password"/>
   <div>
     <input type="submit" value="Login" name="submit" id="submit" class="btn btn-primary"/>

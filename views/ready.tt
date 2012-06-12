@@ -22,11 +22,14 @@
   [%- END %]
 </table>
 [%- END %]
+[%- tt_description = settings.profiles.${user.profile_id}.description -%]
+[% IF tt_description %]
 <div style="padding:30px;background-color:#F4F4F4;border-radius:6px;">
 <dl>
     <dt>validatie profiel</dt>
     <dd>[% user.profile_id %]</dd>
     <dt>beschrijving</dt>
-    <dd>[% settings.profiles.${user.profile_id}.description %]</dd>
+    <dd>[% PROCESS $tt_description %]</dd>
 </dl>
 </div>
+[% END %]

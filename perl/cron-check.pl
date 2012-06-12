@@ -1,9 +1,9 @@
 #!/usr/bin/env perl
 use Dancer qw(:script);
 use Catmandu qw(store);
-use Imaging::Util qw(data_at);
+use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
-use Catmandu::Util qw(require_package :is);
+use Imaging::Util qw(data_at);
 use List::MoreUtils;
 use File::Basename qw();
 use File::Path;
@@ -157,6 +157,15 @@ sub file_info {
         }
     }
 }
+sub mtime {
+    (stat(shift))[9];
+}
+sub file_seconds_old {
+    time - mtime(shift);
+}
+sub file_is_busy {
+    file_seconds_old(shift) <= upload_idle_time();
+}
 
 my $mount_conf = mount_conf;
 my $scans = scans;
@@ -173,14 +182,13 @@ say "$this_file started at ".local_time;
 #     3.2. Map die lange upload nodig heeft? Vergelijk datetime_last_modified met mtime van de map. Indien gelijk, dan wordt upload als afgelopen beschouwd en zet status op 'incoming_done'
 
 
-my @users =  dbi_handle->quick_select("users",{ has_dir => 1});
+my @users =  dbi_handle->quick_select("users",{});
 my @scan_ids_ready = ();
 
 foreach my $user(@users){
 
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
     if(! -d $ready ){
-        say STDERR "directory $ready of user $user->{login} does not exist";
         next;
     }
     try{
@@ -192,9 +200,8 @@ foreach my $user(@users){
             my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($dir);
 
             #wacht totdat er lange tijd niets met de map is gebeurt!!
-            my $seconds_since_modified = time - $mtime;
-            if($seconds_since_modified <= upload_idle_time()){
-                say "directory $basename probably busy (last modified $seconds_since_modified seconds ago)";
+            if(file_is_busy($dir)){
+                say "directory $basename probably busy";
                 next;
             }
             #map komt nog niet voor in de databanken
@@ -227,8 +234,10 @@ foreach my $user(@users){
                 };
                 $scans->add($scan);
             }
-            #map komt terug uit 03_reprocessing. Opgelet: een andere gebruiker kan ook gewoon dezelfde map hebben verwerkt!
-            elsif("$scan->{user_id}" eq "$user->{id}" && $scan->{status} eq "reprocess_scans"){
+            #map komt terug uit 03_reprocessing.
+            # reprocess_* => map werd door gebruiker handmatig verplaatst van 03_reprocessing naar 01_ready
+            # to_incoming => map werd door systeem verplaatst naar 01_ready
+            elsif( array_includes(["reprocess_scans","reprocess_scans_qa_manager","to_incoming"],$scan->{status}) ){
                 
                 #pas paden aan
                 my $oldpath = $scan->{path};
@@ -253,9 +262,7 @@ foreach my $user(@users){
                 };
                 #datum aanpassen
                 $scan->{datetime_last_modified} = Time::HiRes::time;
-
-                my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($dir);
-                $scan->{datetime_directory_last_modified} = $mtime;
+                $scan->{datetime_directory_last_modified} = mtime($dir);
 
                 $scans->add($scan);
 
@@ -263,10 +270,10 @@ foreach my $user(@users){
             #update index_scan en index_log
             scan2index($scan);
             my($success,$error)= index_scan->commit;
-            die($error) if !$success;
+            die(join('',@$error)) if !$success;
             status2index($scan,-1);
             ($success,$error) = index_log->commit;
-            die($error) if !$success;
+            die(join('',@$error)) if !$success;
 
             push @scan_ids_ready,$scan->{_id};
         }
@@ -320,22 +327,19 @@ my @scan_ids_test = ();
 foreach my $scan_id(@scan_ids_ready){
 
     my $scan = $scans->get($scan_id);
-    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($scan->{path});
 
     #check nieuwe directories
     if(
-        $scan->{status} eq "incoming" || 
-        $scan->{status} eq "incoming_back" ||
-        $scan->{status} eq "incoming_renamed"
+        array_includes(["incoming","incoming_back","incoming_renamed"],$scan->{status})
+        
     ){
         push @scan_ids_test,$scan->{_id};
     }
     #check slechte en goede indien iets gewijzigd sinds laatste check
     elsif(
-        $scan->{status} eq "incoming_error" ||
-        $scan->{status} eq "incoming_ok"
+        array_includes(["incoming_error","incoming_ok"],$scan->{status})
     ){
-        push @scan_ids_test,$scan->{_id} if $mtime > $scan->{datetime_last_modified};
+        push @scan_ids_test,$scan->{_id} if mtime($scan->{path}) > $scan->{datetime_last_modified};
     }
 
 };
@@ -400,11 +404,11 @@ foreach my $scan_id(@scan_ids_test){
     #update index_scan en index_log
     scan2index($scan);
     my($success,$error) = index_scan->commit;
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 
     status2index($scan,-1);
     ($success,$error) = index_log->commit;
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 
     $scans->add($scan);
 }

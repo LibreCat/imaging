@@ -3,7 +3,7 @@ use Dancer qw(:syntax);
 use Dancer::Plugin;
 use Catmandu::Sane;
 use Catmandu qw(store);
-use Catmandu::Util qw(:is);
+use Catmandu::Util qw(:is :array);
 use DateTime;
 use DateTime::TimeZone;
 use DateTime::Format::Strptime;
@@ -82,7 +82,7 @@ sub status2index {
     my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
 
     my $history_objects;
-    if(is_integer($history_index)){
+    if(array_exists($scan->{status_history},$history_index)){
         $history_objects = [ $scan->{status_history}->[$history_index] ];
     }else{
         $history_objects = $scan->{status_history};
@@ -124,7 +124,7 @@ sub scan2index {
     $doc->{marc} = [];
     push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
-    my @deletes = qw(metadata comments busy busy_reason warnings project_id);
+    my @deletes = qw(metadata comments busy busy_reason warnings project_id newpath);
     delete $doc->{$_} foreach(@deletes);
     $doc->{metadata_id} = \@metadata_ids;
 

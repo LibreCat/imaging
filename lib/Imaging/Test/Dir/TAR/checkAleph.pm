@@ -63,7 +63,6 @@ sub test {
     if(scalar(@errors) == 0 && Data::Util::is_string($fSYS)){
 
         $query = "rug01:$fSYS";
-
         try{
             my $res = $self->_solr->search($query,{ rows => 0, wt => "json" });
             if($res->content->{response}->{numFound} <= 0){

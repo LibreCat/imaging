@@ -8,7 +8,7 @@ use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Database;
 use Catmandu::Sane;
 use Catmandu qw(store);
-use Catmandu::Util qw(:is);
+use Catmandu::Util qw(:is :array);
 use Data::Pageset;
 use Try::Tiny;
 use URI::Escape qw(uri_escape);
@@ -17,6 +17,25 @@ use Clone qw(clone);
 use Time::HiRes;
 use File::Basename qw();
 use Data::UUID;
+use Hash::Merge qw(merge);
+
+Hash::Merge::specify_behavior({
+    "SCALAR" => {
+            "SCALAR" => sub { $_[1] },
+            "ARRAY"  => sub { [ $_[0], @{$_[1]} ] },
+            "HASH"   => sub { $_[1] },
+    },
+    "ARRAY" => {
+            "SCALAR" => sub { $_[1] },
+            "ARRAY"  => sub { [ @{$_[0]}, @{$_[1]} ] },
+            "HASH"   => sub { $_[1] },
+    },
+    "HASH" => {
+            'SCALAR' => sub { $_[1] },
+            'ARRAY'  => sub { [ values %{$_[0]}, @{$_[1]} ] },
+            'HASH'   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
+    }
+});
 
 hook before => sub {
     if(request->path =~ /^\/scans/o){
@@ -97,6 +116,7 @@ any('/scans/:_id',sub {
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
 
+    #projecten
     my @projects;
     if(is_array_ref($scan->{project_id})){
         foreach(@{ $scan->{project_id} }){
@@ -104,6 +124,8 @@ any('/scans/:_id',sub {
             push @projects,$project if is_hash_ref($project);
         }
     }
+
+    #sorteer bestanden
     my $files = $scan->{files} || [];
     our($a,$b);
     $files = [sort {
@@ -112,15 +134,21 @@ any('/scans/:_id',sub {
     $scan->{files} = $files;
 
 
-    my $action = $params->{action};
-
+    #bewerk metadata
     if(is_string($params->{action})){
-        if(!$scan->{busy}){
+        if(!(
+            $auth->asa("admin") || $auth->can("scans","metadata")
+        )){
+            return forward('/access_denied',{
+                text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
+            });
+        }
+        elsif(!$scan->{busy}){
             # => slecht één metadata-record mag gekoppeld zijn, dus ..
             # 1. bij toevoegen, moet 0 of 1 metadata-record moet aanwezig zijn (want wat moet je anders vervangen?). Indien meerdere, verschijnt een warning dat de slechte er eerst uit moeten
             # 2. 0 records => push, 1 record: vervang                
         
-            if($action eq "add_metadata"){
+            if($params->{action} eq "add_metadata"){
 
                 if(scalar(@{ $scan->{metadata} }) > 1){
 
@@ -169,7 +197,7 @@ any('/scans/:_id',sub {
                 }                    
             }
             #verwijder element met metadata_id uit de lijst (mag resulteren in 0 elementen)
-            elsif($action eq "delete_metadata"){
+            elsif($params->{action} eq "delete_metadata"){
 
                 my @keys = qw(metadata_id);
                 foreach my $key(@keys){
@@ -187,7 +215,7 @@ any('/scans/:_id',sub {
 
             }else{
 
-                push @errors,"actie '$action' is ongeldig";
+                push @errors,"actie '$params->{action}' is ongeldig";
 
             }
 
@@ -285,6 +313,10 @@ post('/scans/:_id/comments/add',,sub{
 
         push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
 
+    }elsif($scan->{busy}){
+
+        push @errors,"Systeem is bezig met een operatie op deze scan";
+
     }elsif(!is_string($params->{text})){
         
         push @errors,"parameter 'text' is leeg";
@@ -331,6 +363,10 @@ post('/scans/:_id/comments/clear',,sub{
 
         push @errors,"U beschikt niet over de nodige rechten om alle commentaren te wissen";
 
+    }elsif($scan->{busy}){
+
+        push @errors,"Systeem is bezig met een operatie op deze scan";
+
     }else{
 
         $scan->{comments} = [];
@@ -360,9 +396,13 @@ post('/scans/:_id/baginfo/add',sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!($auth->asa('admin') || $auth->can('scans','edit'))){
+    }elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
         
         push @errors,"U mist de juiste rechten om de baginfo aan te passen";
+
+    }elsif($scan->{busy}){
+
+        push @errors,"Systeem is bezig met een operatie op deze scan";
 
     }elsif(!is_string($params->{metadata_id})){
 
@@ -418,9 +458,13 @@ post('/scans/:_id/baginfo/edit',sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!($auth->asa('admin') || $auth->can('scans','edit'))){
+    }elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
         
         push @errors,"U mist de juiste rechten om de baginfo aan te passen";
+
+    }elsif($scan->{busy}){
+
+        push @errors,"Systeem is bezig met een operatie op deze scan";
 
     }elsif(!is_string($params->{metadata_id})){
 
@@ -479,7 +523,7 @@ any('/scans/:_id/rename',sub{
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
 
-    if(!($auth->asa('admin') || $auth->can('scans','edit'))){
+    if(!($auth->asa('admin') || $auth->can('scans','rename'))){
         return forward('/access_denied',{
             text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
         });
@@ -558,26 +602,33 @@ any('/scans/:_id/status',sub{
     my @errors = ();
     my @messages = ();
     my $mount_conf = mount_conf;
+    my $session = session();
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
 
-    if(!($auth->asa('admin') || $auth->can('scans','edit'))){
+    if(! $auth->can('scans','status') ){
         return forward('/access_denied',{
             text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
         });
     }
+    my $status_change_conf = status_change_conf();
 
     #edit status - begin
     if($params->{submit} && !$scan->{busy}){
-        my $comments = $params->{comments} // "";
+        my $comments = $params->{comments} // "";        
         my $status_from = $scan->{status};
-        my @status_to_allowed = @{ $config->{status}->{change}->{qa_control}->{$status_from}->{'values'} || [] };
+        my $status_to_allowed = $status_change_conf->{$status_from}->{'values'} || [];
         my $status_to = $params->{status_to};
+
         if(!is_string($status_to)){
+
             push @errors,"gelieve de nieuwe status op te geven";
+
         }else{
-            my $index = first_index { $_ eq $status_to } @status_to_allowed;
-            if($index >= 0){
+
+            if(
+                array_includes($status_to_allowed,$status_to)
+            ){
                 #wijzig status
                 $scan->{status} = $status_to;
                 #voeg toe aan status history    
@@ -597,22 +648,43 @@ any('/scans/:_id/status',sub{
                     id => Data::UUID->new->create_str
                 };
                 $scan->{datetime_last_modified} = Time::HiRes::time;
-                scans->add($scan);
-                #scan
-                scan2index($scan);
-                #log
-                status2index($scan,-1);
 
-                index_scan->commit;
-                index_log->commit;
+                #verplaats naar eigen map 01_ready
+                if($status_to eq "to_incoming"){
+                    
+                    $scan->{busy} = 1;
+                    $scan->{busy_reason} = "move";
+                    my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+                    $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".File::Basename::basename($scan->{path});
+                    scans->add($scan);
 
-                if($status_to eq "reprocess_scans"){
+                }
+                #verplaats naar 03_reprocessing van owner
+                elsif($status_to eq "reprocess_scans"){
+
                     $scan->{busy} = 1;
                     $scan->{busy_reason} = "move";
                     my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
                     $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".File::Basename::basename($scan->{path});
                     scans->add($scan);
+
                 }
+                #verplaats naar eigen 03_reprocessing
+                elsif($status_to eq "reprocess_scans_qa_manager"){
+
+                    $scan->{busy} = 1;
+                    $scan->{busy_reason} = "move";
+                    $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".session('user')->{login}."/".File::Basename::basename($scan->{path});
+                    scans->add($scan);
+
+                }
+
+                scans->add($scan);
+                scan2index($scan);
+                status2index($scan,-1);
+                my($success,$error) = index_scan->commit;
+                ($success,$error) = index_log->commit;
+
                 #redirect
                 return redirect("/scans/$scan->{_id}");
             }else{
@@ -628,6 +700,7 @@ any('/scans/:_id/status',sub{
         errors => \@errors,
         messages => \@messages,
         mount_conf => mount_conf(),
+        status_change_conf => $status_change_conf,
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
@@ -673,9 +746,11 @@ sub validate_baginfo_pair {
         }else{
             my $conf_baginfo_key = $conf_baginfo->[$index_baginfo_key];
             my $values = $conf_baginfo_key->{'values'};
-            if(is_array_ref($values)){
-                my $index_value = first_index { $_ eq $value } @$values;
-                push @errors,"'$value' is niet toegelaten als waarde voor $key" if $index_value < 0;
+            if(
+                is_array_ref($values) && !array_includes($values,$value)
+
+            ){
+                push @errors,"'$value' is niet toegelaten als waarde voor $key";
             }
         }
 
@@ -701,6 +776,15 @@ sub validate_baginfo {
         }
     }
     scalar(@errors) == 0 ? $good_baginfo:undef,\@errors;
+}
+sub status_change_conf {
+    my $session = session();
+    my $config = config();
+    my $merge = {};
+    for(@{ $session->{user}->{roles} }){
+        $merge = merge($merge,$config->{status}->{change}->{$_});
+    }
+    $merge;
 }
 
 true;

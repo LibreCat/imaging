@@ -12,7 +12,6 @@ use URI::Escape qw(uri_escape);
 use DateTime::Format::Strptime;
 use Time::HiRes;
 use Try::Tiny;
-use List::MoreUtils qw(first_index);
 use Digest::MD5 qw(md5_hex);
 
 hook before => sub {
@@ -220,7 +219,7 @@ any('/project/:_id',sub{
                 push @errors,$error if !$success;
             }
         }
-        #insert
+        #insert => pas op: wijzig _id niet!!!! (bij /add wordt _id afgeleid door md5_hex(name+name_subproject))
         if(scalar(@errors)==0){
             $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
             my $datetime = DateTime->new( day => int($1), month => int($2), year => int($3));

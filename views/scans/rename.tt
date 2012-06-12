@@ -2,13 +2,10 @@
 
 [%- IF scan %]
     <h1>Wijzig naam [% scan.item("_id") %]</h1>
-    [%- IF scan.status == "registering" %]
-        <div class="alert"><strong>opgelet!</strong> een automatisch script registreert dit record, en zal later geupdated worden
-        naar status 'registered'.</div>
-    [%- ELSIF scan.busy && scan.busy_reason == "move" %]
-        <div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
-        kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
-        Commentaar kan wel nog worden toegevoegd.</div>
+    [%- IF scan.status == "registering" || scan.busy %]
+        <div class="alert">
+            <strong>opgelet!</strong> een automatisch script bewerkt dit record. Voorlopig kunnen geen operaties op dit record worden toegepast.
+        </div>
     [%- END %]
 
     <form method="POST" accept-charset="UTF-8" class="form-horizontal">

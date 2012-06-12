@@ -2,13 +2,10 @@
 
 [%- IF scan %]
 <h1>Wijzig status [% scan.item("_id") %]</h1>
-[%- IF scan.status == "registering" %]
-<div class="alert"><strong>opgelet!</strong> een automatisch script registreert dit record, en zal later geupdated worden
-naar status 'registered'.</div>
-[%- ELSIF scan.busy && scan.busy_reason == "move" %]
-<div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
-kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd.
-Commentaar kan wel nog worden toegevoegd.</div>
+[%- IF scan.status == "registering" || scan.busy %]
+    <div class="alert">
+        <strong>opgelet!</strong> een automatisch script bewerkt dit record. Voorlopig kunnen geen operaties op dit record worden toegepast.
+    </div>
 [%- END %]
 
 <form method="POST" accept-charset="UTF-8" class="form-horizontal" id="scan-change-status">
@@ -17,11 +14,14 @@ Commentaar kan wel nog worden toegevoegd.</div>
     <label for="status-to" class="control-label">nieuwe status</label>
     <div class="controls">
       <select name="status_to" id="status_to">
-      [%- status_conf = settings.status.change.qa_control.item(scan.status) -%]
-      [%- FOREACH status IN status_conf.item("values") %]
-        [%- message = status_conf.messages.${status} IF status_conf.messages.${status} -%]
-        <option value="[% status %]"[% IF params.status_to == status %] selected="selected"[% END %] message="[% message %]">[% settings.human_readable.${status} || status %]</option>
-      [%- END %]
+      [% status_to = status_change_conf.item(scan.status) %]
+      [%- FOREACH status IN status_to.item("values") %]
+        [%- message = status_to.messages.${status} IF status_to.messages.${status} -%]
+        <option value="[% status %]"[% IF params.status_to == status %] selected="selected"[% END %] data-message="[% message %]">[% settings.human_readable.${status} || status %]</option>
+      [%- END %]       
+      [% IF !( status_to && status_to.item("values").size > 0 ) %]
+        <option value="">-- status niet wijzigbaar --</option>
+      [% END %]
       </select>
     </div>
   </div>
@@ -36,16 +36,17 @@ Commentaar kan wel nog worden toegevoegd.</div>
 	  <a href="/scans/[% scan.item('_id') %]" class="btn">Annuleer</a>
   </div>
 </form>
-
-<script type="text/javascript">
-  $('#scan-change-status').submit(function (evt) {
-    var select_status_to = document.getElementById("status_to");
-    var option_status_to = select_status_to.options[select_status_to.selectedIndex];
-    if (option_status_to.getAttribute("message")){
-      if (!confirm(option_status_to.getAttribute("message"))) {
-        evt.preventDefault();
-      }
-    }
-  });
-</script>
+[%- IF !( scan.status == "registering" || scan.busy ) %]
+    <script type="text/javascript">
+      $('#scan-change-status').submit(function (evt) {
+        var select_status_to = document.getElementById("status_to");
+        var option_status_to = select_status_to.options[select_status_to.selectedIndex];
+        if (option_status_to.getAttribute("data-message")){
+          if (!confirm(option_status_to.getAttribute("data-message"))) {
+            evt.preventDefault();
+          }
+        }
+      });
+    </script>
+[% END %]
 [%- END %]

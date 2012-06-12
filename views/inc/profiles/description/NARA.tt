@@ -1,0 +1,14 @@
+<ol>
+    <li>map bevat enkel bestanden</li>
+    <li>naamgeving map: ofwel de plaatsnaam, ofwel het rug01-nummer van het object gebruikt. De naam moet opzoekbaar zijn in Aleph. Bij het maken van de map, moet elke . of / vervangen worden door een -</li>
+    <li>bestanden zijn groter dan 0KB</li>
+    <li>mimetype van bestanden is image/tiff</li>
+    <li>elk bestand voldoet aan de volgende naamgeving: <b>&lt;map&gt;_&lt;jaar&gt;_&lt;volgnummer&gt;_&lt;type&gt;.&lt;extensie&gt;</b>
+        <ol>
+            <li><b>&lt;map&gt;</b>: naam van de deze map.</li>
+            <li><b>&lt;volgnummer&gt;</b>: getal vanaf 0001. Steeds vier karakters lang, eventueel vooraf gegaan door nullen. vb. 0001.</li>
+            <li><b>&lt;type&gt;</b>: 'MA'</li>
+            <li><b>&lt;extensie&gt;</b>: 'tif'</li>
+        </ol>
+    </li>
+</ol>

@@ -63,7 +63,6 @@ my @ids_to_be_moved = ();
 $scans->each(sub{
     my $scan = shift;
     if(
-        $scan->{status} eq "reprocess_scans" && 
         $scan->{busy} && $scan->{busy_reason} eq "move"
         && is_string($scan->{newpath})
     ){

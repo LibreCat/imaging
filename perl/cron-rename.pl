@@ -153,9 +153,9 @@ foreach my $id(@ids_to_be_renamed){
 
         #commit
         my($success,$error) = index_scan->commit;
-        die($error) if !$success;
+        die(join('',@$error)) if !$success;
         ($success,$error) = index_log->commit;
-        die($error) if !$success;
+        die(join('',@$error)) if !$success;
 
         say "changes committed";
 

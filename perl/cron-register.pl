@@ -178,7 +178,7 @@ foreach my $project_id(@project_ids){
 };
 {
     my($success,$error) = index_project->commit;   
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 }
 
 
@@ -202,7 +202,7 @@ foreach my $scan_id(@scan_ids){
 
 {
     my($success,$error) = index_scan->commit;   
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 }
 
 #stap 3: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
@@ -251,7 +251,7 @@ foreach my $id(@ids_ok_for_metadata){
     scan2index($scan);
 
     my($success,$error) = index_scan->commit;
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 }
 
 #stap 4: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest indien nog niet aanwezig)
@@ -279,11 +279,11 @@ foreach my $id (@incoming_ok){
     scans->add($scan);
     scan2index($scan);
     my($success,$error) = index_scan->commit;
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 
     status2index($scan,-1);
     ($success,$error) = index_log->commit;
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 
     if(!has_valid_manifest($scan->{path})){
 
@@ -343,10 +343,10 @@ foreach my $id (@incoming_ok){
     scans->add($scan);
     scan2index($scan);
     ($success,$error) = index_scan->commit;
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
     status2index($scan,-1);
     ($success,$error) = index_log->commit;
-    die($error) if !$success;
+    die(join('',@$error)) if !$success;
 }
 
 index_log->store->solr->optimize();

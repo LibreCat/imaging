@@ -51,7 +51,7 @@ plugins:
        projects:
         operations: ["edit"]
        scans:
-        operations: ["edit","comment"]
+        operations: ["metadata","status","rename","comment"]
      collectie_beheerder:
       permissions:
        projects: 
@@ -63,7 +63,7 @@ plugins:
        directories: 
         operations: ["view"]
        scans:
-        operations: ["comment"]
+        operations: ["comment","status"]
      it manager:
       permissions:
        manage_accounts:
@@ -75,7 +75,7 @@ plugins:
      qa_manager:
       permissions:
        scans:
-        operations: ["edit","comment"]
+        operations: ["status","rename","comment","metadata"]
      archivaris: {}
      catalograaf: {}
 cache: {}
@@ -96,12 +96,18 @@ app:
     - key: "Bagging-Date"
     - key: "Payload-Oxum"
     - key: "DC-Title"
+      edit: 1
     - key: "DC-Identifier"
+      edit: 1
     - key: "DC-Description"
+      edit: 1
     - key: "DC-Type"
+      edit: 1
       values: ["Text","Audio","Sound","Image","Dataset","MovingImage"]
     - key: "DC-Creator"
+      edit: 1
     - key: "DC-AccessRights"
+      edit: 1
       values: ["open","closed","ugent","media ugent","media closed"]
     - key: "DC-Subject"
 default_app: "/"
@@ -142,48 +148,60 @@ status:
   in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published"]
   in_reprocessing: ["reprocess_scans"]
  change:
-  all:
-   incoming: ["incoming_error","incoming_ok"]
-   incoming_back: ["incoming_error","incoming_ok"]
-   incoming_error: ["incoming_ok"]
-   incoming_ok: ["incoming_error","registering"]
-   registering: ["registered"]
-   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
-   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_ok"]
-   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_ok"]
-   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_ok"]
-   qa_control_ok: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived"]
-   archived: ["archived_ok"]
-   archived_ok: ["archived"]
-   published: ["published_ok"]
-   published_ok: ["published"]
-  qa_control:
+#  all:
+#   incoming: ["incoming_error","incoming_ok"]
+#   incoming_back: ["incoming_error","incoming_ok"]
+#   incoming_error: ["incoming_ok"]
+#   incoming_ok: ["incoming_error","registering"]
+#   registering: ["registered"]
+#   registered: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok"]
+#   reprocess_scans: ["reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+#   reprocess_metadata: ["reprocess_scans","reprocess_derivatives","qa_control_ok"]
+#   reprocess_derivatives: ["reprocess_scans","reprocess_metadata","qa_control_ok"]
+#   reprocess_scans_qa_manager: ["incoming_back"]
+#   qa_control_ok: ["registered","archived"]
+#   archived: ["archived_ok"]
+#   archived_ok: ["archived","published"]
+#   published: ["published_ok"]
+#   published_ok: ["published"]
+  scanner:
+   reprocess_scans: 
+    values: ["incoming"]
+    messages:
+     incoming: "Hiermee verplaatst u de map terug in 01_ready ! Bent u zeker?"
+  qa_manager: &statuschangeqamanager
+   reprocess_scans_qa_manager: 
+    values: ["incoming"]
+    messages:
+     incoming: "Hiermee verplaatst u de map terug in 01_ready ! Bent u zeker?"
    registered: 
-    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_scans:
     values: []
    reprocess_metadata: 
-    values: ["registered","reprocess_scans","reprocess_derivatives","qa_control_ok"]
+    values: ["registered"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_derivatives: 
-    values: ["registered","reprocess_scans","reprocess_metadata","qa_control_ok"]
+    values: ["registered"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    qa_control_ok: 
-    values: ["registered","reprocess_scans","reprocess_metadata","reprocess_derivatives","archived_ok","published_ok"]
+    values: ["registered"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    archived:
-    values: ["archived_ok","qa_control_ok"]
+    values: ["archived_ok"]
    archived_ok:
-    values: ["archived","qa_control_ok"]
+    values: ["archived"]
    published:
-    values: ["published_ok","qa_control_ok"]
+    values: ["published_ok"]
    published_ok:
-    values: ["published","qa_control_ok"]
+    values: ["published"]
+  admin: *statuschangeqamanager
 human_readable:
  incoming: "aangeboden scan"
  incoming_back: "opnieuw aangeboden scan"
@@ -198,28 +216,16 @@ human_readable:
  reprocess_scans: "terug naar scanner"
  reprocess_metadata: "terug naar catalografie"
  reprocess_derivatives: "afgeleiden foutief"
+ reprocess_scans_qa_manager: "scans worden bewerkt door qa_manager"
  qa_control_ok: "qa controle succesvol"
  archived: "gearchiveerd"
  archived_ok: "archivering ok"
  published: "gepubliceerd"
  published_ok: "publicatie ok"
+directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Location"]
 profiles:
  NARA:
-  description: |
-   <ol>
-    <li>map bevat enkel bestanden</li>
-    <li>naamgeving map: ofwel de plaatsnaam, ofwel het rug01-nummer van het object gebruikt. De naam moet opzoekbaar zijn in Aleph. Bij het maken van de map, moet elke . of / vervangen worden door een -</li>
-    <li>bestanden zijn groter dan 0KB</li>
-    <li>mimetype van bestanden is image/tiff</li>
-    <li>elk bestand voldoet aan de volgende naamgeving: <b>&lt;map&gt;_&lt;jaar&gt;_&lt;volgnummer&gt;_&lt;type&gt;.&lt;extensie&gt;</b>
-     <ol>
-      <li><b>&lt;map&gt;</b>: naam van de deze map.</li>
-      <li><b>&lt;volgnummer&gt;</b>: getal vanaf 0001. Steeds vier karakters lang, eventueel vooraf gegaan door nullen. vb. 0001.</li>
-      <li><b>&lt;type&gt;</b>: 'MA'</li>
-      <li><b>&lt;extensie&gt;</b>: 'tif'</li>
-     </ol>
-    </li>
-   </ol>
+  description: "inc/profiles/description/NARA.tt"
   packages:
    - class: "Imaging::Test::Dir::scan"
      args: {}
@@ -250,10 +256,7 @@ profiles:
       solr_args: *meercatindex
      on_error: "continue"
  BAG:
-  description: |
-   <ol>
-    <li>geldige bagit directory</li>
-   </ol>
+  description: "inc/profiles/description/BAG.tt"
   packages:
    - class: "Imaging::Test::Dir::scan"
      args: {}
@@ -265,19 +268,7 @@ profiles:
      args: {}
      on_error: "stop"
  TAR:
-  description: |
-   <ol>
-    <li>naamgeving map: ofwel de plaatsnaam, ofwel het rug01-nummer van het object. De naam moet opzoekbaar zijn in Aleph. Bij het maken van de map, moet elke . of / vervangen worden door een -</li>
-    <li>bestanden zijn groter dan 0KB</li>
-    <li>ten minste één bestand voldoet aan de volgende naamgeving: <b>&lt;map&gt;_&lt;jaar&gt;_&lt;volgnummer&gt;_&lt;type&gt;.&lt;extensie&gt;</b>
-     <ol>
-      <li><b>&lt;map&gt;</b>: naam van de bovenliggende map.</li>
-      <li><b>&lt;volgnummer&gt;</b>: 0001</li>
-      <li><b>&lt;type&gt;</b>: 'AC'</li>
-      <li><b>&lt;extensie&gt;</b>: onbepaald</li>
-     </ol>
-    </li>
-   </ol>
+  description: "inc/profiles/description/TAR.tt"
   packages:
    - class: "Imaging::Test::Dir::scan"
      args: {}

@@ -8,24 +8,24 @@
 
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
-[%- IF auth.can('scans','edit') %]
+[%- IF auth.can('scans','status') && !scan.busy %]
     <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
+[% END %]
+[%- IF auth.can('scans','rename') && !scan.busy -%]
     <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/rename">Wijzig naam</a>
 [% END %]
 
-[%- IF scan.status == "registering" %]
-    <div class="alert"><strong>opgelet!</strong> een automatisch script registreert dit record, en zal later geupdated worden
-naar status 'registered'.</div>
-[%- ELSIF scan.busy && scan.busy_reason == "move" %]
-    <div class="alert"><strong>opgelet!</strong> een automatisch script is bezig met het verplaatsen van deze map. In tussentijd
-kan noch de status, nog enig andere eigenschap van deze scandirectory worden gewijzigd. Wanneer niets wijzigt na vijf minuten
-dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegevoegd.</div>
+[%- IF scan.status == "registering" || scan.busy %]
+    <div class="alert">
+        <strong>opgelet!</strong> een automatisch script bewerkt dit record. Voorlopig kunnen geen operaties op dit record worden toegepast.
+    </div>
 [%- END %]
+
 
 <dl class="dl-horizontal">
   <dt>status</dt>
   <dd>
-    <a href="/scans?q=status:&quot;[% scan.status | url %]&quot;">[% settings.human_readable.${scan.status} || scan.status %]</a>
+    <a href="/scans?q=[% "status:\"" _ scan.status _ "\"" | url %]&amp;fq=[% params.fq | uri %]">[% settings.human_readable.${scan.status} || scan.status %]</a>
   </dd>
   [% IF projects && projects.size > 0 %]
     [% FOREACH project IN projects %]
@@ -37,7 +37,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
       <dd>
         [%- IF project %]
         [%- q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" -%]
-        <a href="/scans?q=[% q | uri %]">[% project.name %] - [% project.name_subproject %]</a>
+        <a href="/scans?q=[% q | uri %]&amp;fq=[% params.fq | uri %]">[% project.name %] - [% project.name_subproject %]</a>
         [%- ELSE %]
         -
         [%- END %]
@@ -110,7 +110,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
           <td>[% status_entry.user_login %]</td>
           <td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
           <td>[% date.format(POSIX.floor(status_entry.datetime),'%d-%m-%Y %H:%M:%S') %]</td>
-          <td>[% status_entry.comments || "-"%]</td>
+          <td>[% status_entry.comments | html %]</td>
         </tr>
         [%- END %]
       </table>
@@ -174,7 +174,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
     </div>
 
     <div class="tab-pane" id="tab-metadata">
-      [%- IF auth.can('scans','edit') %]
+      [%- IF auth.can('scans','metadata') && !scan.busy %]
       <form method="post" class="form-inline pull-right" action="[% request.request_uri %]#tab-metadata">
           <input type="hidden" name="action" value="add_metadata"/>
           <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata identifier"/><button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button></div>
@@ -187,7 +187,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
       <p>
         [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]
         <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
-        [%- IF auth.can('scans','edit') %]
+        [%- IF auth.can('scans','metadata') && !scan.busy %]
         <a class="btn tip"
           title="Herstel originele metadata"
           href="/scans/[% scan.item('_id') %]?action=add_metadata&metadata_id=[% metadata_id %]#tab-metadata"
@@ -236,7 +236,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
                     </table>
           </div>
           <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
-          [%- IF auth.can('scans','edit') %]
+          [%- IF auth.can('scans','metadata') && !scan.busy %]
             <form action="/scans/[% scan.item('_id')%]/baginfo/edit" method="POST" class="form-horizontal edit-baginfo">
               <div class="btn-group pull-right">
                 <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
@@ -302,7 +302,7 @@ dient de administrator ingelicht te worden. Commentaar kan wel nog worden toegev
     </div>
 
     <div class="tab-pane" id="tab-comments">
-      [% IF auth.can('scans','comment') %]
+      [% IF auth.can('scans','comment') && !scan.busy %]
       <form action="/scans/[% scan.item("_id") %]/comments/add" method="POST" id="add-comment">
         <textarea class="span6" name="text"></textarea>
         <div><input class="btn btn-primary" type="submit" name="submit" value="Add"/></div>

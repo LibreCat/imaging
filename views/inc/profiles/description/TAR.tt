@@ -1,0 +1,12 @@
+<ol>
+    <li>naamgeving map: ofwel de plaatsnaam, ofwel het rug01-nummer van het object. De naam moet opzoekbaar zijn in Aleph. Bij het maken van de map, moet elke . of / vervangen worden door een -</li>
+    <li>bestanden zijn groter dan 0KB</li>
+    <li>ten minste één bestand voldoet aan de volgende naamgeving: <b>&lt;map&gt;_&lt;jaar&gt;_&lt;volgnummer&gt;_&lt;type&gt;.&lt;extensie&gt;</b>
+        <ol>
+            <li><b>&lt;map&gt;</b>: naam van de bovenliggende map.</li>
+            <li><b>&lt;volgnummer&gt;</b>: 0001</li>
+            <li><b>&lt;type&gt;</b>: 'AC'</li>
+            <li><b>&lt;extensie&gt;</b>: onbepaald</li>
+        </ol>
+    </li>
+</ol>

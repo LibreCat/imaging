@@ -10,7 +10,6 @@ use Catmandu::Util qw(:is);
 use Data::Pageset;
 use Try::Tiny;
 use URI::Escape qw(uri_escape);
-use List::MoreUtils qw(first_index);
 
 hook before => sub {
     if(request->path =~ /^\/status/o){
