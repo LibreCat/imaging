@@ -271,6 +271,8 @@ foreach my $id (@incoming_ok){
 
     #status 'registering'
     $scan->{status} = "registering";
+    $scan->{busy} = 1;
+    $scan->{busy_reason} = "move";
     push @{ $scan->{status_history} },{
         user_login =>"-",
         status => "registering",
@@ -336,6 +338,7 @@ foreach my $id (@incoming_ok){
     
     #status 'registered'
     $scan->{status} = "registered";
+    delete $scan->{$_} for(qw(busy busy_reason));
     push @{ $scan->{status_history} },{
         user_login =>"-",
         status => "registered",

@@ -15,7 +15,7 @@
     <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/rename">Wijzig naam</a>
 [% END %]
 
-[%- IF scan.status == "registering" || scan.busy %]
+[%- IF scan.busy %]
     <div class="alert">
         <strong>opgelet!</strong> een automatisch script bewerkt dit record. Voorlopig kunnen geen operaties op dit record worden toegepast.
     </div>

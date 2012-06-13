@@ -142,8 +142,10 @@ any('/scans/:_id',sub {
             return forward('/access_denied',{
                 text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
             });
+        }elsif($scan->{busy}){
+            push @errors,"Systeem is bezig met een operatie op deze scan";
         }
-        elsif(!$scan->{busy}){
+        else{
             # => slecht één metadata-record mag gekoppeld zijn, dus ..
             # 1. bij toevoegen, moet 0 of 1 metadata-record moet aanwezig zijn (want wat moet je anders vervangen?). Indien meerdere, verschijnt een warning dat de slechte er eerst uit moeten
             # 2. 0 records => push, 1 record: vervang                
@@ -525,62 +527,69 @@ any('/scans/:_id/rename',sub{
 
     if(!($auth->asa('admin') || $auth->can('scans','rename'))){
         return forward('/access_denied',{
-            text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
+            text => "U mist de nodige gebruikersrechten om dit record te hernoemen"
         });
     }
 
     #rename - begin
-    if($params->{submit} && !$scan->{busy}){
-        my $new_id = $params->{new_id};
-        my $comments = $params->{comments} // "";
-        if(!is_string($new_id)){
+    if($params->{submit}){
+        if($scan->{busy}){
 
-            push @errors,"gelieve de nieuwe mapnaam op te geven";
-
-        }elsif( $new_id !~ /^[\w\-]+$/ ){
-
-            push @errors,"mapnaam mag enkel letters, cijfers, underscores en koppeltekens bevatten";
-
-        }elsif(defined (scans->get($new_id))){
-
-            push @errors,"er bestaat reeds een record met die naam";
+            push @errors,"Systeem is bezig met een operatie op deze scan";
 
         }else{
 
-            #wijzig status
-            my $status_from = $scan->{status};
-            $scan->{status} = "rename_directory";
-            $scan->{new_id} = $new_id;
-            #voeg toe aan status history    
-            push @{ $scan->{status_history} ||= [] },{
-                user_login => session('user')->{login},
-                status => "rename_directory",
-                datetime => Time::HiRes::time,
-                comments => $comments
-            };
-            #neem op in comments
-            my $text = "wijzing status $status_from naar rename_directory";
-            $text .= ":$comments" if $comments;
-            push @{ $scan->{comments} ||= [] },{
-                datetime => local_time(),
-                text => $text,
-                user_login => session('user')->{login},
-                id => Data::UUID->new->create_str
-            };
-            $scan->{datetime_last_modified} = Time::HiRes::time;
-            $scan->{busy} = 1;
-            $scan->{busy_reason} = "move";
+            my $new_id = $params->{new_id};
+            my $comments = $params->{comments} // "";
+            if(!is_string($new_id)){
 
-            scans->add($scan);
-            scan2index($scan);
-            status2index($scan,-1);
+                push @errors,"gelieve de nieuwe mapnaam op te geven";
 
-            index_scan->commit;
-            index_log->commit;
+            }elsif( $new_id !~ /^[\w\-]+$/ ){
 
-            #redirect
-            return redirect("/scans/$scan->{_id}");
+                push @errors,"mapnaam mag enkel letters, cijfers, underscores en koppeltekens bevatten";
 
+            }elsif(defined (scans->get($new_id))){
+
+                push @errors,"er bestaat reeds een record met die naam";
+
+            }else{
+
+                #wijzig status
+                my $status_from = $scan->{status};
+                $scan->{status} = "rename_directory";
+                $scan->{new_id} = $new_id;
+                #voeg toe aan status history    
+                push @{ $scan->{status_history} ||= [] },{
+                    user_login => session('user')->{login},
+                    status => "rename_directory",
+                    datetime => Time::HiRes::time,
+                    comments => $comments
+                };
+                #neem op in comments
+                my $text = "wijzing status $status_from naar rename_directory";
+                $text .= ":$comments" if $comments;
+                push @{ $scan->{comments} ||= [] },{
+                    datetime => local_time(),
+                    text => $text,
+                    user_login => session('user')->{login},
+                    id => Data::UUID->new->create_str
+                };
+                $scan->{datetime_last_modified} = Time::HiRes::time;
+                $scan->{busy} = 1;
+                $scan->{busy_reason} = "move";
+
+                scans->add($scan);
+                scan2index($scan);
+                status2index($scan,-1);
+
+                index_scan->commit;
+                index_log->commit;
+
+                #redirect
+                return redirect("/scans/$scan->{_id}");
+
+            }
         }
     }
     #edit status - einde
@@ -608,87 +617,97 @@ any('/scans/:_id/status',sub{
 
     if(! $auth->can('scans','status') ){
         return forward('/access_denied',{
-            text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
+            text => "U mist de nodige gebruikersrechten om de status van dit record aan te passen"
         });
     }
     my $status_change_conf = status_change_conf();
 
     #edit status - begin
-    if($params->{submit} && !$scan->{busy}){
-        my $comments = $params->{comments} // "";        
-        my $status_from = $scan->{status};
-        my $status_to_allowed = $status_change_conf->{$status_from}->{'values'} || [];
-        my $status_to = $params->{status_to};
+    if($params->{submit}){
 
-        if(!is_string($status_to)){
+        if($scan->{busy}){
 
-            push @errors,"gelieve de nieuwe status op te geven";
+            push @errors,"Systeem is bezig met een operatie op deze scan";
 
         }else{
 
-            if(
-                array_includes($status_to_allowed,$status_to)
-            ){
-                #wijzig status
-                $scan->{status} = $status_to;
-                #voeg toe aan status history    
-                push @{ $scan->{status_history} ||= [] },{
-                    user_login => session('user')->{login},
-                    status => $status_to,
-                    datetime => Time::HiRes::time,
-                    comments => $comments
-                };
-                #neem op in comments
-                my $text = "wijzing status $status_from naar $status_to";
-                $text .= ":$comments" if $comments;
-                push @{ $scan->{comments} ||= [] },{
-                    datetime => local_time(),
-                    text => $text,
-                    user_login => session('user')->{login},
-                    id => Data::UUID->new->create_str
-                };
-                $scan->{datetime_last_modified} = Time::HiRes::time;
+            my $comments = $params->{comments} // "";        
+            my $status_from = $scan->{status};
+            my $status_to_allowed = $status_change_conf->{$status_from}->{'values'} || [];
+            my $status_to = $params->{status_to};
 
-                #verplaats naar eigen map 01_ready
-                if($status_to eq "to_incoming"){
-                    
-                    $scan->{busy} = 1;
-                    $scan->{busy_reason} = "move";
-                    my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
-                    $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".File::Basename::basename($scan->{path});
-                    scans->add($scan);
+            if(!is_string($status_to)){
 
-                }
-                #verplaats naar 03_reprocessing van owner
-                elsif($status_to eq "reprocess_scans"){
+                push @errors,"gelieve de nieuwe status op te geven";
 
-                    $scan->{busy} = 1;
-                    $scan->{busy_reason} = "move";
-                    my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
-                    $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".File::Basename::basename($scan->{path});
-                    scans->add($scan);
-
-                }
-                #verplaats naar eigen 03_reprocessing
-                elsif($status_to eq "reprocess_scans_qa_manager"){
-
-                    $scan->{busy} = 1;
-                    $scan->{busy_reason} = "move";
-                    $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".session('user')->{login}."/".File::Basename::basename($scan->{path});
-                    scans->add($scan);
-
-                }
-
-                scans->add($scan);
-                scan2index($scan);
-                status2index($scan,-1);
-                my($success,$error) = index_scan->commit;
-                ($success,$error) = index_log->commit;
-
-                #redirect
-                return redirect("/scans/$scan->{_id}");
             }else{
-                push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
+
+                if(
+                    array_includes($status_to_allowed,$status_to)
+                ){
+                    #wijzig status
+                    $scan->{status} = $status_to;
+                    #voeg toe aan status history    
+                    push @{ $scan->{status_history} ||= [] },{
+                        user_login => session('user')->{login},
+                        status => $status_to,
+                        datetime => Time::HiRes::time,
+                        comments => $comments
+                    };
+                    #neem op in comments
+                    my $text = "wijzing status $status_from naar $status_to";
+                    $text .= ":$comments" if $comments;
+                    push @{ $scan->{comments} ||= [] },{
+                        datetime => local_time(),
+                        text => $text,
+                        user_login => session('user')->{login},
+                        id => Data::UUID->new->create_str
+                    };
+                    $scan->{datetime_last_modified} = Time::HiRes::time;
+
+                    #verplaats naar eigen map 01_ready
+                    if($status_to eq "to_incoming"){
+                        
+                        $scan->{busy} = 1;
+                        $scan->{busy_reason} = "move";
+                        my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+                        $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".File::Basename::basename($scan->{path});
+                        scans->add($scan);
+
+                    }
+                    #verplaats naar 03_reprocessing van owner
+                    elsif($status_to eq "reprocess_scans"){
+
+                        $scan->{busy} = 1;
+                        $scan->{busy_reason} = "move";
+                        my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+                        $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".$owner->{login}."/".File::Basename::basename($scan->{path});
+                        scans->add($scan);
+
+                    }
+                    #verplaats naar eigen 03_reprocessing
+                    elsif($status_to eq "reprocess_scans_qa_manager"){
+
+                        $scan->{busy} = 1;
+                        $scan->{busy_reason} = "move";
+                        $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{reprocessing}."/".session('user')->{login}."/".File::Basename::basename($scan->{path});
+                        scans->add($scan);
+
+                    }
+
+                    scans->add($scan);
+                    scan2index($scan);
+                    status2index($scan,-1);
+                    my($success,$error) = index_scan->commit;
+                    ($success,$error) = index_log->commit;
+
+                    #redirect
+                    return redirect("/scans/$scan->{_id}");
+                }else{
+
+                    push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
+
+                }
             }
         }
     }

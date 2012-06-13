@@ -2,7 +2,7 @@
 
 [%- IF scan %]
 <h1>Wijzig status [% scan.item("_id") %]</h1>
-[%- IF scan.status == "registering" || scan.busy %]
+[%- IF scan.busy %]
     <div class="alert">
         <strong>opgelet!</strong> een automatisch script bewerkt dit record. Voorlopig kunnen geen operaties op dit record worden toegepast.
     </div>
@@ -36,7 +36,7 @@
 	  <a href="/scans/[% scan.item('_id') %]" class="btn">Annuleer</a>
   </div>
 </form>
-[%- IF !( scan.status == "registering" || scan.busy ) %]
+[%- IF !scan.busy %]
     <script type="text/javascript">
       $('#scan-change-status').submit(function (evt) {
         var select_status_to = document.getElementById("status_to");
