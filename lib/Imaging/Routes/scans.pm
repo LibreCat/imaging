@@ -665,17 +665,19 @@ any('/scans/:_id/status',sub{
                     };
                     $scan->{datetime_last_modified} = Time::HiRes::time;
 
-                    #verplaats naar eigen map 01_ready
+                    #to_incoming: 
+                    #   verplaats naar eigen map 01_ready? => nee, want mogelijk heeft qa_manager ander profiel!
+                    #   dus naar 01_ready van owner
                     if($status_to eq "to_incoming"){
                         
                         $scan->{busy} = 1;
                         $scan->{busy_reason} = "move";
                         my $owner = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
-                        $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".File::Basename::basename($scan->{path});
+                        $scan->{newpath} = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{ready}."/".$owner->{login}."/".File::Basename::basename($scan->{path});
                         scans->add($scan);
 
                     }
-                    #verplaats naar 03_reprocessing van owner
+                    #reprocess_scans: verplaats naar 03_reprocessing van owner
                     elsif($status_to eq "reprocess_scans"){
 
                         $scan->{busy} = 1;
@@ -685,7 +687,7 @@ any('/scans/:_id/status',sub{
                         scans->add($scan);
 
                     }
-                    #verplaats naar eigen 03_reprocessing
+                    #reprocess_scans_qa_manager: verplaats naar eigen 03_reprocessing
                     elsif($status_to eq "reprocess_scans_qa_manager"){
 
                         $scan->{busy} = 1;
