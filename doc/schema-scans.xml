@@ -492,11 +492,13 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="path" type="string" indexed="true" stored="true" />
     <field name="files" type="string" indexed="true" stored="true" multiValued="true" />
     <field name="size" type="long" indexed="true" stored="true" />
-
 	<field name="check_log" type="string" indexed="true" stored="true" multiValued="true" />
     <field name="comments" type="lupetext" indexed="true" stored="true" />
     <dynamicField name="datetime_*" type="date" indexed="true" stored="true" />
 	<field name="metadata_id" type="string" indexed="true" stored="true" multiValued="true" />
+
+    <!--grep-->
+    <field name="archive_id" type="string" indexed="true" stored="true" />
 
     <!-- table users -->
 	<field name="user_id" type="string" indexed="true" stored="true" />
@@ -518,7 +520,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<dynamicField name="project_datetime_*" type="date" indexed="true" stored="true" multiValued="true"/>
 
     <!-- marc -->
-    <field name="marc" type="lupetext" indexed="true" multiValued="true" />
+    <field name="marc" type="lupetext" indexed="true" stored="false" multiValued="true" />
 
     <!--DEFAULT-->
     <field name="text" type="lupetext" indexed="true" stored="false" multiValued="true"/>
@@ -542,6 +544,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <!--copy naar 'text'-->
 
     <!--identifiers-->
+    <copyField source="marc" dest="text"/>
     <copyField source="user_*" dest="text"/>
     <copyField source="project_*" dest="text"/>
     <copyField source="_id" dest="text" />

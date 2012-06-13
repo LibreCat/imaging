@@ -198,7 +198,7 @@ foreach my $user(@users){
             chomp($dir);    
             my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
-            my $time = mtime($dir);
+            my $mtime = mtime($dir);
             #wacht totdat er lange tijd niets met de map is gebeurt!!
             if(file_is_busy($dir)){
                 say "directory $basename probably busy";
