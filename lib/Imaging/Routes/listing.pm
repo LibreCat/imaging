@@ -61,14 +61,16 @@ any('/ready/:user_login/:scan_id',sub{
     my $scan = scans()->get($params->{scan_id});
     $scan or return not_found();
 
-    my $status = $scan->{status};
-    if($status eq "registering"){
-        
-        forward('/access_denied',{
-            text => "Het systeem is bezig met het registreren van deze map. Hij zal binnenkort verplaatst worden naar 02_processed, en zal de status 'registered' krijgen"
-        });
-
-    }
+#   niet meer nodig: scan staat nu per default op 'busy', en wordt vrijgegeven na registered   
+#
+#    my $status = $scan->{status};
+#    if($status eq "registering"){
+#        
+#        forward('/access_denied',{
+#            text => "Het systeem is bezig met het registreren van deze map. Hij zal binnenkort verplaatst worden naar 02_processed, en zal de status 'registered' krijgen"
+#        });
+#
+#    }
 
     my @errors = ();
     my $mount = mount();

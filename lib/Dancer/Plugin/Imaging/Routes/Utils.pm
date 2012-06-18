@@ -138,6 +138,7 @@ sub scan2index {
     }
 
     #project info
+    delete $doc->{project_id};
     if(is_array_ref($scan->{project_id}) && scalar(@{$scan->{project_id}}) > 0){
         foreach my $project_id(@{$scan->{project_id}}){
             my $project = projects->get($project_id);
