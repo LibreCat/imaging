@@ -230,7 +230,10 @@ foreach my $user(@users){
                     project_id => undef,
                     metadata => [],
                     comments => [],
-                    warnings => []
+                    warnings => [],
+                    #default busy!
+                    busy => 1,
+                    busy_reason => "CHECK"
                 };
                 $scans->add($scan);
             }
@@ -263,6 +266,10 @@ foreach my $user(@users){
                 #datum aanpassen
                 $scan->{datetime_last_modified} = Time::HiRes::time;
                 $scan->{datetime_directory_last_modified} = mtime($dir);
+
+                #busy!
+                $scan->{busy} = 1;
+                $scan->{busy_reason} = "CHECK";
 
                 $scans->add($scan);
 
