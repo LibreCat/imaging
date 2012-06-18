@@ -229,9 +229,10 @@ any('/scans/:_id',sub {
             }
         }
     }
+    my $user = ($scan) ? (dbi_handle->quick_select('users',{ id => $scan->{user_id} })) : undef;
     template('scans/view',{
         scan => $scan,
-        user => $scan ? dbi_handle->quick_select('users',{ id => $scan->{user_id} }) : undef,
+        user => $user,
         auth => $auth,
         errors => \@errors,
         mount_conf => mount_conf(),

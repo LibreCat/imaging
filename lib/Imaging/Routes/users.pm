@@ -88,34 +88,42 @@ any('/user/:id/edit',sub{
     my(@errors,@messages);
 
     if($params->{submit}){
-        my($success,$errs)=check_params_new_user();
-        push    @errors,@$errs;     
-        if(scalar(@errors)==0){
-            my $roles = join(', ',@{$params->{roles}});
-            my $new = {
-                roles   =>  $roles,
-                login   =>  $params->{login},
-                name    =>  $params->{name}
-            };
-            $new->{profile_id}  =   $params->{profile_id}   if  defined($params->{profile_id});
-            #nieuw  wachtwoord  opgegeven?  ->  check!
-            if($params->{edit_passwords}){
-                if(!(
-                    is_string($params->{password1}) &&  
-                    is_string($params->{password2}) &&
-                    $params->{password1}    eq  $params->{password2}
-                    )
-                ){
-                    push  @errors,"paswoorden komen niet met elkaar overeen";
-                }else{
-                    $new->{password} = md5_hex($params->{password1});
+        if(user_has_scans($params->{id})){
+
+            push @errors,"Een of meerdere actieve scans zijn nog gekoppeld aan deze gebruiker. Verwijder de scans eerst.";
+
+        }else{
+
+            my($success,$errs)=check_params_new_user();
+            push    @errors,@$errs;     
+            if(scalar(@errors)==0){
+                my $roles = join(', ',@{$params->{roles}});
+                my $new = {
+                    roles   =>  $roles,
+                    login   =>  $params->{login},
+                    name    =>  $params->{name}
+                };
+                $new->{profile_id}  =   $params->{profile_id}   if  defined($params->{profile_id});
+                #nieuw  wachtwoord  opgegeven?  ->  check!
+                if($params->{edit_passwords}){
+                    if(!(
+                        is_string($params->{password1}) &&  
+                        is_string($params->{password2}) &&
+                        $params->{password1}    eq  $params->{password2}
+                        )
+                    ){
+                        push  @errors,"paswoorden komen niet met elkaar overeen";
+                    }else{
+                        $new->{password} = md5_hex($params->{password1});
+                    }
+                }
+                if(scalar(@errors)==0){
+                    $user = { %$user,%$new };
+                    dbi_handle->quick_update('users',{id => $params->{id}},$user);
+                    redirect(uri_for("/users"));
                 }
             }
-            if(scalar(@errors)==0){
-                $user = { %$user,%$new };
-                dbi_handle->quick_update('users',{id => $params->{id}},$user);
-                redirect(uri_for("/users"));
-            }
+
         }
     }
     template('user/edit',{  
@@ -134,14 +142,21 @@ any('/user/:id/delete',sub{
 
     if($user->{login} eq "admin"){
         return forward("/access_denied",{
-            text =>  "user has not the right to edit user information"
+            text =>  "gebruiker beschikt niet over de nodige rechten om gebruikersgegevens aan te passen"
         });
     }
     if($params->{submit}){
-        dbi_handle->quick_delete('users',{
-            id  =>  $params->{id}
-        });
-        redirect(uri_for("/users"));
+        if(user_has_scans($params->{id})){
+
+            push @errors,"Een of meerdere actieve scans zijn nog gekoppeld aan deze gebruiker. Verwijder de scans eerst.";
+
+        }else{
+
+            dbi_handle->quick_delete('users',{
+                id  =>  $params->{id}
+            });
+            redirect(uri_for("/users"));
+        }
     }
 
     template('user/delete',{
@@ -189,6 +204,11 @@ sub check_params_new_user {
         }
     }
     return scalar(@errors)==0,\@errors;
+}
+sub user_has_scans {
+    my $user_id = shift;
+    my $result = index_scan->search(query => "user_id:\"$user_id\" AND -status:published_ok",limit => 0);
+    $result->total > 0;
 }
 
 true;
