@@ -15,7 +15,7 @@ has _solr => (
     lazy => 1,
     default => sub {
         my $self = shift;
-        my $url = delete $self->solr_args->{url};
+        my $url = $self->solr_args->{url};
         WebService::Solr->new($url,{ default_params => {wt => "json"} });
     }
 );
