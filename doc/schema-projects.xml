@@ -465,12 +465,20 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <field name="name_subproject" type="lupetext" indexed="true" stored="true" />
     <field name="description" type="lupetext" indexed="true" stored="true" />
     <dynamicField name="datetime_*" type="date" indexed="true" stored="true" />
-    <field name="list" type="string" indexed="true" stored="false" multiValued="true" />
+	<field name="query" type="string" stored="true" indexed="false" />
+    <!--
+        <list>
+            <str>RUG01-000000001 BIB-AFF-0001</str>
+            <str>RUG01-000000002 BIB-AFF-0002</str>
+        </list>
 
-	<field name="query" type="string" stored="true" />
-	<field name="num_hits" type="int" stored="true" />
-    <field name="total" type="int" stored="true" />
-    <field name="done" type="int" stored="true" />
+        =>  elk element is een 'item', en elke waarde binnen zo'n item is een token waar je enkel
+            exact op kan zoeken
+    -->
+    <field name="list" type="text_ws" indexed="true" stored="true" multiValued="true" />
+	<field name="num_hits" type="int" stored="true" indexed="false" />
+    <!--<field name="total" type="int" stored="true"  />-->
+    <field name="done" type="int" stored="true" indexed="false" />
 
 
     <!--DEFAULT-->
