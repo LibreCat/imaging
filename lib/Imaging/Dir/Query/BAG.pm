@@ -1,5 +1,6 @@
 package Imaging::Dir::Query::BAG;
 use Catmandu::Sane;
+use Catmandu::Util qw(:is);
 use Try::Tiny;
 use Moo;
 
@@ -19,6 +20,7 @@ sub queries {
     my $path_baginfo = "$path/bag-info.txt";
     my @queries = ();
     try{
+        #parse bag-info.txt
         local(*FILE);
         my $line;
         my $baginfo = {};
@@ -32,7 +34,26 @@ sub queries {
             push @{$baginfo->{$key}},$val;
         }
         close FILE;
-        @queries = @{$baginfo->{'DC-Identifier'}};
+        #haal (goede) queries op
+        if(is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0){
+
+            @queries = "\"".$baginfo->{'Archive-Id'}->[0]."\"";
+
+        }else{
+
+            @queries = @{$baginfo->{'DC-Identifier'}};
+            my @filter = ();
+            foreach(@queries){
+                if(/^rug01:\d{9}$/o){
+                    @filter = $_;
+                    last;
+                }else{
+                    push @filter,$_;
+                }
+            }
+            @queries = @filter;
+
+        }
     };
     @queries;
 }   
