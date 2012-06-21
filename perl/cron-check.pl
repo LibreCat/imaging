@@ -328,7 +328,8 @@ foreach my $id(@warn){
 # 2. mappen die wel eens gecontroleerd zijn, maar ongewijzigd sindsdien, worden niet gecontroleerd
 sub get_package {
     my($class,$args)=@_;
-    state $stash->{$class} ||= require_package($class)->new(%$args);
+    #state $stash->{$class} ||= require_package($class)->new(%$args);
+    require_package($class)->new(%$args);
 }
 my @scan_ids_test = ();
 foreach my $scan_id(@scan_ids_ready){
