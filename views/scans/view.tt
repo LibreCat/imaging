@@ -5,7 +5,6 @@
 [%- USE MARCTools -%]
 
 [% PROCESS inc/errors_messages.tt %]
-
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
 [%- IF auth.can('scans','status') && !scan.busy %]
