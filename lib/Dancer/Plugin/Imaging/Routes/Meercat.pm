@@ -223,7 +223,7 @@ sub marcxml2marc {
 }
 sub meercat {
     state $meercat = WebService::Solr->new(
-        config->{'index'}->{meercat}->{url},{default_params => {wt => 'json'}}
+        config->{'index'}->{meercat}->{url},{default_params => {wt => 'json','fq'=>'source:rug01'}}
     );
 }
 
