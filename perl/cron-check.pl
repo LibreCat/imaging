@@ -160,6 +160,22 @@ sub file_info {
 sub mtime {
     (stat(shift))[9];
 }
+sub mtime_latest_file {
+    my $dir = shift;
+    my $max_mtime = 0;
+    my $latest_file;
+    find({
+        wanted => sub{
+            my $mtime = mtime($_);
+            if($mtime > $max_mtime){
+                $max_mtime = $mtime;
+                $latest_file = $_;
+            }
+        },
+        no_chdir => 1
+    },$dir);
+    return $max_mtime;
+}
 sub file_seconds_old {
     time - mtime(shift);
 }
@@ -198,7 +214,7 @@ foreach my $user(@users){
             chomp($dir);    
             my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
-            my $mtime = mtime($dir);
+            my $mtime = mtime_latest_file($dir);
             #wacht totdat er lange tijd niets met de map is gebeurt!!
             if(file_is_busy($dir)){
                 say "directory $basename probably busy";
@@ -221,7 +237,7 @@ foreach my $user(@users){
                     check_log => [],
                     files => [],
                     user_id => $user->{id},
-                    #mtime van de diretory
+                    #mtime van de nieuwste file in deze directory (!= mtime(dir))
                     datetime_directory_last_modified => $mtime,
                     #wanneer heeft het systeem de status van dit record voor het laatst aangepast
                     datetime_last_modified => Time::HiRes::time,
@@ -265,7 +281,7 @@ foreach my $user(@users){
                 };
                 #datum aanpassen
                 $scan->{datetime_last_modified} = Time::HiRes::time;
-                $scan->{datetime_directory_last_modified} = mtime($dir);
+                $scan->{datetime_directory_last_modified} = mtime_latest_file($dir);
 
                 #busy!
                 $scan->{busy} = 1;
@@ -347,7 +363,7 @@ foreach my $scan_id(@scan_ids_ready){
     elsif(
         array_includes(["incoming_error","incoming_ok"],$scan->{status})
     ){
-        push @scan_ids_test,$scan->{_id} if mtime($scan->{path}) > $scan->{datetime_last_modified};
+        push @scan_ids_test,$scan->{_id} if mtime_latest_file($scan->{path}) > $scan->{datetime_last_modified};
     }
 
 };
@@ -443,41 +459,5 @@ say "checking if all incoming are still there..";
         $offset += $limit;
     }    
 }
-
-#check of een directory gewijzigd is in 02_processed (wacht uiteraard)
-
-# => onzeker: wss niet!!
-
-#say "checking changed directories in processed";
-#my $processed = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed};
-#if(! -d $processed ){
-#    say STDERR "directory $processed does not exist";
-#    next;
-#}
-#try{
-#    local(*CMD);
-#    open CMD,"find $processed -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
-#    while(my $dir = <CMD>){
-#        chomp($dir);
-#        my $basename = File::Basename::basename($dir);
-#        my $scan = $scans->get($basename);
-#        my $mtime = mtime($dir);
-#        #wacht totdat er lange tijd niets met de map is gebeurt!!
-#        if(file_is_busy($dir)){
-#            say "directory $basename probably busy";
-#            next;
-#        }elsif($mtime > $scan->{datetime_last_modified}){
-#            my $list = list_files($scan->{path});
-#            my $size = 0;
-#            my @files = ();
-#            foreach(@$list){
-#                my $info = file_info($_);
-#                $size += $info->{size};
-#            }
-#            $scan->{size} = $size;
-#            $scan->{files} = \@files;
-#        }        
-#    }
-#};
 
 say "$this_file ended at ".local_time;
