@@ -13,6 +13,7 @@ use Try::Tiny;
 use File::MimeInfo;
 use IO::CaptureOutput qw(capture_exec);
 use Data::Dumper;
+use File::Find;
 
 BEGIN {
     my $appdir = Cwd::realpath(
@@ -55,7 +56,25 @@ sub file_info {
 sub mount_conf {
     config->{mounts}->{directories};
 }
-
+sub mtime {
+    (stat(shift))[9];
+}
+sub mtime_latest_file {
+    my $dir = shift;
+    my $max_mtime = 0;
+    my $latest_file;
+    find({
+        wanted => sub{
+            my $mtime = mtime($_);
+            if($mtime > $max_mtime){
+                $max_mtime = $mtime;
+                $latest_file = $_;
+            }
+        },
+        no_chdir => 1
+    },$dir);
+    return $max_mtime;
+}
 
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
@@ -139,8 +158,7 @@ foreach my $id(@ids_to_be_renamed){
 
         #datum aanpassen
         $scan->{datetime_last_modified} = Time::HiRes::time;
-        my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($scan->{path});
-        $scan->{datetime_directory_last_modified} = $mtime;
+        $scan->{datetime_directory_last_modified} = mtime_latest_file($scan->{path});
 
 
         #sla terug op

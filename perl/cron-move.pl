@@ -11,6 +11,7 @@ use File::Spec;
 use Try::Tiny;
 use File::MimeInfo;
 use IO::CaptureOutput qw(capture_exec);
+use File::Find;
 
 BEGIN {
     my $appdir = Cwd::realpath(
@@ -49,6 +50,25 @@ sub file_info {
             error => $!
         }
     }
+}
+sub mtime {
+    (stat(shift))[9];
+}
+sub mtime_latest_file {
+    my $dir = shift;
+    my $max_mtime = 0;
+    my $latest_file;
+    find({
+        wanted => sub{
+            my $mtime = mtime($_);
+            if($mtime > $max_mtime){
+                $max_mtime = $mtime;
+                $latest_file = $_;
+            }
+        },
+        no_chdir => 1
+    },$dir);
+    return $max_mtime;
 }
 
 
@@ -98,6 +118,7 @@ foreach my $id(@ids_to_be_moved){
         my @deletes = qw(busy busy_reason newpath);
         delete $scan->{$_} foreach(@deletes);
 
+        $scan->{datetime_directory_last_modified} = mtime_latest_file($scan->{path});
         $scans->add($scan); 
     }else{
         say STDERR "unable to move $oldpath to $newpath:$!";
