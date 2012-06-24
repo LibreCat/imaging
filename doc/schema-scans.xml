@@ -496,6 +496,7 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
     <field name="comments" type="lupetext" indexed="true" stored="true" />
     <dynamicField name="datetime_*" type="date" indexed="true" stored="true" />
 	<field name="metadata_id" type="string" indexed="true" stored="true" multiValued="true" />
+    <field name="profile_id" type="string" indexed="true" stored="true" />
 
     <!--grep-->
     <field name="archive_id" type="string" indexed="true" stored="true" />
@@ -504,7 +505,6 @@ Attributes of the DelimitedPayloadTokenFilterFactory :
 	<field name="user_id" type="string" indexed="true" stored="true" />
 	<field name="user_login" type="string" indexed="true" stored="true" />
 	<field name="user_name" type="string" indexed="true" stored="true" />
-    <field name="user_profile_id" type="string" indexed="true" stored="true" />
 	<field name="user_roles" type="string" indexed="true" stored="true" multiValued="true" />
 
     <!-- table projects -->

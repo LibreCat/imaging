@@ -1,0 +1,120 @@
+package Imaging::Test::Dir;
+use Catmandu::Sane;
+use Catmandu::Util qw(require_package);
+use Data::Util qw(:check :validate);
+use Moo::Role;
+use File::Basename;
+use File::Find;
+use File::Spec;
+use Cwd qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath);
+use Try::Tiny;
+use File::MimeInfo;
+
+sub import {
+    Catmandu::Util->import("require_package");
+    Data::Util->import(qw(:check :validate));
+    File::Basename->import(qw(basename dirname)); 
+    File::Find->import(qw(find finddepth));
+    Cwd->import(qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath));
+    Try::Tiny->import;
+    File::MimeInfo->import(qw(mimetype));
+}
+
+sub _load_file_info {
+    my $self = shift;
+    my $lookup_dir = $self->dir;
+    my $lookup = $self->lookup();
+    if(is_string($lookup) && $lookup ne "."){
+        $lookup_dir = Cwd::realpath(File::Spec->catdir($lookup_dir,$lookup));
+    }else{
+        $lookup_dir = abs_path($lookup_dir);
+    }
+
+    my $size = 0;
+    my(@files,@directories);
+    try{
+        find({
+            wanted => sub{
+                my $path = $File::Find::name;
+                return if $path eq $lookup_dir;
+                my $info = {
+                    dirname => $File::Find::dir,
+                    basename => basename($path),
+                    path => $path
+                };
+                if(-d $path){
+                    $size += -s $path;
+                    push @directories,$info;
+                }elsif(-f $path){
+                    push @files,$info;
+                }
+            },
+            no_chdir => 1
+        },$lookup_dir);
+    };
+    $self->size($size);
+    $self->files(\@files);
+    $self->directories(\@directories);
+}
+sub is_valid_basename {
+    my($self,$basename)=@_;
+    foreach my $pattern(@{ $self->valid_patterns }){
+        return 1 if $basename =~ $pattern;
+    }
+    return 0;
+}
+
+has lookup => (
+    is => 'rw',
+    isa => sub {
+        is_string($_[0]) or die("lookup must be string\n");
+    },
+    default => sub {    
+        return "."; 
+    }
+);
+has dir => (
+    is => 'rw',
+    isa => sub{ (is_string($_[0]) && -d $_[0]) || die("directory not given or does not exist\n"); },
+    lazy => 1,
+    trigger => sub {
+        $_[0]->_load_file_info();
+    }
+);
+has files => (
+    is => 'rw',
+    isa => sub{ array_ref($_[0]); },
+    lazy => 1,
+    default => sub{ []; }
+);
+has directories => (
+    is => 'rw',
+    isa => sub{ array_ref($_[0]); },
+    lazy => 1,
+    default => sub{ []; }
+);
+has size => (
+    is => 'rw',
+    default => sub { 0; }
+);
+has valid_patterns => (
+    is => 'rw',
+    isa => sub{ 
+        my $array = shift;
+        array_ref($array);
+        foreach(@$array){
+            if(!is_rx($_)){
+                $_ = qr/$_/;
+            }
+        }
+        rx($_) foreach(@$array);
+    },
+    default => sub {
+        [qr/.*/];
+    }
+);
+
+requires 'test';
+requires 'is_fatal';
+
+1;

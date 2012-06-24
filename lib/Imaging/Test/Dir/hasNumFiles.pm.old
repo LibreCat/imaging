@@ -1,6 +1,5 @@
 package Imaging::Test::Dir::hasNumFiles;
 use Moo;
-use File::Basename;
 
 has _pattern => (
     is => 'rw',
@@ -22,8 +21,8 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
-    my $files = $self->dir_info->files();
+    my $topdir = $self->dir();
+    my $files = $self->files();
     my(@errors) = ();
 
     my $num = 0;

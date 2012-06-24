@@ -1,6 +1,7 @@
 package Imaging::Test::Dir::checkJPEG;
 use Moo;
 use Image::ExifTool;
+use File::MimeInfo;
 
 has _exif => (
     is => 'ro',
@@ -11,10 +12,10 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir();
-    my $file_info = $self->file_info();
+    my $topdir = $self->dir_info->dir();
+    my $files = $self->dir_info->files();
     my(@errors) = ();
-    foreach my $stats(@$file_info){
+    foreach my $stats(@$files){
         next if !$self->is_valid_basename($stats->{basename});
         my $exif = $self->_exif->ImageInfo($stats->{path});
         if($exif->{Error}){

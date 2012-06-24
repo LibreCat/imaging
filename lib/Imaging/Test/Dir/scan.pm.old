@@ -1,8 +1,6 @@
 package Imaging::Test::Dir::scan;
 use Moo;
 use ClamAV::Client;
-use Data::Util qw(:check :validate);
-use Cwd qw(abs_path);
 
 has _scanner => (
     is => 'ro',
@@ -17,7 +15,7 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
+    my $topdir = $self->dir();
     my(@errors) = ();
     my %results = ();
     local($@) = undef;

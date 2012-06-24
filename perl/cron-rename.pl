@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use Catmandu;
 use Dancer qw(:script);
-
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use File::Basename qw();
@@ -10,10 +9,9 @@ use File::Path qw(mkpath);
 use Cwd qw(abs_path);
 use File::Spec;
 use Try::Tiny;
-use File::MimeInfo;
 use IO::CaptureOutput qw(capture_exec);
-use Data::Dumper;
-use File::Find;
+use Imaging::Util qw(:files);
+use Imaging::Dir::Info;
 
 BEGIN {
     my $appdir = Cwd::realpath(
@@ -31,68 +29,35 @@ BEGIN {
 use Dancer::Plugin::Imaging::Routes::Utils;
 
 #variabelen
-sub file_info {
-    my $path = shift;
-    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
-    if($dev){
-        return {
-            name => File::Basename::basename($path),
-            path => $path,
-            atime => $atime,
-            mtime => $mtime,
-            ctime => $ctime,
-            size => $size,
-            content_type => mimetype($path),
-            mode => $mode
-        };
-    }else{
-        return {
-            name => File::Basename::basename($path),
-            path => $path,
-            error => $!
-        }
-    }
-}
 sub mount_conf {
     config->{mounts}->{directories};
-}
-sub mtime {
-    (stat(shift))[9];
-}
-sub mtime_latest_file {
-    my $dir = shift;
-    my $max_mtime = 0;
-    my $latest_file;
-    find({
-        wanted => sub{
-            my $mtime = mtime($_);
-            if($mtime > $max_mtime){
-                $max_mtime = $mtime;
-                $latest_file = $_;
-            }
-        },
-        no_chdir => 1
-    },$dir);
-    return $max_mtime;
 }
 
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
 
+my $mount_conf = mount_conf();
 my $scans = scans();
 
 my @ids_to_be_renamed = ();
+my $query = "status:\"rename_directory\"";
+my($start,$limit,$total)=(0,1000,0);
+do{
 
-$scans->each(sub{
-    my $scan = shift;
-    if(
-        $scan->{status} eq "rename_directory" && is_string($scan->{new_id})
-    ){
-        push @ids_to_be_renamed,$scan->{_id};
+    my $result = $index_scan->search(
+        query => $query,
+        start => $start,
+        limit => $limit
+    );
+    $total = $result->total;
+    foreach my $hit(@{ $result->hits || [] }){
+        push @ids_to_be_renamed,$hit->{_id};        
     }
-});
+    $start += $limit;
 
-my $mount_conf = mount_conf();
+}while($start < $total);
+
+
 foreach my $id(@ids_to_be_renamed){
     say $id;
     $scans->store->transaction(sub{
@@ -106,16 +71,8 @@ foreach my $id(@ids_to_be_renamed){
 
         say "\tremoved from database and index";
 
-        #set status: renaming_directory
-        push @{ $scan->{status_history} },{
-            user_login => "-",
-            status => "renaming_directory",
-            datetime => Time::HiRes::time,
-            comments => ""
-        };
-
         my $old_path = $scan->{path};
-        my $new_path = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".File::Basename::basename($scan->{new_id});
+        my $new_path = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{new_id};
 
         #verplaats directory naar ready
         say "\tmoving from $scan->{path} to $new_path";        
@@ -136,22 +93,19 @@ foreach my $id(@ids_to_be_renamed){
         say "\tdirectory moved from $old_path to $new_path";
 
         #update file info
-        foreach my $file(@{ $scan->{files} }){
-            print "\t".$file->{path}." => ";
-            $file->{path} =~ s/^$old_path/$new_path/;
-            print $file->{path}."\n";
+        my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+        my @files = ();
+        foreach my $file(@{ $dir_info->files() }){
+            push @files,file_info($file->{path});
         }
-        foreach my $file(@{ $scan->{files} }){
-            my $new_stats = file_info($file->{path});
-            $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
-        }
-        
+        $scan->{files} = \@files;
+        $scan->{size} = $dir_info->size();
 
-        #set status: incoming_back
-        $scan->{status} = "incoming_renamed";
+        #set status: incoming
+        $scan->{status} = "incoming";
         push @{ $scan->{status_history} },{
             user_login => "-",
-            status => "incoming_renamed",
+            status => "incoming",
             datetime => Time::HiRes::time,
             comments => ""
         };

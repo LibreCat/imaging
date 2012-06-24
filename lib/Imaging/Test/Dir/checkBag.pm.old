@@ -4,7 +4,6 @@ use Moo;
 use Data::Util qw(:validate :check);
 use Try::Tiny;
 use Archive::BagIt;
-use File::Basename;
 
 has _bagit => (
     is => 'ro',
@@ -20,7 +19,7 @@ sub is_fatal {
 
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
+    my $topdir = $self->dir();
     my(@errors) = ();
 
     my $read_successfull = $self->_bagit->read($topdir);

@@ -1,56 +1,10 @@
 package Imaging::Test::Dir;
 use Catmandu::Sane;
-use Catmandu::Util qw(require_package);
 use Data::Util qw(:check :validate);
+use Imaging::Dir::Info;
+
 use Moo::Role;
-use File::Basename;
-use File::Find;
-use File::Spec;
-use Cwd qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath);
-use Try::Tiny;
-use File::MimeInfo;
 
-sub import {
-    Catmandu::Util->import("require_package");
-    Data::Util->import(qw(:check :validate));
-    File::Basename->import(qw(basename dirname)); 
-    File::Find->import(qw(find finddepth));
-    Cwd->import(qw(cwd getcwd fastcwd fastgetcwd chdir abs_path fast_abs_path realpath fast_realpath));
-    Try::Tiny->import;
-    File::MimeInfo->import(qw(mimetype));
-}
-
-sub _load_file_info {
-    my $self = shift;
-    my @file_info = ();
-    my $lookup_dir = $self->dir;
-    my $lookup = $self->lookup();
-    if(is_string($lookup) && $lookup ne "."){
-        $lookup_dir = Cwd::realpath(File::Spec->catdir($lookup_dir,$lookup));
-    }else{
-        $lookup_dir = abs_path($lookup_dir);
-    }
-
-    my $size = 0;
-    try{
-        find({
-            wanted => sub{
-                my $path = abs_path($_);
-                return if $path eq $lookup_dir;
-                return if -d $path;
-                $size += -s $path;
-                push @file_info,{
-                    dirname => abs_path($File::Find::dir),
-                    basename => basename($_),
-                    path => abs_path($File::Find::name)
-                };
-            },
-            no_chdir => 1
-        },$lookup_dir);
-    };
-    $self->size($size);
-    $self->file_info(\@file_info);
-}
 sub is_valid_basename {
     my($self,$basename)=@_;
     foreach my $pattern(@{ $self->valid_patterns }){
@@ -59,32 +13,9 @@ sub is_valid_basename {
     return 0;
 }
 
-has lookup => (
+has dir_info => (
     is => 'rw',
-    isa => sub {
-        is_string($_[0]) or die("lookup must be string\n");
-    },
-    default => sub {    
-        return "."; 
-    }
-);
-has dir => (
-    is => 'rw',
-    isa => sub{ (is_string($_[0]) && -d $_[0]) || die("directory not given or does not exist"); },
-    lazy => 1,
-    trigger => sub {
-        $_[0]->_load_file_info();
-    }
-);
-has file_info => (
-    is => 'rw',
-    isa => sub{ array_ref($_[0]); },
-    lazy => 1,
-    default => sub{ []; }
-);
-has size => (
-    is => 'rw',
-    default => sub { 0; }
+    isa => sub { instance($_[0],"Imaging::Dir::Info"); }
 );
 has valid_patterns => (
     is => 'rw',

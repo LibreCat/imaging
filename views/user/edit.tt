@@ -34,17 +34,6 @@
     </div>
   </div>
   <div class="control-group">
-    <label for="profile_id" class="control-label">profiel:</label>
-    <div class="controls">
-      <select name="profile_id" id="profile_id">
-        <option value=""></option>
-        [%- FOREACH profile_id IN settings.profiles.keys.sort %]
-        <option value="[% profile_id %]" [% IF user.profile_id == profile_id %]selected="selected"[% END %]>[% profile_id %]</option>
-        [%- END %]
-      </select>
-    </div>
-  </div>
-  <div class="control-group">
     <div class="controls">
       <label class="checkbox"><input type="checkbox" name="edit_passwords" id="edit_passwords" value="1"/>Wijzig paswoord (type twee keer)</label>
       <div class="control-group"><input type="password" name="password1" id="password1" disabled="disabled"/></div>

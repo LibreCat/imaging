@@ -1,12 +1,10 @@
 package Imaging::Test::Dir::checkMD5;
 use Moo;
 use Digest::MD5 qw(md5_hex);
-use Cwd qw(abs_path);
-use File::Basename;
 
 has name_manifest => (
     is => 'rw',
-    default => sub{ "manifest-md5.txt"; }
+    default => sub{ "manifest.txt"; }
 );
 has is_optional => (
     is => 'ro',
@@ -17,8 +15,8 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
-    my $files = $self->dir_info->files();
+    my $topdir = $self->dir();
+    my $files = $self->files();
     my(@errors) = ();
 
     #find manifest

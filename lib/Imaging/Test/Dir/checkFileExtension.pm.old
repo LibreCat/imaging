@@ -1,12 +1,11 @@
 package Imaging::Test::Dir::checkFileExtension;
 use Moo;
-use Data::Util qw(:check :validate);
 
 has extensions => (
     is => 'rw',
     isa => sub {
-        array_ref($_[0]);
-        is_string($_) or die("array value must be string\n") foreach(@{ $_[0] });
+        Data::Util::array_ref($_[0]);
+        Data::Util::is_string($_) or die("array value must be string\n") foreach(@{ $_[0] });
     },
     default => sub{
         [];
@@ -17,8 +16,8 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
-    my $files = $self->dir_info->files();
+    my $topdir = $self->dir();
+    my $files = $self->files();
     my(@errors) = ();
     my $extensions = $self->extensions;
 

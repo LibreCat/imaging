@@ -33,7 +33,7 @@ plugins:
    AutoCommit: 1
    mysql_auto_reconnect: 1
   on_connect_do:
-   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,profile_id varchar(256),has_dir bool default 0,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
+   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,has_dir bool default 0,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
    - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
  Auth::RBAC:
   credentials:
@@ -64,7 +64,7 @@ plugins:
         operations: ["view"]
        scans:
         operations: ["comment","status"]
-     it manager:
+     it_manager:
       permissions:
        manage_accounts:
         operations: ["edit"]
@@ -82,6 +82,8 @@ cache: {}
 index:
  meercat: &meercatindex
   url: "http://localhost:4000/solr"
+  default_params:
+   fq: "source:rug01"
 app:
  qa_control:
   default_sort: "datetime_last_modified desc"
@@ -119,14 +121,14 @@ mounts:
   subdirectories:
    ready: "01_ready"
    processed: "02_processed"
-   reprocessing: "03_reprocessing"
   network_directories:
+   #vergeet de slash niet na file:// die in windows localhost aangeeft!
    ready:
-    windows: "file:///U:"
+    #windows: "file:///X:"
+    windows: "file://nasan1n.ugent.be/ready"
    processed:
-    windows: "file:///V:"
-   reprocessing:
-    windows: "file:///W:"
+    #windows: "file:///Y:"
+    windows: "file://nasan1n.ugent.be/processed"
   ready: 
    #warn 3 days after first arrival
    warn_after: 
@@ -136,7 +138,7 @@ mounts:
     days: 1
    #how long till directory is processed?
    upload_idle_time:
-    seconds: 15
+    seconds: 5
 status:
  collection:
   status_page: ["registering","registered","derivatives_created","reprocess_metadata","reprocess_derivatives","reprocess_scans","qa_control_ok","archived","archived_ok","published","published_ok"]
@@ -148,16 +150,7 @@ status:
   in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published"]
   in_reprocessing: ["reprocess_scans"]
  change:
-  scanner:
-   reprocess_scans: 
-    values: ["to_incoming"]
-    messages:
-     incoming: "Hiermee verplaatst u de map terug in 01_ready ! Bent u zeker?"
   qa_manager: &statuschangeqamanager
-   reprocess_scans_qa_manager: 
-    values: ["to_incoming"]
-    messages:
-     incoming: "Hiermee verplaatst u de map terug in 01_ready ! Bent u zeker?"
    registered: 
     values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok"]
     messages:
@@ -189,7 +182,6 @@ status:
 human_readable:
  incoming: "aangeboden scan"
  to_incoming: "verplaats naar ready"
- incoming_back: "opnieuw aangeboden scan"
  incoming_error: "automatische check gefaald"
  incoming_ok: "automatische check successvol"
  registering: "registratie bezig"
@@ -224,12 +216,13 @@ profiles:
      on_error: "continue"
    - class: "Imaging::Test::Dir::checkFileExtension"
      args:
-      extensions: ["txt","tif"]
+      extensions: ["txt","tif","jpg","fff","pdf"]
      on_error: "continue"
    - class: "Imaging::Test::Dir::checkTIFF"
      args:
       valid_patterns:
-       - '^(?!manifest-md5\.txt$)'
+       - '\.tif$'
+       #- '^(?!manifest-md5\.txt$)'
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkFilename"
      args:

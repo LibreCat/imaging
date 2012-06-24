@@ -26,6 +26,8 @@
   <dd>
     <a href="/scans?q=[% "status:\"" _ scan.status _ "\"" | url %]&amp;fq=[% params.fq | uri %]">[% settings.human_readable.${scan.status} || scan.status %]</a>
   </dd>
+  <dt>profiel</dt>
+  <dd>[% scan.profile_id %]</dd>
   [% IF projects && projects.size > 0 %]
     [% FOREACH project IN projects %]
       [% IF loop.index == 0 %]

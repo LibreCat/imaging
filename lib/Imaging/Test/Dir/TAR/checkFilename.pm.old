@@ -1,17 +1,16 @@
 package Imaging::Test::Dir::TAR::checkFilename;
 use Moo;
 use Data::Util qw(:check);
-use File::Basename;
 
 sub is_fatal {
     1;
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
+    my $topdir = $self->dir();
     my $basename_topdir = basename($topdir);
-    my $files = $self->dir_info->files();
-    my $directories = $self->dir_info->directories();
+    my $files = $self->files();
+    my $directories = $self->directories();
     my(@errors) = ();
 
     #zit er wel iets in?

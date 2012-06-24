@@ -6,6 +6,7 @@
     <th>naam</th>
     <th>aantal bestanden</th>
     <th>status</th>
+    <th>profiel</th>
   </tr>
   [%- FOREACH directory IN directories %]
   <tr>
@@ -18,6 +19,7 @@
     </td>
     <td>[% directory.record.files.size || "wait..." %]</td>
     <td>[% settings.human_readable.${directory.record.status} || directory.record.status || "wait..." %]</td>
+    <td>[% directory.record.profile_id || "wait.." %]</td>
   </tr>
   [%- END %]
 </table>
@@ -32,4 +34,6 @@
     <dd>[% PROCESS $tt_description %]</dd>
 </dl>
 </div>
+[% ELSE %]
+    TODO:profiel beschrijving bij automatische herkenning (beschrijvingen van alle geven?)
 [% END %]

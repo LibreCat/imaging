@@ -7,12 +7,13 @@ sub is_fatal {
 
 sub test {
     my $self = shift;
-    my $files = $self->dir_info->files();
+    my $topdir = $self->dir();
+    my $files = $self->files();
     my(@errors) = ();
     foreach my $stats(@$files){
         next if !$self->is_valid_basename($stats->{basename});
         if(!-f $stats->{path}){
-            push @errors,$stats->{basename}." is geen normaal bestand";
+            push @errors,$stats->{basename}." is geen normaal bestand (waarschijnlijk een map)";
         }elsif(-l $stats->{path}){
             push @errors,$stats->{basename}." is een symbolic link";
         }

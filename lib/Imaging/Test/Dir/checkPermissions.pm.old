@@ -7,8 +7,9 @@ sub is_fatal {
 
 sub test {
     my $self = shift;
-    my $files = $self->dir_info->files();
-    my $directories = $self->dir_info->directories();
+    my $topdir = $self->dir();
+    my $files = $self->files();
+    my $directories = $self->directories();
     my(@errors) = ();
     foreach my $stats(@$files,@$directories){
         if(!-r $stats->{path}){

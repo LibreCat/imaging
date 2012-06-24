@@ -9,9 +9,8 @@ use File::Path qw(mkpath);
 use Cwd qw(abs_path);
 use File::Spec;
 use Try::Tiny;
-use File::MimeInfo;
 use IO::CaptureOutput qw(capture_exec);
-use File::Find;
+use Imaging::Util qw(:files);
 
 BEGIN {
     my $appdir = Cwd::realpath(
@@ -29,48 +28,6 @@ BEGIN {
 use Dancer::Plugin::Imaging::Routes::Utils;
 
 #variabelen
-sub file_info {
-    my $path = shift;
-    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
-    if($dev){
-        return {
-            name => File::Basename::basename($path),
-            path => $path,
-            atime => $atime,
-            mtime => $mtime,
-            ctime => $ctime,
-            size => $size,
-            content_type => mimetype($path),
-            mode => $mode
-        };
-    }else{
-        return {
-            name => File::Basename::basename($path),
-            path => $path,
-            error => $!
-        }
-    }
-}
-sub mtime {
-    (stat(shift))[9];
-}
-sub mtime_latest_file {
-    my $dir = shift;
-    my $max_mtime = 0;
-    my $latest_file;
-    find({
-        wanted => sub{
-            my $mtime = mtime($_);
-            if($mtime > $max_mtime){
-                $max_mtime = $mtime;
-                $latest_file = $_;
-            }
-        },
-        no_chdir => 1
-    },$dir);
-    return $max_mtime;
-}
-
 
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
@@ -98,9 +55,12 @@ foreach my $id(@ids_to_be_moved){
     mkpath($newpath);
     if(move($oldpath,$newpath)){
         #change file mod   
-        my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 777 $newpath");
-        if(!$success){
-            say STDERR $stderr;
+        {
+            my($stdout,$stderr,$success,$exit_code) = capture_exec("chmod -R 777 $newpath");
+            if(!$success){
+                say STDERR $stderr;
+                next;
+            }
         }
 
         say "\tmoved from $oldpath to $newpath";
@@ -120,6 +80,13 @@ foreach my $id(@ids_to_be_moved){
 
         $scan->{datetime_directory_last_modified} = mtime_latest_file($scan->{path});
         $scans->add($scan); 
+
+        {
+            #update index
+            scan2index($scan);
+            my($success,$error) = index_scan->commit;
+            die(join('',@$error)) if !$success;
+        }
     }else{
         say STDERR "unable to move $oldpath to $newpath:$!";
     }

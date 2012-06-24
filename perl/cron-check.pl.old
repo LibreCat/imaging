@@ -1,17 +1,20 @@
 #!/usr/bin/env perl
 use Dancer qw(:script);
+use Catmandu qw(store);
 use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
-use Imaging::Util qw(:data :files);
-use Imaging::Profiles;
-use Imaging::Dir::Info;
+use Imaging::Util qw(data_at);
 use List::MoreUtils;
 use File::Basename qw();
 use File::Path;
+use File::Copy qw(copy move);
 use Cwd qw(abs_path);
 use File::Spec;
 use Try::Tiny;
 use Time::HiRes;
+use Array::Diff;
+use File::Find;
+use File::MimeInfo;
 use Time::Interval;
 our($a,$b);
 
@@ -29,12 +32,20 @@ BEGIN {
     Catmandu->load($appdir);
 }
 use Dancer::Plugin::Imaging::Routes::Utils;
-
-sub profiles_conf {
-    config->{profiles} ||= {};
+sub list_files {
+    my @files;
+    find({
+        wanted => sub{
+            my $path = abs_path($_);
+            return if -d $path;
+            push @files,$path;
+        },
+        no_chdir => 1
+    },@_);
+    \@files;
 }
-sub profile_resolver {
-    state $r = Imaging::Profiles->new;
+sub profiles {
+    config->{profiles} ||= {};
 }
 sub mount_conf {
     config->{mounts}->{directories};
@@ -124,6 +135,47 @@ sub delete_scan_data {
         say STDERR $_;
     };
 }
+sub file_info {
+    my $path = shift;
+    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
+    if($dev){
+        return {
+            name => File::Basename::basename($path),
+            path => $path,
+            atime => $atime,
+            mtime => $mtime,
+            ctime => $ctime,
+            size => $size,
+            content_type => mimetype($path),
+            mode => $mode
+        };
+    }else{
+        return {
+            name => File::Basename::basename($path),
+            path => $path,
+            error => $!
+        }
+    }
+}
+sub mtime {
+    (stat(shift))[9];
+}
+sub mtime_latest_file {
+    my $dir = shift;
+    my $max_mtime = 0;
+    my $latest_file;
+    find({
+        wanted => sub{
+            my $mtime = mtime($_);
+            if($mtime > $max_mtime){
+                $max_mtime = $mtime;
+                $latest_file = $_;
+            }
+        },
+        no_chdir => 1
+    },$dir);
+    return $max_mtime;
+}
 sub file_seconds_old {
     time - mtime(shift);
 }
@@ -141,8 +193,10 @@ say "$this_file started at ".local_time;
 # 1. lijst mappen
 # 2. Map staat niet in databank: voeg nieuw record toe
 # 3. Map staat wel in databank:
-#   3.1. staat __FIXME.txt in de map? Doe dan niets
-#   3.2. check hoe oud de nieuwste file in de map is. Indien nog niet zo lang geleden, wacht dan
+#     3.1. Map die terugkeert uit 03_reprocessing? Zet 1ste keer status op 'incoming' en zet datetime_last_modified op mtime van de map. Pas tevens de bestandslijst aan. Vergelijk de eerstvolgende
+#          keer datetime_last_modified en mtime, en indien gelijk, zet status op 'incoming_done'
+#     3.2. Map die lange upload nodig heeft? Vergelijk datetime_last_modified met mtime van de map. Indien gelijk, dan wordt upload als afgelopen beschouwd en zet status op 'incoming_done'
+
 
 my @users =  dbi_handle->quick_select("users",{});
 my @scan_ids_ready = ();
@@ -158,36 +212,16 @@ foreach my $user(@users){
         open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
         while(my $dir = <CMD>){
             chomp($dir);    
-
-            if(!(-d -r $dir)){
-                say "directory $dir is not readable, so ignoring..";
-                next;
-            }
-            #wacht tot __FIXME.txt verwijderd is
-            elsif(-f "$dir/__FIXME.txt"){
-                say "directory '$dir' has to be fixed, so ignoring..";
-                next;
-            }
-            #wacht totdat er lange tijd niets met de map is gebeurt!!
-            elsif(file_is_busy($dir)){
-                say "directory '$dir' probably busy";
-                next;
-            }
-
             my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
             my $mtime = mtime_latest_file($dir);
-        
-            #voeg toe aan te verwerken directories
-            push @scan_ids_ready,$scan->{_id};
-
-            #map komt nog niet voor in databank
-            if($scan){
-                say "directory '$scan->{_id}' already in database";
+            #wacht totdat er lange tijd niets met de map is gebeurt!!
+            if(file_is_busy($dir)){
+                say "directory $basename probably busy";
                 next;
             }
             #map komt nog niet voor in de databanken
-            else{
+            elsif(!$scan){
                 say "adding new record $basename";
                 $scan = {
                     _id => $basename,
@@ -217,19 +251,54 @@ foreach my $user(@users){
                     busy => 1,
                     busy_reason => "CHECK"
                 };
+                $scans->add($scan);
+            }
+            #map komt terug uit 03_reprocessing.
+            # reprocess_* => map werd door gebruiker handmatig verplaatst van 03_reprocessing naar 01_ready
+            # to_incoming => map werd door systeem verplaatst naar 01_ready
+            elsif( array_includes(["reprocess_scans","reprocess_scans_qa_manager","to_incoming"],$scan->{status}) ){
+                
+                #pas paden aan
+                my $oldpath = $scan->{path};
+                foreach my $file(@{ $scan->{files} }){
+                    $file->{path} =~ s/^$oldpath/$dir/;
+                }
+                $scan->{path} = $dir;
 
-                #voeg nieuwe scan toe aan tabel scans
+                #update file info
+                foreach my $file(@{ $scan->{files} }){
+                    my $new_stats = file_info($file->{path});
+                    $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
+                }
+
+                #status op 'incoming_back'
+                $scan->{status} = "incoming_back";
+                push @{ $scan->{status_history} },{
+                    user_login => $user->{login},
+                    status => "incoming_back",
+                    datetime => Time::HiRes::time,
+                    comments => ""
+                };
+                #datum aanpassen
+                $scan->{datetime_last_modified} = Time::HiRes::time;
+                $scan->{datetime_directory_last_modified} = mtime_latest_file($dir);
+
+                #busy!
+                $scan->{busy} = 1;
+                $scan->{busy_reason} = "CHECK";
+
                 $scans->add($scan);
 
-                #update index_scan en index_log
-                scan2index($scan);
-                my($success,$error)= index_scan->commit;
-                die(join('',@$error)) if !$success;
-                status2index($scan);
-                ($success,$error) = index_log->commit;
-                die(join('',@$error)) if !$success;
-    
             }
+            #update index_scan en index_log
+            scan2index($scan);
+            my($success,$error)= index_scan->commit;
+            die(join('',@$error)) if !$success;
+            status2index($scan,-1);
+            ($success,$error) = index_log->commit;
+            die(join('',@$error)) if !$success;
+
+            push @scan_ids_ready,$scan->{_id};
         }
         close CMD;   
     }catch{
@@ -284,17 +353,16 @@ foreach my $scan_id(@scan_ids_ready){
 
     #check nieuwe directories
     if(
-        array_includes(qw(incoming)],$scan->{status})
+        array_includes(["incoming","incoming_back","incoming_renamed"],$scan->{status})
         
     ){
         push @scan_ids_test,$scan->{_id};
     }
     #check slechte en goede indien iets gewijzigd sinds laatste check
     elsif(
-        array_includes(["incoming_error","incoming_ok"],$scan->{status}) &&
-        mtime_latest_file($scan->{path}) > $scan->{datetime_last_modified}
+        array_includes(["incoming_error","incoming_ok"],$scan->{status})
     ){
-        push @scan_ids_test,$scan->{_id};
+        push @scan_ids_test,$scan->{_id} if mtime_latest_file($scan->{path}) > $scan->{datetime_last_modified};
     }
 
 };
@@ -302,71 +370,59 @@ foreach my $scan_id(@scan_ids_ready){
 foreach my $scan_id(@scan_ids_test){
     my $scan = $scans->get($scan_id);
 
-    $scan->{check_log} = [];
-
     say "checking $scan_id at $scan->{path}";
-
-    my $profile_id = profile_resolver->get_profile($scan->{path});
-    my $profile;
-
-    if(!is_string($profile_id)){
-
-        $scan->{check_log} = [qw(map voldoet aan geen van de bestaande profielen)];
-
-    }elsif(
-        !($profile = profiles_conf->{$profile_id})
-    ){
-        
-        say STDERR "strange, profile_id '$profile_id' is defined, but no profile configuration could be found";
+    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+    if(!is_string($user->{profile_id})){
+        say STDERR "no profile defined for $user->{login}";
         next;
-
-    }else{
-        
-        #registreer onder welk profiel deze scan valt
-        $scan->{profile_id} = $profile_id;
-
-        #acceptatie valt niet af te leiden uit het bestaan van foutboodschappen, want niet alle testen zijn 'fatal'
-        my $num_fatal = 0;
-        my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
-
-        my @files = ();
-        foreach my $stats(@{ $dir_info->files() }){
-            push @files,file_info($stats->{path});
-        }
-        $scan->{size} = $dir_info->size();
-        $scan->{files} = \@files;
-
-        foreach my $test(@{ $profile->{packages} }){
-
-            my $ref = get_package($test->{class},$test->{args});
-            $ref->dir_info($dir_info);        
-            my($success,$errors) = $ref->test();
-
-            push @{ $scan->{check_log} }, @$errors if !$success;
-            if(!$success){
-                if($test->{on_error} eq "stop"){
-                    $num_fatal = 1;
-                    last;
-                }elsif($ref->is_fatal){
-                    $num_fatal++;
-                }
-            }
-        }
-
-        #nu worden enkel gewijzigde mappen meegenomen, dus niet meer nodig om laatste incoming_error te overschrijven
-        $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
-        my $status_history_object = {
-            user_login => "-",
-            status => $scan->{status},
-            datetime => Time::HiRes::time,
-            comments => ""
-        };
-        push @{ $scan->{status_history} },$status_history_object;
-
+    }
+    my $profile = profiles->{ $user->{profile_id} };
+    if(!$profile){
+        say STDERR "strange, profile_id is defined in table users, but no profile could be found";
+        next;
     }
 
+    $scan->{check_log} = [];
+    my @files = ();
+    #acceptatie valt niet af te leiden uit het bestaan van foutboodschappen, want niet alle testen zijn 'fatal'
+    my $num_fatal = 0;
+
+    foreach my $test(@{ $profile->{packages} }){
+
+        my $ref = get_package($test->{class},$test->{args});
+        $ref->dir($scan->{path});        
+        my($success,$errors) = $ref->test();
+
+        push @{ $scan->{check_log} }, @$errors if !$success;
+        unless(scalar(@files)){
+            foreach my $stats(@{ $ref->files() }){
+                push @files,file_info($stats->{path});
+            }
+            $scan->{size} = $ref->size();
+        }
+        if(!$success){
+            if($test->{on_error} eq "stop"){
+                $num_fatal = 1;
+                last;
+            }elsif($ref->is_fatal){
+                $num_fatal++;
+            }
+        }
+    }
+
+    #nu worden enkel gewijzigde mappen meegenomen, dus niet meer nodig om laatste incoming_error te overschrijven
+    $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
+    my $status_history_object = {
+        user_login => "-",
+        status => $scan->{status},
+        datetime => Time::HiRes::time,
+        comments => ""
+    };
+    push @{ $scan->{status_history} },$status_history_object;
+
+    $scan->{files} = \@files;
+
     $scan->{datetime_last_modified} = Time::HiRes::time;
-    $scans->add($scan);
 
     #update index_scan en index_log
     scan2index($scan);
@@ -377,6 +433,7 @@ foreach my $scan_id(@scan_ids_test){
     ($success,$error) = index_log->commit;
     die(join('',@$error)) if !$success;
 
+    $scans->add($scan);
 }
 
 #check of alle incoming_* er nog staan

@@ -1,5 +1,4 @@
 package Imaging::Test::Dir::checkFilePattern;
-use Data::Util qw(:validate);
 use Moo;
 
 has pattern => (
@@ -16,8 +15,8 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
-    my $files = $self->dir_info->files();
+    my $topdir = $self->dir();
+    my $files = $self->files();
     my(@errors) = ();
     my $pattern = $self->pattern;
 

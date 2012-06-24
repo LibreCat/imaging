@@ -1,7 +1,6 @@
 package Imaging::Test::Dir::checkTIFF;
 use Moo;
 use Image::ExifTool;
-use File::MimeInfo;
 
 has _exif => (
     is => 'ro',
@@ -12,7 +11,8 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $files = $self->dir_info->files();
+    my $topdir = $self->dir();
+    my $files = $self->files();
     my(@errors) = ();
     foreach my $stats(@$files){
         next if !$self->is_valid_basename($stats->{basename});

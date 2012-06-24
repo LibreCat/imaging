@@ -58,8 +58,7 @@ any('/users/add',sub{
                     login   =>  $params->{login},
                     name    =>  $params->{name},
                     roles   =>  join(', ',@{$params->{roles}}),
-                    password    =>  md5_hex($params->{password1}),
-                    profile_id  =>  $params->{profile_id}
+                    password    =>  md5_hex($params->{password1})
                 });
                 redirect(uri_for("/users"));
             }
@@ -103,7 +102,6 @@ any('/user/:id/edit',sub{
                     login   =>  $params->{login},
                     name    =>  $params->{name}
                 };
-                $new->{profile_id}  =   $params->{profile_id}   if  defined($params->{profile_id});
                 #nieuw  wachtwoord  opgegeven?  ->  check!
                 if($params->{edit_passwords}){
                     if(!(
@@ -190,17 +188,6 @@ sub check_params_new_user {
     foreach my $key(@keys){
         if($params->{$key} !~ /^\w+$/o){
             push @errors,"$key moet alfanumeriek zijn";
-        }
-    }
-    if(scalar(@errors)==0){
-        my $is_scanner = scalar(grep { $_  =~ /scanner/o } @{$params->{roles}}) > 0;
-        if($is_scanner){
-            my  $profile;
-            if(!is_string($params->{profile_id})){
-                push @errors,"geen profiel opgegeven, hoewel rol van scanner";
-            }elsif(!($profile = config->{profiles}->{ $params->{profile_id} })){
-                push @errors,"opgegeven profiel bestaat niet";
-            }
         }
     }
     return scalar(@errors)==0,\@errors;

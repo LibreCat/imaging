@@ -2,7 +2,6 @@ package Imaging::Test::Dir::TAR::checkNARA;
 use Moo;
 use Data::Util qw(:validate);
 use Try::Tiny;
-use Catmandu::Util qw(require_package);
 
 has _nara_conf  => (
     is => 'rw',
@@ -40,7 +39,7 @@ has _stash => (
         my $stash = {};
         my $nara_conf = $self->_nara_conf;
         foreach my $nara(@$nara_conf){
-            $stash->{$nara->{class}} = require_package($nara->{class})->new(%{ $nara->{args} });
+            $stash->{$nara->{class}} = Catmandu::Util::require_package($nara->{class})->new(%{ $nara->{args} });
         }
         $stash;
     }
@@ -51,13 +50,14 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
+    my $topdir = $self->dir();
     my(@errors) = ();
     my $stash = $self->_stash;
     my $nara_conf = $self->_nara_conf;
 
     foreach my $nara(@$nara_conf){
         my $ref = $stash->{$nara->{class}};
-        $ref->dir_info($self->dir_info);
+        $ref->dir($topdir);
         my($success,$errs) = $ref->test();
         push @errors,@$errs if(!$success);
     }

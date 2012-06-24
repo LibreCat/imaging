@@ -1,7 +1,6 @@
 package Imaging::Test::Dir::NARA::checkFilename;
 use Moo;
 use Data::Util qw(:check);
-use File::Basename;
 
 has _re_filename => (
     is => 'ro',
@@ -14,9 +13,9 @@ sub is_fatal {
 };
 sub test {
     my $self = shift;
-    my $topdir = $self->dir_info->dir();
-    my $files = $self->dir_info->files();
-    my $directories = $self->dir_info->directories();
+    my $topdir = $self->dir();
+    my $files = $self->files();
+    my $directories = $self->directories();
     my(@errors) = ();
     my $type_numbers = {};
     my $missing_type_numbers = {};
