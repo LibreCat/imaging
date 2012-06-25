@@ -44,7 +44,7 @@ my $query = "status:\"rename_directory\"";
 my($start,$limit,$total)=(0,1000,0);
 do{
 
-    my $result = $index_scan->search(
+    my $result = index_scan->search(
         query => $query,
         start => $start,
         limit => $limit
@@ -116,7 +116,7 @@ foreach my $id(@ids_to_be_renamed){
 
 
         #sla terug op
-        delete $scan->{$_} foreach(qw(busy busy_reason new_id));
+        delete $scan->{$_} foreach(qw(busy new_id));
         $scans->add($scan);        
         scan2index($scan);
         status2index($scan);

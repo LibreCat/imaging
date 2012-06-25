@@ -71,6 +71,11 @@
                 [%- END %]
                 [%- IF session.user.has_dir %]
                 <li><a href="/ready/[% session.user.login %]">ready</a></li>
+                <li>
+                    [%- q = "status:reprocess_scans" -%]
+                    [%- fq = "user_login:" _ session.user.login -%]
+                    <a href="/scans?q=[% q | url %]&amp;fq=[% fq %]">reprocessing</a>
+                </li>
                 [%- END %]
                 [%- IF auth.asa('admin') ||  auth.asa('qa_manager') %]
                 <li><a href="/qa_control">qa_controle</a></li>

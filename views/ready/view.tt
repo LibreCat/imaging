@@ -20,7 +20,7 @@
     <div class="tab-pane active" id="tab-files">
       [%- scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login _ "/"  _ scan.item("_id") -%]
       <p>
-        <a class="btn btn-mini" href="file://[% scan_system_directory %]">open map</a>
+        <a class="btn btn-mini" href="[% scan_system_directory %]">open map</a>
       </p>
       <table class="table table-striped table-condensed">
         <tr>

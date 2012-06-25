@@ -516,6 +516,93 @@ post('/scans/:_id/baginfo/edit',sub{
     $response->{messages} = \@messages;
     return to_json($response,{pretty => 0});
 });
+#any('/scans/:_id/rename',sub{
+#    my $params = params;
+#    my $auth = auth;
+#    my $config = config;
+#    my @errors = ();
+#    my @messages = ();
+#    my $mount_conf = mount_conf;
+#    my $scan = scans->get($params->{_id});
+#    $scan or return not_found();
+#
+#    if(!($auth->asa('admin') || $auth->can('scans','rename'))){
+#        return forward('/access_denied',{
+#            text => "U mist de nodige gebruikersrechten om dit record te hernoemen"
+#        });
+#    }
+#
+#    #rename - begin
+#    if($params->{submit}){
+#
+#        my $new_id = $params->{new_id};
+#        my $comments = $params->{comments} // "";
+#        if(!is_string($new_id)){
+#
+#            push @errors,"gelieve de nieuwe mapnaam op te geven";
+#
+#        }elsif( $new_id !~ /^[\w\-]+$/ ){
+#
+#            push @errors,"mapnaam mag enkel letters, cijfers, underscores en koppeltekens bevatten";
+#
+#        }elsif(defined (scans->get($new_id))){
+#
+#            push @errors,"er bestaat reeds een record met die naam";
+#
+#        }else{
+#
+#            #wijzig status
+#            my $status_from = $scan->{status};
+#            $scan->{status} = "rename_directory";
+#            $scan->{new_id} = $new_id;
+#
+#            #blokkeer automatische verwerking
+#            local(*FILE);
+#            open FILE,">".$scan->{path}."/__FIXME.txt" or confess($!);
+#            print "hernoem mij, en verwijder dit bestand nadien";
+#            close FILE;
+#
+#            #voeg toe aan status history    
+#            push @{ $scan->{status_history} ||= [] },{
+#                user_login => session('user')->{login},
+#                status => "rename_directory",
+#                datetime => Time::HiRes::time,
+#                comments => $comments
+#            };
+#            #neem op in comments
+#            my $text = "wijzing status $status_from naar rename_directory";
+#            $text .= ":$comments" if $comments;
+#            push @{ $scan->{comments} ||= [] },{
+#                datetime => local_time(),
+#                text => $text,
+#                user_login => session('user')->{login},
+#                id => Data::UUID->new->create_str
+#            };
+#            $scan->{datetime_last_modified} = Time::HiRes::time;
+#
+#            scans->add($scan);
+#            scan2index($scan);
+#            status2index($scan,-1);
+#
+#            my($s,$e) = index_scan->commit;
+#            ($s,$e) = index_log->commit;
+#
+#            #redirect
+#            return redirect("/scans/$scan->{_id}");
+#
+#        }
+#    }
+#    #edit status - einde
+#
+#    template('scans/rename',{
+#        scan => $scan,
+#        auth => $auth,
+#        errors => \@errors,
+#        messages => \@messages,
+#        mount_conf => mount_conf(),
+#        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
+#    });
+#});
 
 any('/scans/:_id/status',sub{
     my $params = params;
@@ -582,7 +669,7 @@ any('/scans/:_id/status',sub{
                     if($status_to eq "reprocess_scans"){
 
                         $scan->{busy} = 1;
-                        my $user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
+                        my $user = dbi_handle->quick_select('users',{ id => $scan->{_id} });
                         $scan->{newpath} = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
 
                     }
@@ -700,7 +787,7 @@ sub status_change_conf {
     my $config = config();
     my $merge = {};
     for(@{ $session->{user}->{roles} }){
-        $merge = merge($merge,$config->{status}->{change}->{$_} || {});
+        $merge = merge($merge,$config->{status}->{change}->{$_});
     }
     $merge;
 }

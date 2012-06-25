@@ -1,6 +1,7 @@
 package Imaging::Test::Dir::checkDirStructure;
 use Moo;
-use Catmandu::Util qw(:check);
+use Catmandu::Sane;
+use Data::Util qw(:check :validate);
 
 has conf => (
     is => 'ro',
@@ -14,7 +15,7 @@ has conf => (
     },
     default => sub { 
         {
-            glob => "*",
+            'glob' => "*",
             all => 1,
             message => "missing files in directory"
         }; 

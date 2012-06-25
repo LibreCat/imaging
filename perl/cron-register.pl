@@ -2,6 +2,7 @@
 use Catmandu qw(store);
 use Dancer qw(:script);
 use Imaging::Util qw(:files);
+use Imaging::Dir::Info;
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is :array);
 use List::MoreUtils qw(first_index);
@@ -13,6 +14,7 @@ use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 use Time::HiRes;
 use all qw(Imaging::Dir::Query::*);
+use English '-no_match_vars';
 
 BEGIN {
     my $appdir = Cwd::realpath(
@@ -65,25 +67,30 @@ sub directory_to_queries {
 }
 sub has_manifest {
     my $path = shift;
-    is_string($path) && -f "$path/manifest-md5.txt";
+    is_string($path) && -f "$path/__MANIFEST-MD5.txt";
 }
 sub has_valid_manifest {
+    state $line_re = qr/^[0-9a-fA-F]+\s+.*$/;
+
     my $path = shift;    
     has_manifest($path) && do {
-        my $valid = 0;
+        my $valid = 1;
         try{                        
             local(*FILE);
             my $line;
-            open FILE,"$path/manifest-md5.txt" or die($!);
+            open FILE,"$path/__MANIFEST-MD5.txt" or die($!);
             while($line = <FILE>){
                 $line =~ s/\r\n$/\n/;
                 chomp($line);
                 utf8::decode($line);
-                if($line !~ /^[0-9a-fA-F]+\s+.*$/o){
+                if($line !~ $line_re){
+                    $valid = 0;
                     last;
                 }
             }
             close FILE;
+        }catch{
+            $valid = 0;
         };
         $valid;
     };
@@ -162,7 +169,9 @@ foreach my $project_id(@project_ids){
 #stap 2: ken scans toe aan projects
 say "assigning scans to projects";
 my @scan_ids = ();
-scans->each(sub{ push @scan_ids,$_[0]->{_id}; });
+scans->each(sub{ 
+    push @scan_ids,$_[0]->{_id} if !-f $_[0]->{path}."/__FIXME.txt"; 
+});
 foreach my $scan_id(@scan_ids){
     my $scan = scans->get($scan_id);
     my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
@@ -192,7 +201,8 @@ scans()->each(sub{
     my $metadata = $scan->{metadata};
     if( 
         !array_includes(["incoming","incoming_error"],$status) && 
-        !(is_array_ref($metadata) && scalar(@$metadata) > 0 )
+        !(is_array_ref($metadata) && scalar(@$metadata) > 0 ) &&
+        !(-f $scan->{path}."/__FIXME.txt")
     ){
 
         push @ids_ok_for_metadata,$scan->{_id};
@@ -239,83 +249,71 @@ foreach my $id(@ids_ok_for_metadata){
 my @incoming_ok = ();
 scans()->each(sub{
     my $scan = shift;
-    push @incoming_ok,$scan->{_id} if $scan->{status} eq "incoming_ok";
+    if(
+        $scan->{status} eq "incoming_ok" &&
+        !(-f $scan->{path}."/__FIXME.txt")
+    ){
+        push @incoming_ok,$scan->{_id};
+    }
 });
 say "registering incoming_ok";
 foreach my $id (@incoming_ok){
-    my $scan = scans()->get($id);
+    my $scan = scans()->get($id);    
+
     say "\tscan $id:";
 
-    #status 'registering'
-    $scan->{status} = "registering";
-    $scan->{busy} = 1;
-    $scan->{busy_reason} = "move";
-    push @{ $scan->{status_history} },{
-        user_login =>"-",
-        status => "registering",
-        datetime => Time::HiRes::time,
-        comments => ""
-    };
-    $scan->{datetime_last_modified} = Time::HiRes::time;
-    #=> registratie kan lang duren (move!), waardoor map uit /ready verdwijnt, maar ondertussen ook in /scans is terug te vinden
-    #=> daarom opnemen in databank én indexeren
-    scans->add($scan);
-    scan2index($scan);
-    my($success,$error) = index_scan->commit;
-    die(join('',@$error)) if !$success;
-
-    status2index($scan,-1);
-    ($success,$error) = index_log->commit;
-    die(join('',@$error)) if !$success;
+    my $oldpath = $scan->{path};
+    my $mount_conf = mount_conf();
+    my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".File::Basename::basename($oldpath);   
 
     if(!has_valid_manifest($scan->{path})){
 
-        #verwijder oude manifest vóóraf, want anders duikt oude manifest op in ... manifest-md5.txt
-        unlink($scan->{path}."/manifest-md5.txt") if -f $scan->{path}."/manifest-md5.txt";
-        my $index = first_index { $_ eq $scan->{path}."/manifest-md5.txt" } map { $_->{path} } @{ $scan->{files} };
-        splice(@{ $scan->{files} },$index,1) if $index >= 0;
-
         #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
-        say "\tcreating manifest-md5.txt";
+        say "\tcreating __MANIFEST-MD5.txt";
 
+        my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
         #maak nieuwe manifest
         local(*MANIFEST);
-        open MANIFEST,">".$scan->{path}."/manifest-md5.txt" or die($!);
+        open MANIFEST,">$path_manifest" or die($!);
         foreach my $file(@{ $scan->{files} }){
+            next if $file->{path} eq $path_manifest;
             local(*FILE);
             open FILE,$file->{path} or die($!);
             my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-            print MANIFEST "$md5sum_file ".File::Basename::basename($file->{path})."\r\n";
+            my $filename = $file->{path};
+            say "removing '$oldpath/' from '$filename'";
+            $filename =~ s/^$oldpath\///;
+            say "result:'$filename'";
+            print MANIFEST "$md5sum_file $filename\r\n";
             close FILE;
         }
         close MANIFEST;
 
-        #voeg manifest toe aan de lijst
-        push @{ $scan->{files} },file_info($scan->{path}."/manifest-md5.txt");
-    
     }
     
     #verplaats  
-    my $oldpath = $scan->{path};
-    my $mount_conf = mount_conf();
-    my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".File::Basename::basename($oldpath);
     say "\tmoving from $oldpath to $newpath";
     move($oldpath,$newpath);
-    chmod(0755,$newpath);
+    #chmod(0755,$newpath) is enkel van toepassing op bestanden en mappen direct onder newpath..
+    `chmod -R 0755 $newpath`;    
+    #toekennen aan uitvoerende gebruiker
+    my $uid = getlogin || getpwuid($UID);
+    my $gid = getgrgid($REAL_GROUP_ID);
+    `chown -R $uid:$gid $newpath`;
     $scan->{path} = $newpath;
-    foreach my $file(@{ $scan->{files} }){
-        $file->{path} =~ s/^$oldpath/$newpath/;
-    }
 
-    #update file info
-    foreach my $file(@{ $scan->{files} }){
-        my $new_stats = file_info($file->{path});
-        $file->{$_} = $new_stats->{$_} foreach(keys %$new_stats);
+    #update files
+    my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+    my @files = ();
+    foreach my $file(@{ $dir_info->files() }){
+        push @files,file_info($file->{path});
     }
+    $scan->{files} = \@files;
+    $scan->{size} = $dir_info->size();
     
     #status 'registered'
     $scan->{status} = "registered";
-    delete $scan->{$_} for(qw(busy busy_reason));
+    delete $scan->{$_} for(qw(busy));
     push @{ $scan->{status_history} },{
         user_login =>"-",
         status => "registered",
@@ -326,7 +324,7 @@ foreach my $id (@incoming_ok){
     
     scans->add($scan);
     scan2index($scan);
-    ($success,$error) = index_scan->commit;
+    my($success,$error) = index_scan->commit;
     die(join('',@$error)) if !$success;
     status2index($scan,-1);
     ($success,$error) = index_log->commit;

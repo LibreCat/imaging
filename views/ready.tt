@@ -7,6 +7,7 @@
     <th>aantal bestanden</th>
     <th>status</th>
     <th>profiel</th>
+    <th>FIXME?</th>
   </tr>
   [%- FOREACH directory IN directories %]
   <tr>
@@ -17,9 +18,19 @@
         [% directory.name %]
       [%- END %]
     </td>
-    <td>[% directory.record.files.size || "wait..." %]</td>
-    <td>[% settings.human_readable.${directory.record.status} || directory.record.status || "wait..." %]</td>
-    <td>[% directory.record.profile_id || "wait.." %]</td>
+    <td>[% directory.record.files.size || "-" %]</td>
+    <td>[% settings.human_readable.${directory.record.status} || directory.record.status || "-" %]</td>
+    <td>[% directory.record.profile_id || "-" %]</td>
+    <td>
+        [% TO_FIX = 0 %]
+        [%- TRY %]
+            [% FIXME = directory.path _ "/__FIXME.txt" %]
+            [% FIXME %]
+            [%- USE File(directory.path) %]
+            [% TO_FIX = 1 %]
+        [% END %]
+        <input type="checkbox" readonly="readonly" checked="[% TO_FIX ? "checked":""  %]">
+    </td>
   </tr>
   [%- END %]
 </table>

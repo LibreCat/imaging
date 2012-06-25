@@ -59,6 +59,7 @@ any('/directories',sub {
 
     foreach my $user(@users){
         $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+        #$user->{reprocessing} = "$mount/".$subdirectories->{reprocessing}."/".$user->{login};
     }
     #template
     template('directories',{
@@ -84,9 +85,10 @@ any('/directories/:id/edit',sub {
 
     #check directories
     $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+    #$user->{reprocessing} = "$mount/".$subdirectories->{reprocessing}."/".$user->{login};
 
     if($params->{submit} && scalar(@errors)==0){
-        foreach(qw(ready)){
+        foreach(qw(ready reprocessing)){
             try{
                 my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
                 my $error;
@@ -100,7 +102,7 @@ any('/directories/:id/edit',sub {
             };
         }
     }else{
-        foreach(qw(ready)){
+        foreach(qw(ready reprocessing)){
             if(!-d $user->{$_}){
                 push @errors,"directory '$_' bestaat niet ($user->{$_})";
             }elsif(!-w $user->{$_}){

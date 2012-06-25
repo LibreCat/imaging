@@ -1,5 +1,6 @@
 package Imaging::Test::Dir::NARA::checkFilename;
 use Moo;
+use Catmandu::Sane;
 use Data::Util qw(:check);
 use File::Basename;
 

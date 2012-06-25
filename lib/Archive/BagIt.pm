@@ -482,7 +482,6 @@ sub valid {
         my $md5 = $tag == 0 ? $self->get_checksum($file) : $self->get_tagsum($file);
         my $fh  = $tag == 0 ? new IO::File "$path/data/$file", "r" : new IO::File "$path/$file" , "r";
     
-
         unless ($fh) {
           return (0,"failed to open $file for reading");
         }

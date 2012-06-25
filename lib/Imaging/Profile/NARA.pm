@@ -7,7 +7,7 @@ use Moo;
 sub test {
     my($self,$dir)=@_;
     $dir =~ s/\/$//o if $dir;
-    is_string($dir) && -d $dir &&
+    return is_string($dir) && -d $dir &&
     do {
         my @files = glob "$dir/*";
         my $success = 1;
@@ -22,7 +22,7 @@ sub test {
         if($success){
             my @valid = grep { 
                 my $name = basename($_);
-                $name =~ /_MA\.tif$/o || $name =~ /^manifest-md5\.txt$/o || $name =~ /^__FIXME\.txt$/o 
+                $name =~ /_MA\.tif$/o || $name =~ /^__MANIFEST-MD5\.txt$/o || $name =~ /^__FIXME\.txt$/o 
             } @files;
             $success = scalar(@valid) == scalar(@files);
         }

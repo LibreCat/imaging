@@ -1,5 +1,6 @@
 package Imaging::Test::Dir::checkJPEG;
 use Moo;
+use Catmandu::Sane;
 use Image::ExifTool;
 use File::MimeInfo;
 

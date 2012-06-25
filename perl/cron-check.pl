@@ -1,5 +1,6 @@
 #!/usr/bin/env perl
 use Dancer qw(:script);
+use Catmandu;
 use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
 use Imaging::Util qw(:data :files);
@@ -155,10 +156,10 @@ foreach my $user(@users){
     }
     try{
         local(*CMD);
-        open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d | sort |" or die($!);
+        open CMD,"find $ready -mindepth 1 -maxdepth 1 -type d 2> /dev/null |" or die($!);
         while(my $dir = <CMD>){
             chomp($dir);    
-
+            
             if(!(-d -r $dir)){
                 say "directory $dir is not readable, so ignoring..";
                 next;
@@ -176,18 +177,12 @@ foreach my $user(@users){
 
             my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
+
             my $mtime = mtime_latest_file($dir);
         
-            #voeg toe aan te verwerken directories
-            push @scan_ids_ready,$scan->{_id};
-
             #map komt nog niet voor in databank
-            if($scan){
-                say "directory '$scan->{_id}' already in database";
-                next;
-            }
-            #map komt nog niet voor in de databanken
-            else{
+            if(!is_hash_ref($scan)){
+
                 say "adding new record $basename";
                 $scan = {
                     _id => $basename,
@@ -214,8 +209,7 @@ foreach my $user(@users){
                     comments => [],
                     warnings => [],
                     #default busy!
-                    busy => 1,
-                    busy_reason => "CHECK"
+                    busy => 1
                 };
 
                 #voeg nieuwe scan toe aan tabel scans
@@ -230,6 +224,9 @@ foreach my $user(@users){
                 die(join('',@$error)) if !$success;
     
             }
+
+            #voeg toe aan te verwerken directories
+            push @scan_ids_ready,$scan->{_id}; 
         }
         close CMD;   
     }catch{
@@ -284,7 +281,7 @@ foreach my $scan_id(@scan_ids_ready){
 
     #check nieuwe directories
     if(
-        array_includes(qw(incoming)],$scan->{status})
+        array_includes([qw(incoming)],$scan->{status})
         
     ){
         push @scan_ids_test,$scan->{_id};
@@ -302,16 +299,28 @@ foreach my $scan_id(@scan_ids_ready){
 foreach my $scan_id(@scan_ids_test){
     my $scan = $scans->get($scan_id);
 
-    $scan->{check_log} = [];
 
     say "checking $scan_id at $scan->{path}";
 
+    #get profile
     my $profile_id = profile_resolver->get_profile($scan->{path});
     my $profile;
 
+    #lijst bestanden
+    my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+    my @files = ();
+    foreach my $stats(@{ $dir_info->files() }){
+        push @files,file_info($stats->{path});
+    }
+    $scan->{size} = $dir_info->size();
+    $scan->{files} = \@files;
+
+    #initialise check_log
+    $scan->{check_log} = [];
+
     if(!is_string($profile_id)){
 
-        $scan->{check_log} = [qw(map voldoet aan geen van de bestaande profielen)];
+        $scan->{check_log} = ["map voldoet aan geen van de bestaande profielen"];
 
     }elsif(
         !($profile = profiles_conf->{$profile_id})
@@ -321,23 +330,14 @@ foreach my $scan_id(@scan_ids_test){
         next;
 
     }else{
-        
+ 
         #registreer onder welk profiel deze scan valt
         $scan->{profile_id} = $profile_id;
 
         #acceptatie valt niet af te leiden uit het bestaan van foutboodschappen, want niet alle testen zijn 'fatal'
         my $num_fatal = 0;
-        my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
-
-        my @files = ();
-        foreach my $stats(@{ $dir_info->files() }){
-            push @files,file_info($stats->{path});
-        }
-        $scan->{size} = $dir_info->size();
-        $scan->{files} = \@files;
-
+        
         foreach my $test(@{ $profile->{packages} }){
-
             my $ref = get_package($test->{class},$test->{args});
             $ref->dir_info($dir_info);        
             my($success,$errors) = $ref->test();
@@ -382,11 +382,14 @@ foreach my $scan_id(@scan_ids_test){
 #check of alle incoming_* er nog staan
 say "checking if all incoming are still there..";
 {
-    my $result = index_scan->search(query => "status:incoming_*",limit => 0);
-    my $total_incoming = $result->total;
+    my $total_incoming = 0;
     my($offset,$limit) = (0,1000);
-    while($offset <= $total_incoming){
-        $result = index_scan->search(query => "status:incoming_*",limit => $limit,offset=>$offset);
+
+    do{
+
+        my $result = index_scan->search(query => "status:incoming_*",limit => $limit,offset=>$offset);
+        $total_incoming = $result->total();
+
         foreach my $hit(@{ $result->hits }){
             my $scan = scans->get($hit->{_id});            
             if(!-d $scan->{path}){
@@ -399,7 +402,7 @@ say "checking if all incoming are still there..";
             }
         }
         $offset += $limit;
-    }    
+    }while($offset < $total_incoming);
 }
 
 say "$this_file ended at ".local_time;

@@ -103,13 +103,16 @@ app:
       edit: 1
     - key: "DC-Description"
       edit: 1
+      tag: "textarea"
     - key: "DC-Type"
       edit: 1
+      tag: "select"
       values: ["Text","Audio","Sound","Image","Dataset","MovingImage"]
     - key: "DC-Creator"
       edit: 1
     - key: "DC-AccessRights"
       edit: 1
+      tag: "select"
       values: ["open","closed","ugent","media ugent","media closed"]
     - key: "DC-Subject"
 default_app: "/"
@@ -147,8 +150,8 @@ status:
   archiving: ["qa_control_ok","archived","archived_ok","published","published_ok"]
   done: ["archived_ok","published_ok"]
   in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
-  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published"]
-  in_reprocessing: ["reprocess_scans"]
+  #opgelet: zolang reprocess_* staat het nog in processed, nadien terug in 01_ready
+  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published","reprocess_scans","reprocess_scans_qamanager"]
  change:
   qa_manager: &statuschangeqamanager
    registered: 
@@ -181,19 +184,14 @@ status:
   admin: *statuschangeqamanager
 human_readable:
  incoming: "aangeboden scan"
- to_incoming: "verplaats naar ready"
  incoming_error: "automatische check gefaald"
  incoming_ok: "automatische check successvol"
  registering: "registratie bezig"
  registered: "registratie voltooid"
- rename_directory: "map hernoemen aangevraagd"
- renaming_directory: "map hernoemen bezig"
- incoming_renamed: "hernoemde map aangeboden"
- to_reprocess_scans: "terug naar scanner (bezig)"
  reprocess_scans: "terug naar scanner"
  reprocess_metadata: "terug naar catalografie"
  reprocess_derivatives: "afgeleiden foutief"
- reprocess_scans_qa_manager: "scans worden bewerkt door qa_manager"
+ reprocess_scans_qa_manager: "naar qa_manager"
  qa_control_ok: "qa controle succesvol"
  archived: "gearchiveerd"
  archived_ok: "archivering ok"
@@ -216,24 +214,25 @@ profiles:
      on_error: "continue"
    - class: "Imaging::Test::Dir::checkDirStructure"
      args:
-      glob: "*.txt *.tif *.jpg *.fff *.pdf"
+      glob: "__MANIFEST-MD5.txt *.tif *.jpg *.fff *.pdf"
       all: 1
-      message: "map mag enkel deze bestanden bevatten: *.txt *.tif *.jpg *.fff *.pdf"
-     on_error: "continue"
-   - class: "Imaging::Test::Dir::checkFileExtension"
-     args:
-      extensions: ["txt","tif","jpg","fff","pdf"]
-     on_error: "continue"
+      message: "map mag enkel deze bestanden bevatten: __MANIFEST-MD5.txt *.tif *.jpg *.fff *.pdf"
+     on_error: "stop"
    - class: "Imaging::Test::Dir::checkTIFF"
      args:
       valid_patterns:
-       - '\.tif$'
-       #- '^(?!manifest-md5\.txt$)'
+       - '\.(?:tif|fff)$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkJPEG"
+     args:
+      valid_patterns:
+       - '\.jpg$'
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkFilename"
      args:
       valid_patterns:
-       - '^(?!manifest-md5\.txt$)'
+       - '\.(?:tif|fff)$'
+       #- '^(?!manifest-md5\.txt$)'
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkAleph"
      args:

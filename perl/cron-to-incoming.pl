@@ -35,8 +35,9 @@ sub complain {
 sub process_scan {
     my $scan = shift;
     my $oldpath = $scan->{path};    
-    my $manifest = "$dir/manifest-md5.txt";
+    my $manifest = "$oldpath/__MANIFEST-MD5.txt";
     my $newpath = $scan->{newpath};
+    say "$oldpath => $newpath";
 
     local(*FILE);
 
@@ -47,7 +48,7 @@ sub process_scan {
     print FILE $scan->{status_history}->[-1]->{comments};
     close FILE;
     
-    #verplaats bestanden die opgelijst staan in manifest-md5.txt naar 01_ready
+    #verplaats bestanden die opgelijst staan in __MANIFEST-MD5.txt naar 01_ready
     #andere bestanden laat je staan (en worden dus verwijderd)
     open FILE,$manifest or return complain($!);
     while(my $line = <FILE>){
@@ -71,6 +72,8 @@ sub process_scan {
     #gelukt! verwijder nu oude map
     rmtree($oldpath);
 
+    #TODO: rechten aanpassen aan dat van 01_ready submap
+
     #pas paden aan
     $scan->{path} = $newpath;
     my $dir_info = Imaging::Dir::Info->new(dir => $newpath);
@@ -90,9 +93,11 @@ sub process_scan {
     };
     $scan->{datetime_last_modified} = Time::HiRes::time;
 
+    delete $scan->{$_} for(qw(busy));
+
     scans->add($scan);
     scan2index($scan);
-    ($success,$error) = index_scan->commit;
+    my($success,$error) = index_scan->commit;
     die(join('',@$error)) if !$success;
     status2index($scan,-1);
     ($success,$error) = index_log->commit;

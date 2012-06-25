@@ -1,0 +1,10 @@
+cron-rename.pl
+    - niet meer nodig:
+        - indien 'registered': verplaats via reprocess_scans of reprocess_scans_qamanager terug naar 01_ready
+            met daarin __FIXME.txt. Hernoemen houdt immers meer in dan alleen maar wijzigen van mapnaam (ook de files).
+            cron-to-incoming.pl doet de move, en zet status op "incoming". 
+            cron-check.pl merkt "nieuwe map" op
+            cron-check.pl ziet dat een record met status "incoming_*" verdwenen is uit incoming (want hernoemd), en verwijderd die
+        - indien nog vóór 'registered': wijzig in bestandssysteem,
+            plaats __FIXME.txt
+            en cron-check.pl verwijdert oude record nadien, en checkt het nieuwe nadat __FIXME.txt is verwijderd

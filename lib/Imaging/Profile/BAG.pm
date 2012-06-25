@@ -6,7 +6,7 @@ use Moo;
 sub test {
     my($self,$dir)=@_;
     $dir =~ s/\/$//o if $dir;
-    is_string($dir) &&
+    return is_string($dir) &&
     -d "$dir/data" && 
     -f "$dir/manifest-md5.txt" &&
     -f "$dir/bagit.txt" &&

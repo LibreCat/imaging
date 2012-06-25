@@ -29,8 +29,10 @@ sub get_profile {
     foreach my $package_name(@{ $self->_profile_packages }){
         my $ref = $self->profile($package_name);
         if($ref->test($dir)){ 
-            $package_name =~ s/Imaging::Profile:://g;
-            return $package_name; 
+            #opgelet! $package_name is een alias van een element uit _profile_packages, dus de eerstvolgende is het 'BAG' i.p.v. 'Imaging::Profile::Bag'
+            my $n = $package_name;
+            $n =~ s/Imaging::Profile:://g;
+            return $n; 
         }
     }
     return undef;

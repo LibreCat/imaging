@@ -10,6 +10,9 @@
 [%- IF auth.can('scans','status') && !scan.busy %]
     <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
 [% END %]
+[%- IF auth.can('scans','rename') && !scan.busy -%]
+    <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/rename">Wijzig naam</a>
+[% END %]
 
 [%- IF scan.busy %]
     <div class="alert">
@@ -117,12 +120,11 @@
     <div class="tab-pane" id="tab-files">
       [%- states_in_processed = settings.status.collection.in_processed -%]
       [%- states_in_ready = settings.status.collection.in_ready-%]
+      [%- states_in_reprocessing = settings.status.collection.in_reprocessing -%]
 
       [%- do_open = 1 -%]
       [% IF scan.busy %]
-
         [% do_open = 0 %]
-
       [% ELSIF states_in_ready.grep(scan.status).size > 0 -%]
 
         [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
@@ -133,10 +135,13 @@
         [%# file:///V:/processed/BHSL-PAP-0064  %]
         [% scan_system_directory = settings.mounts.directories.network_directories.processed.windows _ "/"  _ scan.item("_id") %]
 
+      [% ELSIF states_in_reprocessing.grep(scan.status).size > 0 %]
+
+        [%# file:///W:/reprocessing/geert/BHSL-PAP-0064 %]
+        [% scan_system_directory = settings.mounts.directories.network_directories.reprocessing.windows _ "/" _ user.login _ "/" _ scan.item("_id") %]
+
       [% ELSE %]
-
           [% do_open = 0 %]
-
       [% END %]
 
       [% IF do_open %]

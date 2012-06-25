@@ -40,6 +40,7 @@ any('/ready/:user_login',sub{
             next if !-d $path;
             my $obj = {
                 name => $file,
+                path => $path,
                 record => scans()->get($file)
             };
             push @directories,$obj;
@@ -60,17 +61,6 @@ any('/ready/:user_login/:scan_id',sub{
 
     my $scan = scans()->get($params->{scan_id});
     $scan or return not_found();
-
-#   niet meer nodig: scan staat nu per default op 'busy', en wordt vrijgegeven na registered   
-#
-#    my $status = $scan->{status};
-#    if($status eq "registering"){
-#        
-#        forward('/access_denied',{
-#            text => "Het systeem is bezig met het registreren van deze map. Hij zal binnenkort verplaatst worden naar 02_processed, en zal de status 'registered' krijgen"
-#        });
-#
-#    }
 
     my @errors = ();
     my $mount = mount();

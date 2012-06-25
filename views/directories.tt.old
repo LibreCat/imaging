@@ -22,6 +22,7 @@
     <tr>
       <th>login</th>
       <th>01_ready</th>
+      <th>03_reprocessing</th>
     </tr>
   </thead>
   <tbody>
@@ -41,6 +42,19 @@
         [%- CATCH File %]
         <span class="label label-important">error</span>
         [%- END %]					
+        [%- ELSE %]
+        -
+        [%- END %]
+      </td>
+      <td>
+        [%- IF user.has_dir %]
+        [%- q = "status:reprocess_scans AND user_login:" _ user.login -%]
+        <a href="/scans?q=[% q | url %]">[% user.reprocessing || '-' %]</a>
+        [%- TRY %]
+        [%- USE File(user.reprocessing) %]
+        [%- CATCH File %]
+        <span class="label label-important">error</span>
+        [%- END %]
         [%- ELSE %]
         -
         [%- END %]

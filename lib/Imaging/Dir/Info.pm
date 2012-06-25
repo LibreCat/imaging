@@ -24,9 +24,9 @@ sub _load_info {
                     path => $path
                 };
                 if(-d $path){
-                    $size += -s $path;
                     push @directories,$info;
                 }elsif(-f $path){
+                    $size += -s $path;
                     push @files,$info;
                 }
             },
@@ -63,6 +63,7 @@ has directories => (
 );
 has size => (
     is => 'rw',
+    lazy => 1,
     default => sub { 0; }
 );
 

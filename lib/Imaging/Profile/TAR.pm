@@ -6,7 +6,7 @@ use Moo;
 sub test {
     my($self,$dir)=@_;
     $dir =~ s/\/$//o if $dir;
-    is_string($dir) && -d $dir && -f "$dir/__TAR.txt";
+    return is_string($dir) && -d $dir && -f "$dir/__TAR.txt";
 }
 
 with 'Imaging::Profile';
