@@ -143,7 +143,13 @@ any('/scans/:_id',sub {
                 text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
             });
         }elsif($scan->{busy}){
+
             push @errors,"Systeem is bezig met een operatie op deze scan";
+
+        }elsif(-f $scan->{path}."/__FIXME.txt"){
+
+            push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+
         }
         else{
             # => slecht één metadata-record mag gekoppeld zijn, dus ..
@@ -320,7 +326,12 @@ post('/scans/:_id/comments/add',,sub{
 
         push @errors,"Systeem is bezig met een operatie op deze scan";
 
-    }elsif(!is_string($params->{text})){
+    }elsif(-f $scan->{path}."/__FIXME.txt"){
+
+        push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+
+    }
+    elsif(!is_string($params->{text})){
         
         push @errors,"parameter 'text' is leeg";
 
@@ -370,7 +381,12 @@ post('/scans/:_id/comments/clear',,sub{
 
         push @errors,"Systeem is bezig met een operatie op deze scan";
 
-    }else{
+    }elsif(-f $scan->{path}."/__FIXME.txt"){
+
+        push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+
+    }
+    else{
 
         $scan->{comments} = [];
         scans->add($scan);
@@ -407,7 +423,12 @@ post('/scans/:_id/baginfo/add',sub{
 
         push @errors,"Systeem is bezig met een operatie op deze scan";
 
-    }elsif(!is_string($params->{metadata_id})){
+    }elsif(-f $scan->{path}."/__FIXME.txt"){
+
+        push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+
+    }
+    elsif(!is_string($params->{metadata_id})){
 
         push @errors,"Parameter metadata_id is niet opgegeven";
 
@@ -469,7 +490,12 @@ post('/scans/:_id/baginfo/edit',sub{
 
         push @errors,"Systeem is bezig met een operatie op deze scan";
 
-    }elsif(!is_string($params->{metadata_id})){
+    }elsif(-f $scan->{path}."/__FIXME.txt"){
+
+        push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+
+    }
+    elsif(!is_string($params->{metadata_id})){
 
         push @errors,"Parameter metadata_id is niet opgegeven";
 
@@ -542,7 +568,12 @@ any('/scans/:_id/status',sub{
 
             push @errors,"Systeem is bezig met een operatie op deze scan";
 
-        }else{
+        }elsif(-f $scan->{path}."/__FIXME.txt"){
+
+            push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+
+        }
+        else{
 
             my $comments = $params->{comments} // "";        
             my $status_from = $scan->{status};

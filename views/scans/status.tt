@@ -8,6 +8,19 @@
     </div>
 [%- END %]
 
+[% TO_FIX = 0 %]
+[%- TRY %]
+    [% FIXME = scan.path _ "/__FIXME.txt" %]
+    [%- USE File(FIXME) %]
+    [% TO_FIX = 1 %]
+[% END %]
+[% IF TO_FIX %]
+    <div class="alert">
+        <strong>opgelet!</strong>Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map.
+    </div>
+[% END %]
+
+
 <form method="POST" accept-charset="UTF-8" class="form-horizontal" id="scan-change-status">
   <p>De huidige status is <strong>[% settings.human_readable.${scan.status} || scan.status %]</strong></p>
   <div class="control-group">
