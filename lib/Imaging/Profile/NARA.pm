@@ -22,7 +22,7 @@ sub test {
         if($success){
             my @valid = grep { 
                 my $name = basename($_);
-                $name =~ /_MA\.tif$/o || $name =~ /^__MANIFEST-MD5\.txt$/o || $name =~ /^__FIXME\.txt$/o 
+                $name =~ /_(?:MA|AC|ST)\.(?:tif|fff|jpg|pdf)$/o || $name =~ /^__MANIFEST-MD5\.txt$/o || $name =~ /^__FIXME\.txt$/o 
             } @files;
             $success = scalar(@valid) == scalar(@files);
         }

@@ -272,7 +272,7 @@ foreach my $id (@incoming_ok){
         my $success = $bag->read($scan->{path});        
         if(!$success){
             push @errors,@{ $bag->_error };
-        }elsif(!$bag->validate){
+        }elsif(!$bag->valid){
             push @errors,@{ $bag->_error };
         }
         if(scalar(@errors) > 0){
