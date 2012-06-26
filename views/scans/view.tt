@@ -135,11 +135,11 @@
       [%- states_in_ready = settings.status.collection.in_ready-%]
 
       [%- do_open = 1 -%]
-      [% IF scan.busy %]
+      [%# IF scan.busy %]
+      [%# do_open = 0 %]
+      [%# ELSIF states_in_ready.grep(scan.status).size > 0 -%]
 
-        [% do_open = 0 %]
-
-      [% ELSIF states_in_ready.grep(scan.status).size > 0 -%]
+      [% IF states_in_ready.grep(scan.status).size > 0 -%]
 
         [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
         [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login _ "/"  _ scan.item("_id") %]
