@@ -283,7 +283,7 @@
                     [%- END %]
                     <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button>
                   [% ELSE %]
-                    [% val | html %]
+                    [% value | html %]
                   [% END %]
                   </div>
                 </div>
