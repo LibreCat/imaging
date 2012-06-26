@@ -178,12 +178,10 @@ foreach my $user(@users){
             my $basename = File::Basename::basename($dir);
             my $scan = $scans->get($basename);
 
-            my $mtime = mtime_latest_file($dir);
-
-            #vorige keer profile_id niet gevonden, en sindsdien niet gewijzigd => enkel hier kan je verschil tussen nieuw record, en oud record zonder profile_id
-        
             #map komt nog niet voor in databank
             if(!is_hash_ref($scan)){
+
+                my $mtime = mtime_latest_file($dir);
 
                 say "adding new record $basename";
                 $scan = {
@@ -289,17 +287,21 @@ foreach my $scan_id(@scan_ids_ready){
         #oud record zonder profile_id enkel controleren indien iets gewijzigd
         if(
             is_array_ref($scan->{check_log}) &&
-            scalar(@{ $scan->{check_log} }) > 0 &&
-            mtime_latest_file($scan->{path}) > $scan->{datetime_last_modified}
-        ){
+            scalar(@{ $scan->{check_log} }) > 0
+        ){ 
 
-            push @scan_ids_test,$scan->{_id};
+            if(
+                mtime_latest_file($scan->{path}) > $scan->{datetime_last_modified}
+            ){ 
+                push @scan_ids_test,$scan->{_id};
+            }
 
         }
         #nieuw record
         else{
             push @scan_ids_test,$scan->{_id};
         }
+
     }
     #check slechte en goede indien iets gewijzigd sinds laatste check
     elsif(
