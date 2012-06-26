@@ -16,6 +16,8 @@ use Time::HiRes;
 use all qw(Imaging::Dir::Query::*);
 use English '-no_match_vars';
 
+use Archive::BagIt;
+
 BEGIN {
     my $appdir = Cwd::realpath(
         dirname(dirname(
@@ -261,6 +263,35 @@ foreach my $id (@incoming_ok){
     my $scan = scans()->get($id);    
 
     say "\tscan $id:";
+
+    #check BAGS!
+    if($scan->{profile_id} eq "BAG"){
+        say "\t\tvalidating as bagit";
+        my @errors = ();
+        my $bag = Archive::BagIt->new();
+        my $success = $bag->read($scan->{path});        
+        if(!$success){
+            push @errors,@{ $bag->_error };
+        }elsif(!$bag->validate){
+            push @errors,@{ $bag->_error };
+        }
+        if(scalar(@errors) > 0){
+            say "\t\tfailed";
+            $scan->{status} = "incoming_error";
+            my $status_history_object = {
+                user_login => "-",
+                status => $scan->{status},
+                datetime => Time::HiRes::time,
+                comments => ""
+            };
+            push @{ $scan->{status_history} },$status_history_object;
+            $scan->{check_log} = \@errors;
+            next;
+        }else{
+            say "\t\tsuccessfull";
+        }
+    }
+
 
     my $oldpath = $scan->{path};
     my $mount_conf = mount_conf();

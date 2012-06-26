@@ -160,7 +160,7 @@ status:
   done: ["archived_ok","published_ok"]
   in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
   #opgelet: zolang reprocess_* staat het nog in processed, nadien terug in 01_ready
-  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published","reprocess_scans","reprocess_scans_qamanager"]
+  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published","reprocess_scans","reprocess_scans_qa_manager"]
  change:
   qa_manager: &statuschangeqamanager
    registered: 

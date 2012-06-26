@@ -112,7 +112,7 @@ say "$this_file started at ".local_time;
 my $scans = scans();
 my $index_scan = index_scan();
 
-my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qamanager\"";
+my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qa_manager\"";
 my($start,$limit,$total)=(0,1000,0);
 do{
 

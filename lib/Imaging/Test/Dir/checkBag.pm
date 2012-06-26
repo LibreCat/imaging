@@ -14,6 +14,11 @@ has _bagit => (
         Archive::BagIt->new;
     }
 );
+has validate => (
+    is => 'ro',
+    lazy => 1,
+    default => sub{ 0; }
+);
 sub is_fatal {
     1;
 };
@@ -39,8 +44,14 @@ sub test {
         }else{
             push @errors,basename($topdir).": bag validatie faalde om niet gekende redenen";
         }
-    }elsif(!$self->_bagit->valid){
-        push @errors,@{ $self->_bagit->_error || [] };
+    }else{
+        if($self->validate){
+            if(!$self->_bagit->valid){
+                push @errors,@{ $self->_bagit->_error || [] };
+            }
+        }elsif(!$self->_bagit->complete){
+            push @errors,@{ $self->_bagit->_error || [] };
+        }
     }
 
     scalar(@errors) == 0,\@errors;
