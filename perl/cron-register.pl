@@ -286,6 +286,15 @@ foreach my $id (@incoming_ok){
             };
             push @{ $scan->{status_history} },$status_history_object;
             $scan->{check_log} = \@errors;
+
+            scans->add($scan);
+            scan2index($scan);
+            my($success,$error) = index_scan->commit;
+            die(join('',@$error)) if !$success;
+            status2index($scan,-1);
+            ($success,$error) = index_log->commit;
+            die(join('',@$error)) if !$success;
+
             next;
         }else{
             say "\t\tsuccessfull";
