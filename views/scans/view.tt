@@ -4,11 +4,19 @@
 [%- USE JSON -%]
 [%- USE MARCTools -%]
 
+[% TO_FIX = 1 %]
+[%- TRY %]
+    [% FIXME = scan.path _ "/__FIXME.txt" %]
+    [%- USE File(FIXME) %]
+[% CATCH %]
+    [% TO_FIX = 0 %]
+[% END %]
+
 [% PROCESS inc/errors_messages.tt %]
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
 
-[%- IF auth.can('scans','status') && !scan.busy && status_change_conf.${ scan.status }.values.size > 0 %]
+[%- IF auth.can('scans','status') && !scan.busy && status_change_conf.${ scan.status }.values.size > 0 && !TO_FIX %]
     <a class="btn btn-small" href="/scans/[% scan.item('_id') %]/status">Wijzig status</a>
 [% END %]
 
@@ -18,13 +26,6 @@
     </div>
 [%- END %]
 
-[% TO_FIX = 1 %]
-[%- TRY %]
-    [% FIXME = scan.path _ "/__FIXME.txt" %]
-    [%- USE File(FIXME) %]
-[% CATCH %]
-    [% TO_FIX = 0 %]
-[% END %]
 
 [% IF TO_FIX %]
     <div class="alert">
@@ -185,7 +186,7 @@
     </div>
 
     <div class="tab-pane" id="tab-metadata">
-      [%- IF auth.can('scans','metadata') && !scan.busy %]
+      [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
       <form method="post" class="form-inline pull-right" action="[% request.request_uri %]#tab-metadata">
           <input type="hidden" name="action" value="add_metadata"/>
           <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata identifier"/><button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button></div>
@@ -198,7 +199,7 @@
       <p>
         [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]
         <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
-        [%- IF auth.can('scans','metadata') && !scan.busy %]
+        [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
         <a class="btn tip"
           title="Herstel originele metadata"
           href="/scans/[% scan.item('_id') %]?action=add_metadata&metadata_id=[% metadata_id %]#tab-metadata"
@@ -247,7 +248,7 @@
                     </table>
           </div>
           <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
-          [%- IF auth.can('scans','metadata') && !scan.busy %]
+          [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
             <form action="/scans/[% scan.item('_id')%]/baginfo/edit" method="POST" class="form-horizontal edit-baginfo">
               <div class="btn-group pull-right">
                 <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
@@ -317,7 +318,7 @@
     </div>
 
     <div class="tab-pane" id="tab-comments">
-      [% IF auth.can('scans','comment') && !scan.busy %]
+      [% IF auth.can('scans','comment') && !scan.busy && !TO_FIX %]
       <form action="/scans/[% scan.item("_id") %]/comments/add" method="POST" id="add-comment">
         <textarea class="span6" name="text"></textarea>
         <div><input class="btn btn-primary" type="submit" name="submit" value="Add"/></div>

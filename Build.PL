@@ -23,6 +23,7 @@ my $requires = {
 	'Scalar::Util' => 0,
 	'Data::Util' => 0,
 	'Dancer::Plugin::Auth::RBAC' => 0,
+    'Dancer::Plugin::Email' => 0,
 	'Data::Pageset' => 0,
 	'Hash::Merge::Simple' => 0,
 	'Digest::MD5' => 0,
