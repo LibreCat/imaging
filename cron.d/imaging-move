@@ -1,6 +1,0 @@
-SHELL=/bin/bash
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/opt/Catmandu/bin
-MAILTO=root
-HOME=/
-PERL5LIB=/opt/Catmandu/lib:/opt/Catmandu-MARC/lib:/opt/Imaging/lib
-*/5 2-22 * * * root /opt/Imaging/perl/cron-move.pl 1>> /var/log/Imaging/imaging-move.log 2>> /var/log/Imaging/imaging-move.error
