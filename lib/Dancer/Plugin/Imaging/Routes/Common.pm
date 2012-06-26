@@ -23,12 +23,12 @@ sub mount_conf {
                 $subdirectories->{$_} = is_string($subdirectories->{$_}) ? $subdirectories->{$_} : $_;
             }
             $mc = {
-                mount => $topdir,
+                path => $topdir,
                 subdirectories => $subdirectories
             }
         }else{
             $mc = {
-                mount => "/tmp",
+                path => "/tmp",
                 subdirectories => {
                     "ready" => "ready",
                     "processed" => "processed",
@@ -40,7 +40,7 @@ sub mount_conf {
     };
 }
 sub mount {
-    state $mount = mount_conf->{mount};
+    state $mount = mount_conf->{path};
 }
 sub subdirectories {
     state $subdirectories = mount_conf->{subdirectories};

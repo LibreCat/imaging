@@ -32,7 +32,7 @@ any('/status',sub {
     my $config = config;
 
     #aantal directories in 01_ready
-    my $mount_ready = $mount_conf->{mount}."/".$mount_conf->{subdirectories}->{ready};
+    my $mount_ready = mount()."/".$mount_conf->{subdirectories}->{ready};
     foreach my $user(@users){
         my $dir_ready = $mount_ready."/".$user->{login};
         my @files = glob("$dir_ready/*");
