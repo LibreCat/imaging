@@ -4,19 +4,21 @@
 <h1>Wijzig status [% scan.item("_id") %]</h1>
 [%- IF scan.busy %]
     <div class="alert">
-        <strong>opgelet!</strong> een automatisch script bewerkt dit record. Voorlopig kunnen geen operaties op dit record worden toegepast.
+        <strong>opgelet!</strong> Dit record is nog niet geregistreerd door het systeem. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
     </div>
 [%- END %]
 
-[% TO_FIX = 0 %]
+[% TO_FIX = 1 %]
 [%- TRY %]
     [% FIXME = scan.path _ "/__FIXME.txt" %]
     [%- USE File(FIXME) %]
-    [% TO_FIX = 1 %]
+[% CATCH %]
+    [% TO_FIX = 0 %]
 [% END %]
+
 [% IF TO_FIX %]
     <div class="alert">
-        <strong>opgelet!</strong>Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map.
+        <strong>opgelet!</strong>&nbsp;Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map.
     </div>
 [% END %]
 

@@ -91,7 +91,7 @@
         [% facet_status.qa_control_ok || 0 %]
     [% END %]
   </dd>
-  
+ 
 
   <dt>Gearchiveerd</dt>
   <dd>
@@ -147,4 +147,19 @@
         [% num_done || 0 %]
     [% END %]
   </dd>
+
+  <dt>&nbsp;</dt>
+  <dd>&nbsp;</dd>
+
+  <dt>Problematisch</dt>
+  <dd>
+    [% IF facet_status.problematic > 0 %]
+        <a href="/scans?q=[% "status:problematic" | url %]">
+            [% facet_status.problematic %]
+        </a>
+    [% ELSE %]
+        [% facet_status.problematic || 0 %]
+    [% END %]
+  </dd> 
+
 </dl>

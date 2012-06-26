@@ -22,13 +22,14 @@
     <td>[% settings.human_readable.${directory.record.status} || directory.record.status || "-" %]</td>
     <td>[% directory.record.profile_id || "-" %]</td>
     <td>
-        [% TO_FIX = 0 %]
+        [% TO_FIX = 1 %]
         [%- TRY %]
             [% FIXME = directory.path _ "/__FIXME.txt" %]
             [%- USE File(FIXME) %]
-            [% TO_FIX = 1 %]
+        [% CATCH %]
+            [% TO_FIX = 0 %]
         [% END %]
-        <input type="checkbox" readonly="readonly" checked="[% TO_FIX ? "checked":""  %]">
+        <input type="checkbox" disabled="disabled" [% IF TO_FIX %]checked="checked"[% END %] >
     </td>
   </tr>
   [%- END %]

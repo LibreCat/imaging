@@ -21,6 +21,15 @@ auto_reload: 0
 
 #plugins
 plugins:
+ Email:
+  driver: "smtp"
+  host: "localhost"
+  port: 25
+  encoding: "base64"
+  from: "libservice@ugent.be"
+  type: "html"
+  subject: "Dashboard Scanning workflow"
+  to: "nicolas.franck@ugent.be"
  Database:
   driver: mysql
   database: imaging
@@ -155,34 +164,35 @@ status:
  change:
   qa_manager: &statuschangeqamanager
    registered: 
-    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok"]
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok","problematic"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_scans:
-    values: []
+    values: ["problematic"]
    reprocess_metadata: 
-    values: ["registered"]
+    values: ["registered","problematic"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_derivatives: 
-    values: ["registered"]
+    values: ["registered","problematic"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    qa_control_ok: 
-    values: ["registered"]
+    values: ["registered","problematic"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    archived:
-    values: ["archived_ok"]
+    values: ["archived_ok","problematic"]
    archived_ok:
-    values: ["archived"]
+    values: ["archived","problematic"]
    published:
-    values: ["published_ok"]
+    values: ["published_ok","problematic"]
    published_ok:
     values: ["published"]
   admin: *statuschangeqamanager
 human_readable:
+ problematic: "problematisch"
  incoming: "aangeboden scan"
  incoming_error: "automatische check gefaald"
  incoming_ok: "automatische check successvol"
@@ -230,8 +240,9 @@ profiles:
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkFilename"
      args:
+      types: ["MA","AC","ST"]
       valid_patterns:
-       - '\.(?:tif|fff)$'
+       - '\.(?:tif|fff|pdf|jpg)$'
        #- '^(?!manifest-md5\.txt$)'
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkAleph"

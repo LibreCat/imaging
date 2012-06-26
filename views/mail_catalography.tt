@@ -1,0 +1,45 @@
+[% USE date %]
+<!doctype html>
+<html>
+    <body>
+        <p>Beste catalograaf,</p>
+        <table>
+            <tr>
+                <th colspan="2" style="padding:10px 0px 10px;text-align:left">
+                    De metadata van dit Aleph-record moet worden aangepast:
+                </th>
+            </tr>
+            <tr>
+                <th style="text-align:right">id:</th>
+                <td>[% scan.metadata.0.source _ ":" _ scan.metadata.0.fSYS %]</td>
+            </tr>
+            <tr>
+                <th style="text-align:right">links:</th>
+                <td>
+                    <a href="http://search.ugent.be/meercat/x/view/[% scan.metadata.0.source _ "/" _ scan.metadata.0.fSYS %]">Meercat</a>&nbsp;|&nbsp;
+                    <a href="[% link %]">Dashboard</a>
+                </td>
+            </tr>
+            <tr>
+                <th colspan="2" style="padding:10px 0px 10px;text-align:left">
+                    Verantwoordelijke:
+                </th>
+            </tr>
+            <tr>
+                <th style="text-align:right">gebruikersnaam:</th>
+                <td>[% session.user.name %]</td>
+            </tr>
+            <tr>
+                <th style="text-align:right">login:</th>
+                <td>[% session.user.login %]</td>
+            </tr>
+            [% IF comments %]
+            <tr>
+                <th style="text-align:right">bericht:</th>
+                <td>[% comments | html %]</td>
+            </tr>
+            [% END %]
+        </table>
+        <p>&copy;&nbsp;[% date.format(format => '%Y') %]&nbsp;Dashboard Scanning Workflow, Universiteitsbibliotheek Gent</p>
+    </body>
+</html>

@@ -5,15 +5,17 @@
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
 
-[% TO_FIX = 0 %]
+[% TO_FIX = 1 %]
 [%- TRY %]
     [% FIXME = scan.path _ "/__FIXME.txt" %]
     [%- USE File(FIXME) %]
-    [% TO_FIX = 1 %]
+[% CATCH %]
+    [% TO_FIX = 0 %]
 [% END %]
+
 [% IF TO_FIX %]
     <div class="alert">
-        <strong>opgelet!</strong>Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map.
+        <strong>opgelet!</strong>&nbsp;Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map.
     </div>
 [% END %]
 

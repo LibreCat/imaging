@@ -1,13 +1,28 @@
 package Imaging::Test::Dir::NARA::checkFilename;
 use Moo;
 use Catmandu::Sane;
-use Data::Util qw(:check);
+use Data::Util qw(:check :validate);
+use Catmandu::Util qw(:array);
 use File::Basename;
 
+has types => (
+    is => 'ro',
+    isa => sub { array_ref($_[0]); },
+    lazy => 1,
+    default => sub{
+        [qw(MA ST)];
+    },
+    coerce => sub {
+        ( is_array_ref($_[0]) && scalar(@{ $_[0] }) > 0 ) ? $_[0] : [qw(MA ST)];
+    }
+);
 has _re_filename => (
     is => 'ro',
+    lazy => 1,
     default => sub{
-        qr/^([\w_\-]+)_(\d{4})_(\d{4})_(MA|ST)\.([a-zA-Z]+)$/;
+        my $self = shift;
+        my $types_join = join('|',@{$self->types()});
+        qr/^([\w_\-]+)_(\d{4})_(\d{4})_($types_join)\.([a-zA-Z]+)$/;
     }
 );
 sub is_fatal {
@@ -21,6 +36,7 @@ sub test {
     my(@errors) = ();
     my $type_numbers = {};
     my $missing_type_numbers = {};
+    my $types_join = join(',',@{$self->types()});
 
     #zit er wel iets in?
     if(scalar(@$files) <= 0 && scalar(@$directories) <= 0){
@@ -39,13 +55,14 @@ sub test {
             if($index >= 0){
                 my $base = substr($stats->{basename},0,$index);
 
-                #type (MA|ST)
+                #type
                 my $type = substr($base,-2);
-                if(!( is_string($type) && (
-                    $type eq "MA" || $type eq "ST"
-                ))){
+                if(!( 
+                    is_string($type) &&
+                    array_includes($self->types,$type)
+                )){
                     $type = defined($type) ? $type:"";
-                    push @errors,$stats->{basename}." moet MA of ST zijn (gevonden:'$type')";
+                    push @errors,$stats->{basename}." moet $types_join zijn (gevonden:'$type')";
                 }
 
                 #sequentienummer (0001)
@@ -92,10 +109,12 @@ sub test {
         }
     }
 
-    my $num_st = scalar(@{ $type_numbers->{ST} || [] });
-    #indien een ST, dan minstens twee
-    if($num_st  > 0 && $num_st < 2){
-        push @errors,"wanneer er files zijn van het type ST, dan moeten er minimum 2 zijn. Opgegeven: $num_st";
+    if(array_includes($self->types,"ST")){
+        my $num_st = scalar(@{ $type_numbers->{ST} || [] });
+        #indien een ST, dan minstens twee
+        if($num_st  > 0 && $num_st < 2){
+            push @errors,"wanneer er files zijn van het type ST, dan moeten er minimum 2 zijn. Opgegeven: $num_st";
+        }
     }
 
     #check volgorde binnen MA, ST
@@ -115,12 +134,14 @@ sub test {
         $missing_type_numbers->{$type} = \@missing_numbers;
     }
 
-    #check minstens 1 master (en die moet 0001 zijn) -> want vorige kan dat niet controleren!
-    my $num_ma = scalar(@{ $type_numbers->{MA} || [] });
-    if($num_ma == 0){
-        push @errors,"Er moet tenminste 1 master tif aanwezig zijn. Geen aanwezig.";
-    }elsif($num_ma == 1 && $type_numbers->{MA}->[0] != 1){
-        push @errors,"1 master tif aangetroffen, maar het sequentienummer begint niet met '0001'";
+    if(array_includes($self->types,"MA")){
+        #check minstens 1 master (en die moet 0001 zijn) -> want vorige kan dat niet controleren!
+        my $num_ma = scalar(@{ $type_numbers->{MA} || [] });
+        if($num_ma == 0){
+            push @errors,"Er moet tenminste 1 master tif aanwezig zijn. Geen aanwezig.";
+        }elsif($num_ma == 1 && $type_numbers->{MA}->[0] != 1){
+            push @errors,"1 master tif aangetroffen, maar het sequentienummer begint niet met '0001'";
+        }
     }
 
     foreach my $type(keys %$missing_type_numbers){

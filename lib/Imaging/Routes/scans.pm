@@ -3,11 +3,10 @@ use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Imaging::Routes::Meercat;
 use Dancer::Plugin::Imaging::Routes::Utils;
-use CGI::Expand qw(expand_hash);
 use Dancer::Plugin::Auth::RBAC;
-use Dancer::Plugin::Database;
+use Dancer::Plugin::Email;
 use Catmandu::Sane;
-use Catmandu qw(store);
+use Catmandu;
 use Catmandu::Util qw(:is :array);
 use Data::Pageset;
 use Try::Tiny;
@@ -243,6 +242,7 @@ any('/scans/:_id',sub {
         errors => \@errors,
         mount_conf => mount_conf(),
         projects => \@projects,
+        status_change_conf => status_change_conf(),
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });
 });
@@ -584,7 +584,15 @@ any('/scans/:_id/status',sub{
 
                 push @errors,"gelieve de nieuwe status op te geven";
 
-            }else{
+            }elsif(
+                $status_to eq "reprocess_metadata" && 
+                scalar(@{ $scan->{metadata} || []}) != 1
+            ){
+                
+                push @errors,"Dit record moet exact één metadata record bevatten";
+
+            }
+            else{
 
                 if(
                     array_includes($status_to_allowed,$status_to)
@@ -609,8 +617,34 @@ any('/scans/:_id/status',sub{
                     };
                     $scan->{datetime_last_modified} = Time::HiRes::time;
 
+
+                    if($status_to eq "reprocess_metadata"){
+                        my $message = template("mail_catalography",{
+                            scan => $scan,
+                            session => session(),
+                            comments => $comments,
+                            "link" => uri_for("/scans/".$scan->{_id})."#tab-metadata"
+                        },{ 
+                            layout=>undef
+                        });
+                        say $message;
+
+                        my $status = email {
+                            message => $message
+                        };
+                        if(defined($status->{type}) && $status->{type} eq "failure"){
+                            
+                            push @errors,"Mail naar catalografie kon niet worden verzonden:".$status->{string};
+
+                        }else{
+    
+                            push @messages,"Een mail werd verzonden naar de catalografie!";
+
+                        }
+
+                    }
                     #reprocess_scans: verplaats naar 01_ready van owner + __FIXME.txt
-                    if($status_to eq "reprocess_scans"){
+                    elsif($status_to eq "reprocess_scans"){
 
                         $scan->{busy} = 1;
                         my $user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });

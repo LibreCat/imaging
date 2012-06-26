@@ -281,9 +281,7 @@ foreach my $id (@incoming_ok){
             open FILE,$file->{path} or die($!);
             my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
             my $filename = $file->{path};
-            say "removing '$oldpath/' from '$filename'";
             $filename =~ s/^$oldpath\///;
-            say "result:'$filename'";
             print MANIFEST "$md5sum_file $filename\r\n";
             close FILE;
         }
