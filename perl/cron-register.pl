@@ -267,6 +267,14 @@ foreach my $id (@incoming_ok){
 
     say "\tscan $id:";
 
+    #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
+    
+    my $mtime_latest_file = mtime_latest_file($scan->{path});
+    if($mtime_latest_file > $scan->{datetime_last_modified}){
+        say STDERR "\t\tis changed since last check, I'm sorry! Aborting..";
+        next;
+    }
+
     #check BAGS!
     if($scan->{profile_id} eq "BAG"){
         say "\t\tvalidating as bagit";

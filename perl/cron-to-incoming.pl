@@ -50,7 +50,8 @@ sub process_scan {
     open FILE,">$newpath/__FIXME.txt" or return complain($!);
     print FILE $scan->{status_history}->[-1]->{comments};
     close FILE;
-    
+
+ 
     #verplaats bestanden die opgelijst staan in __MANIFEST-MD5.txt naar 01_ready
     #andere bestanden laat je staan (en worden dus verwijderd)
     open FILE,$manifest or return complain($!);
@@ -60,6 +61,7 @@ sub process_scan {
         utf8::decode($line);
         my($checksum,$filename)=split(/\s+/o,$line);
 
+        mkpath(File::Basename::dirname("$newpath/$filename"));   
         say "moving $oldpath/$filename to $newpath/$filename";
         if(
             !move("$oldpath/$filename","$newpath/$filename")
