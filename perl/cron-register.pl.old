@@ -18,7 +18,27 @@ use English '-no_match_vars';
 use Archive::BagIt;
 
 
+my $pidfile;
 BEGIN {
+    $pidfile = "/var/run/cron-imaging.pid";
+    #lock
+    if(-f $pidfile){
+        local(*PID);
+        open PID,$pidfile or die($!);
+        local($/);
+        $/ = undef;
+        my $pid = <PID>;
+        close PID;
+
+        if(kill 0,$pid){
+            die("Cannot run while other cronjob of imaging is still running\n");
+        }
+    }
+    local(*PID);
+    open PID,">$pidfile" or die($!);
+    print PID $$;
+    close PID;
+
     #load configuration
     my $appdir = Cwd::realpath(
         dirname(dirname(
@@ -33,6 +53,9 @@ BEGIN {
     Catmandu->load($appdir);
 }
 
+END {
+    unlink($pidfile);
+}
 
 use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Imaging::Routes::Meercat;
