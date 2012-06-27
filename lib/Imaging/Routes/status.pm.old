@@ -28,10 +28,7 @@ any('/status',sub {
         order_by => 'id'
     });
     my $mount_conf = mount_conf;    
-    my $stats = {
-        fixme => {},
-        ready => {},
-    };
+    my $stats = {};
     my $config = config;
 
     #aantal directories in 01_ready
@@ -39,15 +36,15 @@ any('/status',sub {
     foreach my $user(@users){
         my $dir_ready = $mount_ready."/".$user->{login};
         my @files = glob("$dir_ready/*");
-        $stats->{ready}->{$user->{login}} = scalar(@files);
-        $stats->{fixme}->{$user->{login}} = 0;
-        for(@files){
-            if(-f "$_/__FIXME.txt"){
-                $stats->{fixme}->{$user->{login}}++;
-            }
-        }
-    }
+        $stats->{ready}->{ $user->{login} } = scalar(@files);
 
+        my $result = index_scan->search(
+            query => "(status:reprocess_scans) AND user_login:\"".$user->{login}."\"",
+            limit => 0
+        );
+        $stats->{reprocessing}->{ $user->{login} } = $result->total;
+    }
+    
     #status facet
     my $result = index_scan->search(
         query => "*",

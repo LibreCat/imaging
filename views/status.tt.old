@@ -11,14 +11,26 @@
   <dd>
     [%- IF stats.ready.${user_login} > 0 %]
       <a href="/ready/[% user_login %]">[% stats.ready.${user_login} %]</a>
-      [% IF stats.fixme.${user_login} %]
-        &nbsp;([% stats.fixme.${user_login} || 0 %] in herwerking)
-      [% END %]  
     [%- ELSE %]
       [% stats.ready.${user_login} %]
     [%- END %]
   </dd>
   [%- END %]
+
+  [%- FOREACH user_login IN stats.reprocessing.keys.sort %]
+  <dt>
+      [% settings.mounts.directories.subdirectories.reprocessing _ "/" _ user_login %]
+  </dt>
+  <dd>
+    [%- IF stats.reprocessing.${user_login} > 0 -%]
+    [%- q = "status:reprocess_scans AND user_login:" _ user_login -%]
+    <a href="/scans?q=[% q | url %]">[% stats.reprocessing.${user_login} %]</a>
+    [%- ELSE %]
+    [% stats.reprocessing.${user_login} %]
+    [%- END %]
+  </dd>
+  [%- END %]
+
 
   <dt>&nbsp;</dt>
   <dd>&nbsp;</dd>
@@ -41,17 +53,6 @@
         </a>
     [% ELSE %]  
         [% facet_status.reprocess_derivatives || 0 %]
-    [% END %]
-  </dd>
-
-  <dt>Herwerking door qa manager</dt>
-  <dd>
-    [% IF facet_status.reprocess_scans_qa_manager > 0 %]
-        <a href="/scans?q=[% "status:reprocess_scans_qa_manager" | url %]">
-            [% facet_status.reprocess_scans_qa_manager %]
-        </a>
-    [% ELSE %]
-        [% facet_status.reprocess_scans_qa_manager || 0 %]
     [% END %]
   </dd>
 

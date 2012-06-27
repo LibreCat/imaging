@@ -153,7 +153,7 @@ mounts:
     seconds: 5
 status:
  collection:
-  status_page: ["registering","registered","derivatives_created","reprocess_metadata","reprocess_derivatives","reprocess_scans","qa_control_ok","archived","archived_ok","published","published_ok"]
+  status_page: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","reprocess_scans","qa_control_ok","archived","archived_ok","published","published_ok","problematic"]
   qa_control: ["registered","derivatives_created","archived","published"]
   publishing: ["qa_control_ok","archived","archived_ok","published"]
   archiving: ["qa_control_ok","archived","archived_ok","published","published_ok"]
@@ -196,7 +196,6 @@ human_readable:
  incoming: "aangeboden scan"
  incoming_error: "automatische check gefaald"
  incoming_ok: "automatische check successvol"
- registering: "registratie bezig"
  registered: "registratie voltooid"
  reprocess_scans: "terug naar scanner"
  reprocess_metadata: "terug naar catalografie"
