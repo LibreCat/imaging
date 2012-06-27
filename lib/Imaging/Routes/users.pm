@@ -190,6 +190,12 @@ sub check_params_new_user {
             push @errors,"$key moet alfanumeriek zijn";
         }
     }
+    my $uid = getpwuid($params->{login});
+    if(!defined($uid)){
+        push @errors,"user '$params->{login}' bestaat niet in het systeem";
+    }elsif($uid == 0){
+        push @errors,"root wordt niet toegelaten als gebruiker";
+    }   
     return scalar(@errors)==0,\@errors;
 }
 sub user_has_scans {
