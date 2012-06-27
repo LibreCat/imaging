@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use Catmandu qw(store);
 use Dancer qw(:script);
-use Imaging::Util qw(:files);
+use Imaging::Util qw(:files :data);
 use Imaging::Dir::Info;
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is :array);
@@ -17,8 +17,9 @@ use all qw(Imaging::Dir::Query::*);
 use English '-no_match_vars';
 use Archive::BagIt;
 
-
+my $pidfile;
 BEGIN {
+   
     #load configuration
     my $appdir = Cwd::realpath(
         dirname(dirname(
@@ -31,8 +32,29 @@ BEGIN {
     Dancer::Config::setting(envdir => "$appdir/environments");
     Dancer::Config::load();
     Catmandu->load($appdir);
-}
 
+    #voer niet uit wanneer andere instantie van imaging-register.pl draait!
+    local(*PIDFILE);
+    $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
+    if(-f $pidfile){
+        local($/)=undef;
+        open PIDFILE,$pidfile or die($!);
+        my $pid = <PIDFILE>;
+        close PIDFILE;
+        if(is_natural($pid) && kill(0,$pid)){
+            die("Cannot run while other registration is running (pidfile '$pidfile',pid '$pid')\n");
+        }
+    }
+    #plaats lock
+    open PIDFILE,">$pidfile" or die($!);
+    print PIDFILE $$;
+    close PIDFILE;
+
+}
+END {
+    #verwijder lock
+    unlink($pidfile) if is_string($pidfile) && -f -w $pidfile;
+}
 
 use Dancer::Plugin::Imaging::Routes::Utils;
 use Dancer::Plugin::Imaging::Routes::Meercat;

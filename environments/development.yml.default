@@ -286,3 +286,6 @@ profiles:
      args: 
       solr_args: *meercatindex
      on_error: "continue"
+cron:
+ register:
+  pidfile: "/tmp/imaging-register.pid"

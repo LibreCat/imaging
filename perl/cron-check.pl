@@ -30,7 +30,6 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 }
-
 use Dancer::Plugin::Imaging::Routes::Utils;
 
 sub profiles_conf {
@@ -135,6 +134,23 @@ sub file_seconds_old {
 sub file_is_busy {
     file_seconds_old(shift) <= upload_idle_time();
 }
+
+
+#voer niet uit wanneer imaging-register.pl draait!
+
+my $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
+if(-f $pidfile){
+    local(*PIDFILE);
+    local($/)=undef;
+    open PIDFILE,$pidfile or die($!);
+    my $pid = <PIDFILE>;
+    close PIDFILE;
+
+    if(is_natural($pid) && kill(0,$pid)){
+        die("Cannot run while registration is running\n");
+    }
+}
+
 
 my $mount_conf = mount_conf;
 my $scans = scans;
