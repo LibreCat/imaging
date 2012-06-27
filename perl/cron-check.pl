@@ -17,6 +17,13 @@ use Time::Interval;
 our($a,$b);
 
 BEGIN {
+    #lock
+    -f "/var/run/cron-imaging.pid" && die("Cannot run while other cronjob of imaging is still running\n");
+    local(*PID);
+    open PID,">/var/run/cron-imaging.pid" or die($!);
+    print PID $$;
+    close PID;
+
     my $appdir = Cwd::realpath(
         dirname(dirname(
             Cwd::realpath( __FILE__)
@@ -29,13 +36,18 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 }
+END {
+    unlink("/var/run/cron-imaging.pid");
+}
 use Dancer::Plugin::Imaging::Routes::Utils;
 
 sub profiles_conf {
     config->{profiles} ||= {};
 }
-sub profile_resolver {
-    state $r = Imaging::Profiles->new;
+sub profile_detector {
+    state $r = Imaging::Profiles->new(
+        list => config->{profile_detector}->{list} || []
+    );
 }
 sub mount_conf {
     config->{mounts}->{directories};
@@ -320,7 +332,7 @@ foreach my $scan_id(@scan_ids_test){
     say "checking $scan_id at $scan->{path}";
 
     #get profile
-    my $profile_id = profile_resolver->get_profile($scan->{path});
+    my $profile_id = profile_detector->get_profile($scan->{path});
     my $profile;
 
     #lijst bestanden

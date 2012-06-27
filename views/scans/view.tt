@@ -135,9 +135,6 @@
       [%- states_in_ready = settings.status.collection.in_ready-%]
 
       [%- do_open = 1 -%]
-      [%# IF scan.busy %]
-      [%# do_open = 0 %]
-      [%# ELSIF states_in_ready.grep(scan.status).size > 0 -%]
 
       [% IF states_in_ready.grep(scan.status).size > 0 -%]
 
@@ -269,7 +266,7 @@
                     [% tag = element.item("tag") %]
                     [% IF tag == "select" %]
                       [% SET values = element.item("values") || [ value ] %]
-                      <select name="[% element.key %]">
+                      <select name="[% element.key %]" class="baginfostyle">
                       [%- FOREACH conf_value IN values %]
                         <option value="[% conf_value %]"[% IF value == conf_value %] selected="selected"[% END %]>
                           [% conf_value %]
@@ -277,9 +274,9 @@
                       [%- END %]
                       </select>
                     [%- ELSIF tag == "textarea" %]
-                      <textarea name="[% element.key %]">[% value %]</textarea>
+                      <textarea name="[% element.key %]" class="baginfostyle">[% value %]</textarea>
                     [% ELSE %]
-                      <input type="text" name="[% element.key %]" value="[% value %]"/>
+                      <input type="text" name="[% element.key %]" value="[% value %]" class="baginfostyle" />
                     [%- END %]
                     <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button>
                   [% ELSE %]
@@ -375,16 +372,16 @@
           var data = ['<div class="control-group baginfo"><label class="control-label"><b>', key,
             '</b></label><div class="controls">'];
           if(baginfoConfig[i].values && baginfoConfig[i].values.length > 0) {
-              data.push('<select name="', key, '">');
+              data.push('<select name="', key, '" class="baginfostyle">');
               for (var j = 0;j < baginfoConfig[i].values.length;j++) {
                   data.push('<option value="'+baginfoConfig[i].values[j]+'">'+baginfoConfig[i].values[j]+'</option>');
               }
               data.push('</select>');
           }else if(baginfoConfig[i].tag && baginfoConfig[i].tag == "textarea"){
-              data.push('<textarea name="',key,'" ></textarea>');
+              data.push('<textarea name="',key,'" class="baginfostyle" ></textarea>');
           }
           else{
-              data.push('<input type="text" name="', key, '" value=""/>');
+              data.push('<input type="text" name="', key, '" value="" class="baginfostyle"/>');
           }
           data.push(' <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button></div></div>');
           var f = $(this).closest('form');

@@ -1,1 +1,10 @@
-<img src="/img/logo-boekentoren.png" />
+<h1>Dashboard Scanning Workflow</h1>
+
+<h3>De mappen die aangeleverd worden, moeten voldoen aan een van deze profielen</h3>
+<dl>
+    [% FOREACH profile_id IN settings.profiles.keys.sort %]
+        [% tt_description = settings.profiles.${profile_id}.description %]
+        <dt>[% profile_id %]</dt>
+        <dd>[% PROCESS $tt_description %]</dd>
+    [% END %]
+</dl>

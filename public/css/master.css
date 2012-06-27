@@ -1,0 +1,9 @@
+input.baginfostyle,textarea.baginfostyle {
+    width:500px;
+}
+select.baginfostyle {
+    width:510px;
+}
+textarea.baginfostyle {
+    height:100px;
+}

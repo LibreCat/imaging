@@ -8,9 +8,7 @@ sub test {
     $dir =~ s/\/$//o if $dir;
     return is_string($dir) &&
     -d "$dir/data" && 
-    -f "$dir/manifest-md5.txt" &&
-    -f "$dir/bagit.txt" &&
-    -f "$dir/bag-info.txt"
+    -f "$dir/bagit.txt"
 }
 
 with 'Imaging::Profile';

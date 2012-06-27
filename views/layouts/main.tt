@@ -4,6 +4,8 @@
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <link rel="stylesheet" href="[% request.base_uri %]/css/bootstrap.min.css" type="text/css" media="screen"/>
+        <link rel="stylesheet" href="[% request.base_uri %]/css/master.css" type="text/css" media="screen"/>
+
         <style type="text/css" media="screen">
           body {
             padding-top: 64px;

@@ -44,17 +44,6 @@
     [% END %]
   </dd>
 
-  <dt>Herwerking door qa manager</dt>
-  <dd>
-    [% IF facet_status.reprocess_scans_qa_manager > 0 %]
-        <a href="/scans?q=[% "status:reprocess_scans_qa_manager" | url %]">
-            [% facet_status.reprocess_scans_qa_manager %]
-        </a>
-    [% ELSE %]
-        [% facet_status.reprocess_scans_qa_manager || 0 %]
-    [% END %]
-  </dd>
-
   <dt>Catalografie</dt>
   <dd>
     [% IF facet_status.reprocess_metadata > 0 %]

@@ -1,41 +1,45 @@
 package Imaging::Profiles;
 use Catmandu::Sane;
-use Catmandu::Util qw(:is);
+use Catmandu::Util qw(require_package);
+use Data::Util qw(:check :validate);
 use Moo;
-use all qw(Imaging::Profile::*);
 
-has _profile_packages => (
-    is => 'ro',
-    predicate => "has_profile_packages",
-    default => sub {
-        my $self = shift;
-        my @packages = grep { $_ =~ /^Imaging\/Profile\//o } keys %INC;
-        foreach(@packages){ s/\.pm$//o; }
-        foreach(@packages){ s/\//::/go; }
-        [sort @packages];
-    }
-);
-has _packages => (
+has list => (
     is => 'rw',
-    default => sub{ {}; }
+    lazy => 1,
+    isa => sub {
+        my $a = $_[0];
+        array_ref($a) && do {
+            my $success = 1;
+            foreach my $pair(@$a){
+                if(!(is_array_ref($pair) && scalar(@$pair) == 2)){
+                    $success = 0;
+                    last;
+                }
+            }
+            $success;
+        } or die("format: [ ['BAG','Imaging::Profile::BAG'],['TAR','Imaging::Profile::TAR'], .. ]\n");
+    },
+    default => sub{ []; }
 );
 sub profile {
+    state $packages = {};
     my($self,$package_name)=@_;
-    $self->_packages->{$package_name} ||= $package_name->new;
+    $packages->{$package_name} ||= require_package($package_name)->new;
 }
 
 sub get_profile {
     my($self,$dir)=@_;
-    foreach my $package_name(@{ $self->_profile_packages }){
+
+    #laatste profile geldt als default, en moet je dus niet testen
+    for(my $i = 0;$i < scalar(@{ $self->list }) - 1;$i++){
+        my($profile_id,$package_name) = @{ $self->list->[$i] };
         my $ref = $self->profile($package_name);
         if($ref->test($dir)){ 
-            #opgelet! $package_name is een alias van een element uit _profile_packages, dus de eerstvolgende is het 'BAG' i.p.v. 'Imaging::Profile::Bag'
-            my $n = $package_name;
-            $n =~ s/Imaging::Profile:://g;
-            return $n; 
+            return $profile_id; 
         }
     }
-    return undef;
+    return (scalar(@{ $self->list }) > 0) ? $self->list->[-1]->[0] : undef;
 }
 
 __PACKAGE__;

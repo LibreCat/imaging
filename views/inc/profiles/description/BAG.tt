@@ -1,3 +1,19 @@
 <ol>
-    <li>geldige bagit directory</li>
+    <li>bagit directory is 'complete', wanneer de volgende onderdelen aanwezig zijn, direct onder de hoofdmap:
+        <ul>
+            <li><b>bagit.txt</b>: bevat exact twee lijnen, waarin 'BagIt-Version' en 'Tag-File-Character-Encoding' worden beschreven
+                <textarea disabled="disabled" style="display:block;width:100%;margin:5px 0px 5px 0px;">BagIt-Version: 0.96&#013;&#010;Tag-File-Character-Encoding: UTF-8</textarea>
+            </li>
+            <li>Payload directory <b>data</b></li>
+            <li>Payload manifest <b>manifest-md5.txt</b>. Elke lijn in dit bestand voldoet aan dit formaat: <i>&lt;checksum&gt; &lt;payload&gt;</i>. Enkel bestanden uit de payload directory zijn toegelaten
+                <textarea disabled="disabled" rows="2" style="display:block;width:100%;margin:5px 0px 5px 0px;">82197eef14f8358b21e6194a1ba5d2c8  data/BRKZ-KRT-0299_2010_0001_MA.tif&#013;&#010;5961553644eb2fc019c774b276d939c6  data/BRKZ-KRT-0299_2010_0001_AC.jpg</textarea>
+            </li>
+            <li>Elke payload uit de payload manifest moet aanwezig zijn in de payload directory</li>
+            <li><b>bag-info.txt</b> waarin de inhoud van de bag beschreven wordt. Elke lijn in dit bestand voldoet aan dit formaat: <i>&lt;key&gt;:&lt;value&gt;</i>
+
+                <textarea disabled="disabled" rows="3" style="display:block;width:100%;margin:5px 0px 5px 0px;">DC-Identifier: rug01:001385565&#013;&#010;DC-Identifier: BRKZ.KRT.0299&#013;&#010;Payload-Oxum: 339336881.2&#013;&#010;DC-AccessRights: open&#013;&#010;DC-DateAccepted: 2012-06-26&#013;&#010;DC-Description: Carte du mouvement des transports en Belgique, pendant l'année 1843, indiquant l'importance comparative de la circulation sur les voies de communication par terre. /Alphonse Belpaire[cartographic material]&#013;&#010;DC-Title: RUG01-001385565&#013;&#010;Bag-Size: 323,6 MB&#013;&#010;DC-Type: Image&#013;&#010;Bagging-Date: 2012-06-26&#013;&#010;DC-Creator: Belpaire, Alphonse&#013;&#010;</textarea>
+            </li>            
+        </ul>
+    </li>
+    <li>bagit directory is 'valid' wanneer elke checksum van elke payload overeenkomt met de checksum zoals die staat genoteerd in manifest-md5.txt</li>
 </ol>

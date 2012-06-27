@@ -14,6 +14,13 @@ use Imaging::Util qw(:files);
 use Imaging::Dir::Info;
 
 BEGIN {
+    #lock
+    -f "/var/run/cron-imaging.pid" && die("Cannot run while other cronjob of imaging is still running\n");
+    local(*PID);
+    open PID,">/var/run/cron-imaging.pid" or die($!);
+    print PID $$;
+    close PID;
+
     my $appdir = Cwd::realpath(
         dirname(dirname(
             Cwd::realpath( __FILE__)
@@ -25,6 +32,9 @@ BEGIN {
     Dancer::Config::setting(envdir => "$appdir/environments");
     Dancer::Config::load();
     Catmandu->load($appdir);
+}
+END {
+    unlink("/var/run/cron-imaging.pid");
 }
 use Dancer::Plugin::Imaging::Routes::Utils;
 
