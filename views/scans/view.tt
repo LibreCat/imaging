@@ -139,7 +139,8 @@
       [% IF states_in_ready.grep(scan.status).size > 0 -%]
 
         [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
-        [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login _ "/"  _ scan.item("_id") %]
+        [% directory = settings.mounts.directories.path _ "/" _ settings.mounts.directories.subdirectories.ready _ "/" %]
+        [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ scan.path.replace(directory,"") %]
 
       [% ELSIF states_in_processed.grep(scan.status).size > 0 %]
 
