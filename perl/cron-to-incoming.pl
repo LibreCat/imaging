@@ -64,7 +64,6 @@ sub process_scan {
         if(
             !move("$oldpath/$filename","$newpath/$filename")
         ){
-            #mislukt: niets aan de hand. Alles staat nog in de map processed
             say STDERR "could not move $oldpath/$filename to $newpath/$filename";
             return;
         }
