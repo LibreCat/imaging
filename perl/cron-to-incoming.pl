@@ -83,14 +83,12 @@ sub process_scan {
         utf8::decode($line);
         my($checksum,$filename)=split(/\s+/o,$line);
 
-        say "copying $oldpath/$filename to $newpath/$filename";
-        #doe een copy operatie: indien een verplaatsing mislukt, kunnen we nog alles laten staan..
+        say "moving $oldpath/$filename to $newpath/$filename";
         if(
-            !copy("$oldpath/$filename","$newpath/$filename")
+            !move("$oldpath/$filename","$newpath/$filename")
         ){
             #mislukt: niets aan de hand. Alles staat nog in de map processed
             say STDERR "could not move $oldpath/$filename to $newpath/$filename";
-            rmtree($newpath) if -d -w $newpath;
             return;
         }
     }
