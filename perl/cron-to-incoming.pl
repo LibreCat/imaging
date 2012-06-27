@@ -75,8 +75,7 @@ sub process_scan {
     #gelukt! verwijder nu oude map
     rmtree($oldpath);
 
-    #TODO: rechten aanpassen aan dat van 01_ready submap
-
+    
     #pas paden aan
     $scan->{path} = $newpath;
     my $dir_info = Imaging::Dir::Info->new(dir => $newpath);
@@ -105,6 +104,19 @@ sub process_scan {
     status2index($scan,-1);
     ($success,$error) = index_log->commit;
     die(join('',@$error)) if !$success;
+
+    #done? rechten aanpassen aan dat van 01_ready submap
+    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+    if($user && getpwuid($user->{login})){
+        local($@);
+        `chown -R $user->{login} $scan->{path} && chmod -R 700 $scan->{path}`;
+        if($@){
+            say STDERR $@;
+        }
+    }else{
+        say STDERR $user->{login}." is not a valid system user" 
+    }
+
 }
 
 
