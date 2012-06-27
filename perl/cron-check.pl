@@ -16,14 +16,28 @@ use Time::HiRes;
 use Time::Interval;
 our($a,$b);
 
+my $pidfile;
 BEGIN {
+    $pidfile = "/var/run/cron-imaging.pid";
     #lock
-    -f "/var/run/cron-imaging.pid" && die("Cannot run while other cronjob of imaging is still running\n");
+    if(-f $pidfile){
+        local(*PID);
+        open PID,$pidfile or die($!);
+        local($/);
+        $/ = undef;
+        my $pid = <PID>;
+        close PID;
+
+        if(kill 0,$pid){
+            die("Cannot run while other cronjob of imaging is still running\n");
+        }
+    }
     local(*PID);
-    open PID,">/var/run/cron-imaging.pid" or die($!);
+    open PID,">$pidfile" or die($!);
     print PID $$;
     close PID;
 
+    #load configuration
     my $appdir = Cwd::realpath(
         dirname(dirname(
             Cwd::realpath( __FILE__)
@@ -36,8 +50,9 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 }
+
 END {
-    unlink("/var/run/cron-imaging.pid");
+    unlink($pidfile);
 }
 use Dancer::Plugin::Imaging::Routes::Utils;
 
