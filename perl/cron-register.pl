@@ -16,8 +16,10 @@ use Time::HiRes;
 use all qw(Imaging::Dir::Query::*);
 use English '-no_match_vars';
 use Archive::BagIt;
+use File::Pid;
 
 my $pidfile;
+my $pid;
 BEGIN {
    
     #load configuration
@@ -34,26 +36,20 @@ BEGIN {
     Catmandu->load($appdir);
 
     #voer niet uit wanneer andere instantie van imaging-register.pl draait!
-    local(*PIDFILE);
     $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
-    if(-f $pidfile){
-        local($/)=undef;
-        open PIDFILE,$pidfile or die($!);
-        my $pid = <PIDFILE>;
-        close PIDFILE;
-        if(is_natural($pid) && kill(0,$pid)){
-            die("Cannot run while other registration is running (pidfile '$pidfile',pid '$pid')\n");
-        }
+    $pid = File::Pid->new({
+        file => $pidfile
+    });
+    if($pid->running){
+        die("Cannot run while registration is running\n");
     }
-    #plaats lock
-    open PIDFILE,">$pidfile" or die($!);
-    print PIDFILE $$;
-    close PIDFILE;
 
+    #plaats lock
+    $pid->write;
 }
 END {
     #verwijder lock
-    unlink($pidfile) if is_string($pidfile) && -f -w $pidfile;
+    $pid->remove if $pid;
 }
 
 use Dancer::Plugin::Imaging::Routes::Utils;
@@ -333,6 +329,14 @@ foreach my $id (@incoming_ok){
             say "\t\tsuccessfull";
         }
     }
+    
+
+    my $uid = getlogin || getpwuid($UID);
+    my $gid = getgrgid($REAL_GROUP_ID);
+
+    #ok, tijdelijk toekennen aan root zelf, opdat niemand kan tussenkomen..
+    say "\tchanging ownership of '$scan->{path}' to $uid:$gid";
+    `chown -R $uid:$gid $scan->{path} && chmod -R 700 $scan->{path}`;
 
 
     my $oldpath = $scan->{path};
@@ -366,11 +370,7 @@ foreach my $id (@incoming_ok){
     say "\tmoving from $oldpath to $newpath";
     move($oldpath,$newpath);
     #chmod(0755,$newpath) is enkel van toepassing op bestanden en mappen direct onder newpath..
-    `chmod -R 0755 $newpath`;    
-    #toekennen aan uitvoerende gebruiker
-    my $uid = getlogin || getpwuid($UID);
-    my $gid = getgrgid($REAL_GROUP_ID);
-    `chown -R $uid:$gid $newpath`;
+    `chmod -R 0755 $newpath && chown -R $uid:$gid $newpath`;
     $scan->{path} = $newpath;
 
     #update files

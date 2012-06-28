@@ -10,8 +10,9 @@ use Cwd qw(abs_path);
 use File::Spec;
 use Try::Tiny;
 use IO::CaptureOutput qw(capture_exec);
-use Imaging::Util qw(:files);
+use Imaging::Util qw(:files :data);
 use Imaging::Dir::Info;
+use File::Pid;
 
 BEGIN {
     #load configuration
@@ -123,16 +124,11 @@ sub process_scan {
 #voer niet uit wanneer imaging-register.pl draait!
 
 my $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
-if(-f $pidfile){
-    local(*PIDFILE);
-    local($/)=undef;
-    open PIDFILE,$pidfile or die($!);
-    my $pid = <PIDFILE>;
-    close PIDFILE;
-
-    if(is_natural($pid) && kill(0,$pid)){
-        die("Cannot run while registration is running\n");
-    }
+my $pid = File::Pid->new({
+    file => $pidfile
+});
+if($pid->running){
+    die("Cannot run while registration is running\n");
 }
 
 my $this_file = File::Basename::basename(__FILE__);

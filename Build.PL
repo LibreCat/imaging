@@ -40,7 +40,8 @@ my $requires = {
     'IO::CaptureOutput' => 0,
     'CAM::PDF' => 0,
     'PDF::API2' => 0,
-    'Hash::Merge' => 0
+    'Hash::Merge' => 0,
+    'File::Pid' => 0
 };
 my $recommends = {
 	'Starman' => 0,
