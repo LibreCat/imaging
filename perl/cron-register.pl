@@ -40,7 +40,7 @@ BEGIN {
     $pid = File::Pid->new({
         file => $pidfile
     });
-    if($pid->running){
+    if(-f $pid->file && $pid->running){
         die("Cannot run while registration is running\n");
     }
 
