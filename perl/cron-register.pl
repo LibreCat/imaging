@@ -334,18 +334,19 @@ foreach my $id (@incoming_ok){
     #vergeet zelfde rechten niet toe te kennen aan bovenliggende map (anders kan je verwijderen..)
     my $this_uid = getlogin || getpwuid($UID);
     my $this_gid = getgrgid($REAL_GROUP_ID);
+
     my $uid = data_at(config,"mounts.directories.owner.processed") || $this_uid;
     my $gid = data_at(config,"mounts.directories.group.processed") || $this_gid;
     my $rights = data_at(config,"mounts.directories.rights.processed") || "0755";
 
-
-    if(!getpwuid($uid)){
+    
+    my($uname) = getpwnam($uid);
+    if(!is_string($uname)){
         say STDERR "$uid is not a valid user name";
         next;
     }
     say "\tchanging ownership of '$scan->{path}' to $this_uid:$this_gid";
     `chown -R $this_uid:$this_gid $scan->{path} && chmod -R 700 $scan->{path}`;
-
 
     my $oldpath = $scan->{path};
     my $mount_conf = mount_conf();

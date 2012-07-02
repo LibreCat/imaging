@@ -19,7 +19,7 @@ sub mount_conf {
         ){
             my $topdir = $config->{mounts}->{directories}->{path};
             my $subdirectories = is_hash_ref($config->{mounts}->{directories}->{subdirectories}) ? $config->{mounts}->{directories}->{subdirectories} : {};
-            foreach(qw(ready processed reprocessing)){
+            foreach(qw(ready processed)){
                 $subdirectories->{$_} = is_string($subdirectories->{$_}) ? $subdirectories->{$_} : $_;
             }
             $mc = {
@@ -31,8 +31,7 @@ sub mount_conf {
                 path => "/tmp",
                 subdirectories => {
                     "ready" => "ready",
-                    "processed" => "processed",
-                    "reprocessing" => "reprocessing"
+                    "processed" => "processed"
                 }
             };
         }

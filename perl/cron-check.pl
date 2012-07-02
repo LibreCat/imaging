@@ -167,9 +167,9 @@ foreach my $user(@users){
 
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
     if(! -d $ready ){
-        say STDERR "usery $user->{login} has no directory ready";
+        say STDERR "user $user->{login} has no directory ready";
         next;
-    }elsif(!getpwuid($user->{login})){
+    }elsif(!getpwnam($user->{login})){
         say STDERR "$user->{login} does not exist";
         next;
     }
@@ -298,6 +298,7 @@ foreach my $scan_id(@scan_ids_ready){
 
     my $scan = $scans->get($scan_id);
 
+
     #check nieuwe directories (opgelet: ook record zonder profile_id onder)
     if(
         array_includes([qw(incoming)],$scan->{status})
@@ -335,6 +336,7 @@ foreach my $scan_id(@scan_ids_ready){
 foreach my $scan_id(@scan_ids_test){
     my $scan = $scans->get($scan_id);
 
+    $scan->{busy} = 1;
 
     say "checking $scan_id at $scan->{path}";
 

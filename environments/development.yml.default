@@ -234,9 +234,9 @@ profiles:
    - class: "Imaging::Test::Dir::checkDirStructure"
      args:
       conf:
-       glob: "__MANIFEST-MD5.txt *.tif *.jpg *.fff *.pdf"
+       glob: "*.tif *.jpg *.fff *.pdf"
        all: 1
-       message: "map mag enkel deze bestanden bevatten: __MANIFEST-MD5.txt *.tif *.jpg *.fff *.pdf"
+       message: "map mag enkel deze bestanden bevatten: *.tif *.jpg *.fff *.pdf"
      on_error: "stop"
    - class: "Imaging::Test::Dir::checkTIFF"
      args:
