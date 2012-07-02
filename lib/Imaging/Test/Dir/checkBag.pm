@@ -32,15 +32,7 @@ sub test {
     if(!$read_successfull){
         my $bagit_errors = $self->_bagit->_error;
         if(is_array_ref($bagit_errors) && scalar(@$bagit_errors) > 0){
-            foreach(@$bagit_errors){
-                if(/bagit\.txt/o){
-                    push @errors,basename($topdir).":bagit.txt bestaat niet";
-                }elsif(/(package-info\.txt|bag-info\.txt)/o){
-                    push @errors,basename($topdir).":package-info.txt of bag-info.txt bestaat niet";
-                }elsif(/manifest-md5\.txt/o){
-                    push @errors,basename($topdir).":manifest-md5.txt bestaat niet";
-                }
-            }
+            push @errors,@$bagit_errors;
         }else{
             push @errors,basename($topdir).": bag validatie faalde om niet gekende redenen";
         }

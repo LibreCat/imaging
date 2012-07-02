@@ -131,9 +131,15 @@ all: {}
 mounts:
  directories:
   path: "/mnt/data01"
+  owner:
+   processed: root
+  group:
+   processed: nginx
+  rights:
+   processed: "775" 
   subdirectories:
    ready: "01_ready"
-   processed: "02_processed"
+   processed: "02_processed"   
   network_directories:
    #vergeet de slash niet na file:// die in windows localhost aangeeft!
    ready:

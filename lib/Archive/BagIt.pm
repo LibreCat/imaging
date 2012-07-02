@@ -200,7 +200,7 @@ sub write {
     remove_tree($path) if $opts{overwrite};
 
     if (-d $path) {
-        $self->_push_error("$path already exists");
+        $self->_push_error("$path bestaat reeds");
         return undef;
     }
 
@@ -231,7 +231,7 @@ sub add_file {
     $self->_error([]);
 
     if ($self->get_checksum("$name")) {
-        $self->_push_error("$name already exists in bag");
+        $self->_push_error("$name bestaat reeds in bag");
         return;
     } 
 
@@ -255,14 +255,14 @@ sub remove_file {
     $self->_error([]);
 
     unless ($self->get_checksum($name)) {
-        $self->_push_error("$name doesn't exist in bag");
+        $self->_push_error("$name bestaat niet in bag");
         return;
     }
 
     my $idx = first_index { $_->{name} eq $name } @{ $self->_files };
 
     unless ($idx != -1) {
-        $self->_push_error("$name doesn't exist in bag");
+        $self->_push_error("$name bestaat niet in bag");
         return;
     }
 
@@ -434,11 +434,11 @@ sub complete {
     $self->_error([]);
 
     unless ($self->version and $self->version =~ /^\d+\.\d+$/) {
-        $self->_push_error("No BagIt-Version available");       
+        $self->_push_error("Tag 'BagIt-Version' niet aanwezig in bagit.txt");       
     }
 
     unless ($self->encoding and $self->encoding eq 'UTF-8') {
-        $self->_push_error("No Tag-File-Character-Encoding available");     
+        $self->_push_error("Tag 'Tag-File-Character-Encoding' niet aanwezig in bagit.txt");     
     }
 
     my @missing = ();
@@ -459,7 +459,7 @@ sub complete {
 
     foreach my $file (@missing) {
         unless (grep { $_->{filename} =~ /^$file$/ } $self->list_fetch) {
-            $self->_push_error("file $file missing from bag and fetch.txt");
+            $self->_push_error("bestand $file ontbreekt in bag en fetch.txt");
         }
     }
 
@@ -476,14 +476,14 @@ sub valid {
         # To keep things very simple right now we require at least the
         # bag to be serialized somewhere before we start our validation process
         unless (defined $path && -d $path) {
-            return (0,"sorry I can only validate serialized bags try a write() first");
+            return (0,"sorry, enkel geserialiseerde bags worden toegelaten");
         }
 
         my $md5 = $tag == 0 ? $self->get_checksum($file) : $self->get_tagsum($file);
         my $fh  = $tag == 0 ? new IO::File "$path/data/$file", "r" : new IO::File "$path/$file" , "r";
     
         unless ($fh) {
-          return (0,"failed to open $file for reading");
+          return (0,"kan bestand $file niet lezen");
         }
 
         binmode($fh);
@@ -493,7 +493,7 @@ sub valid {
         undef $fh;
 
         unless ($md5 eq $md5_check) {
-          return (0, "$file checksum failed $md5 <> $md5_check");
+          return (0, "$file checksum faalde $md5 <> $md5_check");
         }
 
         (1);
@@ -510,7 +510,7 @@ sub valid {
        my ($code,$msg) = $validator->($file,0);
 
        if ($code == 0) {
-        $self->_push_error("$file failed : $msg");
+        $self->_push_error("$file faalde : $msg");
        }
     }
     foreach my $sum ($self->list_tagsum) {
@@ -572,7 +572,7 @@ sub _read_manifest {
     $self->_sums({});
 
     if (! -f "$path/manifest-md5.txt") {
-        $self->_push_error("$path/manifest-md5.txt doesn't exist");
+        $self->_push_error("$path/manifest-md5.txt bestaat niet");
         return;
     }
 
@@ -593,7 +593,7 @@ sub _read_tags {
     $self->_tags([]);
 
     local(*F);
-    open(F,"find $path -maxdepth 1 -type f |") || die "failed to find";
+    open(F,"find $path -maxdepth 1 -type f |") || die "kan tag-bestanden niet vinden";
     while(<F>) {
     $_ =~ s/\r\n$/\n/g;
         chomp($_);
@@ -614,13 +614,13 @@ sub _read_files {
     $self->_files([]);
 
     if (! -d "$path/data" ) {
-        $self->_push_error("$path/data doesn't exist");
+        $self->_push_error("payload directory $path/data bestaat niet");
         return;
     }
 
 
     local(*F);
-    open(F,"find $path/data -type f |") || die "failed to find";
+    open(F,"find $path/data -type f |") || die "payload directory bevat geen bestanden";
 
     while(my $file = <F>) {
     $file =~ s/\r\n$/\n/g;
@@ -647,7 +647,7 @@ sub _read_info {
     my $info_file = -f "$path/bag-info.txt" ? "$path/bag-info.txt" :  "$path/package-info.txt";
 
     if (! -f $info_file) {
-        $self->_push_error("$path/package-info.txt or $path/bag-info.txt doesn't exist");
+        $self->_push_error("$path/package-info.txt of $path/bag-info.txt bestaat niet");
         return;
     }
 
@@ -676,7 +676,7 @@ sub _read_version {
     my ($self, $path) = @_;
 
     if (! -f "$path/bagit.txt" ) {
-        $self->_push_error("$path/bagit.txt doesn't exist");
+        $self->_push_error("$path/bagit.txt bestaat niet");
         return;
     }
 
@@ -701,7 +701,7 @@ sub _write_bagit {
 
     local (*F);
     unless (open(F,">:utf8" , "$path/bagit.txt")) {
-        $self->_push_error("failed to create $path/bagit.txt : $!");
+        $self->_push_error("kon $path/bagit.txt niet aanmaken: $!");
         return;
     }
 
@@ -730,7 +730,7 @@ sub  _write_info {
     local(*F);
 
     unless (open(F,">:utf8", "$path/bag-info.txt")) {
-        $self->_push_error("failed to create $path/bag-info.txt : $!");
+        $self->_push_error("kon $path/bag-info.txt niet aanmaken: $!");
         return;
     }
 
@@ -766,7 +766,7 @@ sub  _write_data {
     my ($self,$path) = @_;
 
     unless (mkdir "$path/data") {
-        $self->_push_error("failed to create $path/data : $!");
+        $self->_push_error("kon payload directory $path/data niet aanmaken: $!");
         return;
     }
 
@@ -797,7 +797,7 @@ sub _write_fetch {
     local(*F);
 
     unless (open(F,">:utf8", "$path/fetch.txt")) {
-        $self->_push_error("failed to create $path/fetch.txt : $!");
+        $self->_push_error("kon $path/fetch.txt niet aanmaken: $!");
         return; 
     }
 
@@ -826,7 +826,7 @@ sub  _write_manifest {
     local (*F);
 
     unless (open(F,">:utf8", "$path/manifest-md5.txt")) {
-        $self->_push_error("failed to create $path/manifest-md5.txt : $!");
+        $self->_push_error("kon $path/manifest-md5.txt niet aanmaken: $!");
         return;
     }
 
@@ -855,7 +855,7 @@ sub  _write_tag_manifest {
     local (*F);
 
     unless (open(F,">:utf8", "$path/tag-manifest-md5.txt")) {
-        $self->_push_error("failed to create $path/manifest-md5.txt : $!");
+        $self->_push_error("kon $path/manifest-md5.txt niet aanmaken: $!");
         return;
     }
 

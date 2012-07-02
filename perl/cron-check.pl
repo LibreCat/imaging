@@ -167,6 +167,10 @@ foreach my $user(@users){
 
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
     if(! -d $ready ){
+        say STDERR "usery $user->{login} has no directory ready";
+        next;
+    }elsif(!getpwuid($user->{login})){
+        say STDERR "$user->{login} does not exist";
         next;
     }
     try{

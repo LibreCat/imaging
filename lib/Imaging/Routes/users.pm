@@ -190,7 +190,7 @@ sub check_params_new_user {
             push @errors,"$key moet alfanumeriek zijn";
         }
     }
-    my $uid = getpwuid($params->{login});
+    my($name,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam($params->{login});
     if(!defined($uid)){
         push @errors,"user '$params->{login}' bestaat niet in het systeem";
     }elsif($uid == 0){

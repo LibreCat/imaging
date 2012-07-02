@@ -330,13 +330,21 @@ foreach my $id (@incoming_ok){
         }
     }
     
-
-    my $uid = getlogin || getpwuid($UID);
-    my $gid = getgrgid($REAL_GROUP_ID);
-
     #ok, tijdelijk toekennen aan root zelf, opdat niemand kan tussenkomen..
-    say "\tchanging ownership of '$scan->{path}' to $uid:$gid";
-    `chown -R $uid:$gid $scan->{path} && chmod -R 700 $scan->{path}`;
+    #vergeet zelfde rechten niet toe te kennen aan bovenliggende map (anders kan je verwijderen..)
+    my $this_uid = getlogin || getpwuid($UID);
+    my $this_gid = getgrgid($REAL_GROUP_ID);
+    my $uid = data_at(config,"mounts.directories.owner.processed") || $this_uid;
+    my $gid = data_at(config,"mounts.directories.group.processed") || $this_gid;
+    my $rights = data_at(config,"mounts.directories.rights.processed") || "0755";
+
+
+    if(!getpwuid($uid)){
+        say STDERR "$uid is not a valid user name";
+        next;
+    }
+    say "\tchanging ownership of '$scan->{path}' to $this_uid:$this_gid";
+    `chown -R $this_uid:$this_gid $scan->{path} && chmod -R 700 $scan->{path}`;
 
 
     my $oldpath = $scan->{path};
@@ -370,7 +378,7 @@ foreach my $id (@incoming_ok){
     say "\tmoving from $oldpath to $newpath";
     move($oldpath,$newpath);
     #chmod(0755,$newpath) is enkel van toepassing op bestanden en mappen direct onder newpath..
-    `chmod -R 0755 $newpath && chown -R $uid:$gid $newpath`;
+    `chmod -R $rights $newpath && chown -R $uid:$gid $newpath`;
     $scan->{path} = $newpath;
 
     #update files

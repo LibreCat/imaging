@@ -38,6 +38,20 @@ sub complain {
 
 sub process_scan {
     my $scan = shift;
+
+    #gebruiker bestaat?
+    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+    my($user_name,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire)=getpwnam($user->{login});
+    if(!is_string($uid)){
+        say STDERR "$user->{login} is not a valid system user!";
+        return;
+    }elsif($uid == 0){
+        say STDERR "root is not allowed as user";
+        return;
+    }
+    my $group_name = getgrgid($gid);
+
+
     my $oldpath = $scan->{path};    
     my $manifest = "$oldpath/__MANIFEST-MD5.txt";
     my $newpath = $scan->{newpath};
@@ -107,17 +121,11 @@ sub process_scan {
     die(join('',@$error)) if !$success;
 
     #done? rechten aanpassen aan dat van 01_ready submap
-    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
-    if($user && getpwuid($user->{login})){
-        local($@);
-        `chown -R $user->{login} $scan->{path} && chmod -R 700 $scan->{path}`;
-        if($@){
-            say STDERR $@;
-        }
-    }else{
-        say STDERR $user->{login}." is not a valid system user" 
-    }
-
+    try{
+        `chown -R $user_name:$group_name $scan->{path} && chmod -R 755 $scan->{path}`;
+    }catch{
+        say STDERR $_;
+    };
 }
 
 
