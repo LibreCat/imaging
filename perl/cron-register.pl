@@ -332,8 +332,8 @@ foreach my $id (@incoming_ok){
     
     #ok, tijdelijk toekennen aan root zelf, opdat niemand kan tussenkomen..
     #vergeet zelfde rechten niet toe te kennen aan bovenliggende map (anders kan je verwijderen..)
-    my $this_uid = getlogin || getpwuid($UID);
-    my $this_gid = getgrgid($REAL_GROUP_ID);
+    my $this_uid = getpwuid($UID);
+    my $this_gid = getgrgid($EGID);
 
     my $uid = data_at(config,"mounts.directories.owner.processed") || $this_uid;
     my $gid = data_at(config,"mounts.directories.group.processed") || $this_gid;
