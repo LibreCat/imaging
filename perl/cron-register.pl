@@ -352,28 +352,26 @@ foreach my $id (@incoming_ok){
     my $mount_conf = mount_conf();
     my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".File::Basename::basename($oldpath);   
 
-    if(!has_valid_manifest($scan->{path})){
 
-        #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
-        say "\tcreating __MANIFEST-MD5.txt";
+    #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
+    say "\tcreating __MANIFEST-MD5.txt";
 
-        my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
-        #maak nieuwe manifest
-        local(*MANIFEST);
-        open MANIFEST,">$path_manifest" or die($!);
-        foreach my $file(@{ $scan->{files} }){
-            next if $file->{path} eq $path_manifest;
-            local(*FILE);
-            open FILE,$file->{path} or die($!);
-            my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-            my $filename = $file->{path};
-            $filename =~ s/^$oldpath\///;
-            print MANIFEST "$md5sum_file $filename\r\n";
-            close FILE;
-        }
-        close MANIFEST;
-
+    my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
+    #maak nieuwe manifest
+    local(*MANIFEST);
+    open MANIFEST,">$path_manifest" or die($!);
+    foreach my $file(@{ $scan->{files} }){
+        next if $file->{path} eq $path_manifest;
+        local(*FILE);
+        open FILE,$file->{path} or die($!);
+        my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
+        my $filename = $file->{path};
+        $filename =~ s/^$oldpath\///;
+        print MANIFEST "$md5sum_file $filename\r\n";
+        close FILE;
     }
+    close MANIFEST;
+
     
     #verplaats  
     say "\tmoving from $oldpath to $newpath";
