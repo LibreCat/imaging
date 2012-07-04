@@ -32,8 +32,9 @@ sub test {
     my $total = scalar(@{ $self->dir_info->files }) + scalar(@{ $self->dir_info->directories });
     my(@errors) = ();
 
-    my $glob = "$topdir/".$self->conf->{glob};
-    my @files = glob $glob;
+    chdir($topdir);
+
+    my @files = glob $self->conf->{'glob'};
 
     if(
         (scalar @files == 0) ||
