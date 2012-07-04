@@ -17,14 +17,9 @@ hook before => sub {
         }
     }
 };  
-any('/',sub{
+any('/info',sub{
     my $user = dbi_handle()->quick_select('users',{ id => session('user')->{id} });
-    my $config = config;
-    my($first_role) = split (',',$user->{roles});
-    $first_role =~ s/\s//go;
-    my $home_url_template = $config->{home}->{roles}->{$first_role} || $config->{home}->{default};
-    my $url = sprintf($home_url_template,$user->{login});
-    return redirect(uri_for($url));
+    template('info',{ user => $user, auth => auth() });
 });
 
 true;

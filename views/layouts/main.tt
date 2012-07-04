@@ -77,6 +77,7 @@
                 [%- IF auth.asa('admin') ||  auth.asa('qa_manager') %]
                 <li><a href="/qa_control">qa_controle</a></li>
                 [%- END %]
+                <li><a href="/info">info</a></li>
               [%- END %]
               </ul>
 
@@ -85,7 +86,7 @@
                 <li><a href="/account">[% session.user.login | html %]</a></li>
                 <li><a href="/logout">logout</a></li>
               </ul>
-              [% END %]
+              [% END %]           
             </div>
           </div>
         </div>

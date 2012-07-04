@@ -94,6 +94,14 @@ index:
   url: "http://localhost:4000/solr"
   default_params:
    fq: "source:rug01"
+home:
+ roles: 
+  # sprintf( config->{home}->{roles}->{$first_role} , $user->{login} )
+  admin: "/users"
+  scanner: "/ready/%s"
+  qa_manager: "/qa_control"
+  collectie_beheerder: "/projects"
+ default: "/scans"
 app:
  qa_control:
   default_sort: "datetime_last_modified desc"
