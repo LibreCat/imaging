@@ -659,6 +659,8 @@ any('/scans/:_id/status',sub{
 
                         $scan->{busy} = 1;
                         $scan->{newpath} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".$scan->{_id};
+                        #cron-to-incoming laten weten dat scan wordt toegewezen aan andere gebruiker..
+                        $scan->{temp_user} = session('user')->{login};
 
                     }
 

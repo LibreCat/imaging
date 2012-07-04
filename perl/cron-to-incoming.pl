@@ -40,10 +40,17 @@ sub process_scan {
     my $scan = shift;
 
     #gebruiker bestaat?
-    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
-    my($user_name,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire)=getpwnam($user->{login});
+    my $login;
+    if($scan->{temp_user}){
+        $login = $scan->{temp_user};
+    }else{
+        my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+        $login = $user->{login};
+    }
+
+    my($user_name,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire)=getpwnam($login);
     if(!is_string($uid)){
-        say STDERR "$user->{login} is not a valid system user!";
+        say STDERR "$login is not a valid system user!";
         return;
     }elsif($uid == 0){
         say STDERR "root is not allowed as user";
