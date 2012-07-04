@@ -411,12 +411,14 @@ foreach my $id (@incoming_ok){
 
 
     #laad op in mediamosa    
-    my $command = sprintf(config->{cron}->{register}->{drush_command_create_derivatives},$scan->{path});
-    say "\t$command";
-    my($stdout,$stderr,$exit_code);
-    ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-    if(!$success){
-        say STDERR $stderr;
+    if($scan->{profile_id} eq "NARA"){
+        my $command = sprintf(config->{cron}->{register}->{drush_command_create_derivatives},$scan->{path});
+        say "\t$command";
+        my($stdout,$stderr,$exit_code);
+        ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+        if(!$success){
+            say STDERR $stderr;
+        }
     }
 
 }
