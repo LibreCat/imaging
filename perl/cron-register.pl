@@ -5,7 +5,6 @@ use Imaging::Util qw(:files :data);
 use Imaging::Dir::Info;
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is :array);
-use List::MoreUtils qw(first_index);
 use File::Basename qw();
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
@@ -259,155 +258,221 @@ scans()->each(sub{
         push @incoming_ok,$scan->{_id};
     }
 });
+
 say "registering incoming_ok";
-foreach my $id (@incoming_ok){
-    my $scan = scans()->get($id);    
 
-    say "\tscan $id:";
+my $mount_conf = mount_conf();
+my $dir_processed = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed};
 
-    #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
-    
-    my $mtime_latest_file = mtime_latest_file($scan->{path});
-    if($mtime_latest_file > $scan->{datetime_last_modified}){
-        say STDERR "\t\tis changed since last check, I'm sorry! Aborting..";
-        next;
-    }
+if(!-w $dir_processed){
 
-    #check BAGS!
-    if($scan->{profile_id} eq "BAG"){
-        say "\t\tvalidating as bagit";
-        my @errors = ();
-        my $bag = Archive::BagIt->new();
-        my $success = $bag->read($scan->{path});        
-        if(!$success){
-            push @errors,@{ $bag->_error };
-        }elsif(!$bag->valid){
-            push @errors,@{ $bag->_error };
+    #not recoverable: aborting
+    say "\tcannot write to $dir_processed";    
+
+}else{
+
+    foreach my $id (@incoming_ok){
+        my $scan = scans()->get($id);    
+
+        say "\tscan $id:";
+
+        if(!-w dirname($scan->{path})){
+
+            say "\t\tcannot move $scan->{path} from parent directory";
+            #not recoverable: aborting
+            next;
+
+        }        
+
+
+        #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
+        
+        my $mtime_latest_file = mtime_latest_file($scan->{path});
+        if($mtime_latest_file > $scan->{datetime_last_modified}){
+            say "\t\tis changed since last check, I'm sorry! Aborting..";
+            #not recoverable: aborting
+            next;
         }
-        if(scalar(@errors) > 0){
-            say "\t\tfailed";
-            $scan->{status} = "incoming_error";
-            my $status_history_object = {
-                user_login => "-",
-                status => $scan->{status},
-                datetime => Time::HiRes::time,
-                comments => ""
-            };
-            push @{ $scan->{status_history} },$status_history_object;
-            $scan->{check_log} = \@errors;
 
+        #check BAGS!
+        if($scan->{profile_id} eq "BAG"){
+            say "\t\tvalidating as bagit";
+            my @errors = ();
+            my $bag = Archive::BagIt->new();
+            my $success = $bag->read($scan->{path});        
+            if(!$success){
+                push @errors,@{ $bag->_error };
+            }elsif(!$bag->valid){
+                push @errors,@{ $bag->_error };
+            }
+            if(scalar(@errors) > 0){
+                say "\t\tfailed";
+                $scan->{status} = "incoming_error";
+                my $status_history_object = {
+                    user_login => "-",
+                    status => $scan->{status},
+                    datetime => Time::HiRes::time,
+                    comments => ""
+                };
+                push @{ $scan->{status_history} },$status_history_object;
+                $scan->{check_log} = \@errors;
+
+                scans->add($scan);
+                scan2index($scan);
+                my($success,$error) = index_scan->commit;
+                die(join('',@$error)) if !$success;
+                status2index($scan,-1);
+                ($success,$error) = index_log->commit;
+                die(join('',@$error)) if !$success;
+
+                #see you later!
+                #not recoverable: aborting
+                next;
+            }else{
+                say "\t\tsuccessfull";
+            }
+        }
+        
+        #ok, tijdelijk toekennen aan root zelf, opdat niemand kan tussenkomen..
+        #vergeet zelfde rechten niet toe te kennen aan bovenliggende map (anders kan je verwijderen..)
+        my $this_uid = getpwuid($UID);
+        my $this_gid = getgrgid($EGID);
+
+        my $uid = data_at(config,"mounts.directories.owner.processed") || $this_uid;
+        my $gid = data_at(config,"mounts.directories.group.processed") || $this_gid;
+        my $rights = data_at(config,"mounts.directories.rights.processed") || "0755";
+
+        
+        my($uname) = getpwnam($uid);
+        if(!is_string($uname)){
+            say "\t\t$uid is not a valid user name";
+            #not recoverable: aborting
+            next;
+        }
+        say "\t\tchanging ownership of '$scan->{path}' to $this_uid:$this_gid";
+
+        {
+            my $command = "chown -R $this_uid:$this_gid $scan->{path} && chmod -R 700 $scan->{path}";
+            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+            if(!$success){
+                say "\t\tcannot change ownership: $stderr";
+                #not recoverable: aborting
+                next;
+            }
+
+        }
+
+        my $oldpath = $scan->{path};
+        my $newpath = "$dir_processed/".File::Basename::basename($oldpath);   
+
+
+        #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
+        say "\tcreating __MANIFEST-MD5.txt";   
+        my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
+        if(-f $path_manifest){
+            if(!unlink($path_manifest)){
+                say "\tcannot remove old __MANIFEST-MD5.txt";
+                #not recoverable: aborting
+                next;
+            }
+        }
+
+        #maak nieuwe manifest
+        if(!-w $scan->{path}){
+            say "\tcannot write to directory $scan->{path}";
+            #not recoverable: aborting
+            next;
+        }
+
+        local(*MANIFEST);
+        open MANIFEST,">$path_manifest" or die($!);
+        foreach my $file(@{ $scan->{files} }){
+            next if $file->{path} eq $path_manifest;
+            local(*FILE);
+            if(!(
+                -f -r $file->{path}
+            )){
+                say "$file->{path} is not a regular file or is not readable";
+                unlink($path_manifest);
+                #not recoverable: aborting
+                next;
+            }
+            open FILE,$file->{path} or die($!);
+            my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
+            my $filename = $file->{path};
+            $filename =~ s/^$oldpath\///;
+            print MANIFEST "$md5sum_file $filename\r\n";
+            close FILE;
+        }
+        close MANIFEST;
+
+        
+        #verplaats  
+        say "\tmoving from $oldpath to $newpath";
+        if(!move($oldpath,$newpath)){
+            say "\tcannot move $oldpath to $newpath";
+            #not recoverable: aborting
+            next;
+        }
+
+        #chmod(0755,$newpath) is enkel van toepassing op bestanden en mappen direct onder newpath..
+        {
+            my $command = "chmod -R $rights $newpath && chown -R $uid:$gid $newpath";
+            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+
+            if(!$success){
+                #niet zo erg, valt op te lossen via manuele tussenkomst
+                say STDERR $stderr;
+            }
+        }
+        $scan->{path} = $newpath;
+
+        #update files
+        my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+        my @files = ();
+        foreach my $file(@{ $dir_info->files() }){
+            push @files,file_info($file->{path});
+        }
+        $scan->{files} = \@files;
+        $scan->{size} = $dir_info->size();
+        
+        #status 'registered'
+        $scan->{status} = "registered";
+        delete $scan->{$_} for(qw(busy));
+        push @{ $scan->{status_history} },{
+            user_login =>"-",
+            status => "registered",
+            datetime => Time::HiRes::time,
+            comments => ""
+        };
+        $scan->{datetime_last_modified} = Time::HiRes::time;
+        
+        {
             scans->add($scan);
             scan2index($scan);
             my($success,$error) = index_scan->commit;
             die(join('',@$error)) if !$success;
+        }
+
+        {
             status2index($scan,-1);
-            ($success,$error) = index_log->commit;
+            my ($success,$error) = index_log->commit;
             die(join('',@$error)) if !$success;
-
-            next;
-        }else{
-            say "\t\tsuccessfull";
         }
-    }
-    
-    #ok, tijdelijk toekennen aan root zelf, opdat niemand kan tussenkomen..
-    #vergeet zelfde rechten niet toe te kennen aan bovenliggende map (anders kan je verwijderen..)
-    my $this_uid = getpwuid($UID);
-    my $this_gid = getgrgid($EGID);
-
-    my $uid = data_at(config,"mounts.directories.owner.processed") || $this_uid;
-    my $gid = data_at(config,"mounts.directories.group.processed") || $this_gid;
-    my $rights = data_at(config,"mounts.directories.rights.processed") || "0755";
-
-    
-    my($uname) = getpwnam($uid);
-    if(!is_string($uname)){
-        say STDERR "$uid is not a valid user name";
-        next;
-    }
-    say "\tchanging ownership of '$scan->{path}' to $this_uid:$this_gid";
-    `chown -R $this_uid:$this_gid $scan->{path} && chmod -R 700 $scan->{path}`;
-
-    my $oldpath = $scan->{path};
-    my $mount_conf = mount_conf();
-    my $newpath = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed}."/".File::Basename::basename($oldpath);   
 
 
-    #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
-    say "\tcreating __MANIFEST-MD5.txt";   
-    my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
-    if(-f $path_manifest){
-        if(!unlink($path_manifest)){
-            say STDERR "\tcannot remove old __MANIFEST-MD5.txt";
-            next;
+        #laad op in mediamosa    
+        if(is_string($scan->{profile_id}) && $scan->{profile_id} eq "NARA"){
+            my $command = sprintf(config->{cron}->{register}->{drush_command_create_derivatives},$scan->{path});
+            say "\t$command";
+            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+            if(!$success){
+                say STDERR $stderr;
+            }
         }
+
     }
-
-    #maak nieuwe manifest
-    local(*MANIFEST);
-    open MANIFEST,">$path_manifest" or die($!);
-    foreach my $file(@{ $scan->{files} }){
-        next if $file->{path} eq $path_manifest;
-        local(*FILE);
-        open FILE,$file->{path} or die($!);
-        my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-        my $filename = $file->{path};
-        $filename =~ s/^$oldpath\///;
-        print MANIFEST "$md5sum_file $filename\r\n";
-        close FILE;
-    }
-    close MANIFEST;
-
-    
-    #verplaats  
-    say "\tmoving from $oldpath to $newpath";
-    move($oldpath,$newpath);
-    #chmod(0755,$newpath) is enkel van toepassing op bestanden en mappen direct onder newpath..
-    `chmod -R $rights $newpath && chown -R $uid:$gid $newpath`;
-    $scan->{path} = $newpath;
-
-    #update files
-    my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
-    my @files = ();
-    foreach my $file(@{ $dir_info->files() }){
-        push @files,file_info($file->{path});
-    }
-    $scan->{files} = \@files;
-    $scan->{size} = $dir_info->size();
-    
-    #status 'registered'
-    $scan->{status} = "registered";
-    delete $scan->{$_} for(qw(busy));
-    push @{ $scan->{status_history} },{
-        user_login =>"-",
-        status => "registered",
-        datetime => Time::HiRes::time,
-        comments => ""
-    };
-    $scan->{datetime_last_modified} = Time::HiRes::time;
-    
-    scans->add($scan);
-    scan2index($scan);
-    my($success,$error) = index_scan->commit;
-    die(join('',@$error)) if !$success;
-    status2index($scan,-1);
-    ($success,$error) = index_log->commit;
-    die(join('',@$error)) if !$success;
-
-
-    #laad op in mediamosa    
-    if(is_string($scan->{profile_id}) && $scan->{profile_id} eq "NARA"){
-        my $command = sprintf(config->{cron}->{register}->{drush_command_create_derivatives},$scan->{path});
-        say "\t$command";
-        my($stdout,$stderr,$exit_code);
-        ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-        if(!$success){
-            say STDERR $stderr;
-        }
-    }
-
 }
-
 
 index_log->store->solr->optimize();
 index_scan->store->solr->optimize();
