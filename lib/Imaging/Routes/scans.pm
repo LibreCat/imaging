@@ -651,16 +651,16 @@ any('/scans/:_id/status',sub{
 
                         $scan->{busy} = 1;
                         my $user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
-                        $scan->{newpath} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
+                        $scan->{new_path} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
 
                     }
                     #reprocess_scans_qa_manager: verplaats naar eigen 01_ready + __FIXME.txt
                     elsif($status_to eq "reprocess_scans_qa_manager"){
 
                         $scan->{busy} = 1;
-                        $scan->{newpath} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".$scan->{_id};
+                        $scan->{new_path} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".$scan->{_id};
                         #cron-to-incoming laten weten dat scan wordt toegewezen aan andere gebruiker..
-                        $scan->{temp_user} = session('user')->{login};
+                        $scan->{new_user} = session('user')->{login};
 
                     }
 

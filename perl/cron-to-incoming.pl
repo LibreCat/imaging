@@ -41,8 +41,8 @@ sub process_scan {
 
     #gebruiker bestaat?
     my $login;
-    if($scan->{temp_user}){
-        $login = $scan->{temp_user};
+    if($scan->{new_user}){
+        $login = $scan->{new_user};
     }else{
         my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
         $login = $user->{login};
@@ -61,7 +61,7 @@ sub process_scan {
 
     my $oldpath = $scan->{path};    
     my $manifest = "$oldpath/__MANIFEST-MD5.txt";
-    my $newpath = $scan->{newpath};
+    my $newpath = $scan->{new_path};
     say "$oldpath => $newpath";
 
     local(*FILE);
@@ -117,7 +117,8 @@ sub process_scan {
     };
     $scan->{datetime_last_modified} = Time::HiRes::time;
 
-    delete $scan->{$_} for(qw(busy));
+    #gedaan ermee
+    delete $scan->{$_} for(qw(busy new_path new_user));
 
     scans->add($scan);
     scan2index($scan);

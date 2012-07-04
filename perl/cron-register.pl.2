@@ -89,6 +89,36 @@ sub directory_to_queries {
     }
     @queries;
 }
+sub has_manifest {
+    my $path = shift;
+    is_string($path) && -f "$path/__MANIFEST-MD5.txt";
+}
+sub has_valid_manifest {
+    state $line_re = qr/^[0-9a-fA-F]+\s+.*$/;
+
+    my $path = shift;    
+    has_manifest($path) && do {
+        my $valid = 1;
+        try{                        
+            local(*FILE);
+            my $line;
+            open FILE,"$path/__MANIFEST-MD5.txt" or die($!);
+            while($line = <FILE>){
+                $line =~ s/\r\n$/\n/;
+                chomp($line);
+                utf8::decode($line);
+                if($line !~ $line_re){
+                    $valid = 0;
+                    last;
+                }
+            }
+            close FILE;
+        }catch{
+            $valid = 0;
+        };
+        $valid;
+    };
+}
 
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
@@ -103,6 +133,7 @@ projects()->each(sub{
 foreach my $project_id(@project_ids){
 
     my $project = projects()->get($project_id);
+    my $total = 0;
 
     my $query = $project->{query};
     next if !$query;
@@ -110,58 +141,48 @@ foreach my $project_id(@project_ids){
     my @list = ();
 
     my $meercat = meercat();
+    my $res = $meercat->search($query,{rows=>0});
+    $total = $res->content->{response}->{numFound};
 
-    my($offset,$limit,$total) = (0,1000,0);
+    my($offset,$limit) = (0,1000);
+    while($offset <= $total){
+        $res = $meercat->search($query,{start => $offset,rows => $limit});
+        my $hits = $res->content->{response}->{docs};
 
-    my $fetch_successfull = 1;
-    try{
-        do{
+        foreach my $hit(@$hits){
+            my $ref = from_xml($hit->{fXML},ForceArray => 1);
 
-            my $res = $meercat->search($query,{start => $offset,rows => $limit});
-            $total = $res->content->{response}->{numFound};
-            my $hits = $res->content->{response}->{docs};
+            #zoek items in Z30 3, en nummering in Z30 h
+            my @items = ();
 
-            foreach my $hit(@$hits){
-                my $ref = from_xml($hit->{fXML},ForceArray => 1);
-
-                #zoek items in Z30 3, en nummering in Z30 h
-                my @items = ();
-
-                foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
-                    if($marc_datafield->{tag} eq "Z30"){
-                        my $item = {
-                            source => $hit->{source},
-                            fSYS => $hit->{fSYS}
-                        };
-                        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
-                            if($marc_subfield->{code} eq "3"){
-                                $item->{"location"} = $marc_subfield->{content};
-                            }
-                            if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
-                                $item->{"number"} = $1;
-                            }
+            foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
+                if($marc_datafield->{tag} eq "Z30"){
+                    my $item = {
+                        source => $hit->{source},
+                        fSYS => $hit->{fSYS}
+                    };
+                    foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+                        if($marc_subfield->{code} eq "3"){
+                            $item->{"location"} = $marc_subfield->{content};
                         }
-                        say "\t".join(',',values %$item);
-                        push @items,$item;
+                        if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
+                            $item->{"number"} = $1;
+                        }
                     }
+                    say "\t".join(',',values %$item);
+                    push @items,$item;
                 }
-                push @list,@items;
             }
-
-            $offset += $limit;
-
-        }while($offset < $total);
-
-    }catch{
-        $fetch_successfull = 0;
-        say STDERR $_;
-    };
-    if($fetch_successfull){
-        $project->{list} = \@list;
-        $project->{datetime_last_modified} = Time::HiRes::time;
-        projects()->add($project);
-        project2index($project);
+            push @list,@items;
+        }
+        $offset += $limit;
     }
+
+    $project->{list} = \@list;
+    $project->{datetime_last_modified} = Time::HiRes::time;
+
+    projects()->add($project);
+    project2index($project);
 };
 {
     my($success,$error) = index_project->commit;   
@@ -248,7 +269,7 @@ foreach my $id(@ids_ok_for_metadata){
     die(join('',@$error)) if !$success;
 }
 
-#stap 4: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
+#stap 4: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest indien nog niet aanwezig)
 my @incoming_ok = ();
 scans()->each(sub{
     my $scan = shift;
@@ -334,15 +355,9 @@ foreach my $id (@incoming_ok){
 
 
     #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
-    say "\tcreating __MANIFEST-MD5.txt";   
-    my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
-    if(-f $path_manifest){
-        if(!unlink($path_manifest)){
-            say STDERR "\tcannot remove old __MANIFEST-MD5.txt";
-            next;
-        }
-    }
+    say "\tcreating __MANIFEST-MD5.txt";
 
+    my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
     #maak nieuwe manifest
     local(*MANIFEST);
     open MANIFEST,">$path_manifest" or die($!);

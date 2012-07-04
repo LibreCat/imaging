@@ -103,6 +103,7 @@ projects()->each(sub{
 foreach my $project_id(@project_ids){
 
     my $project = projects()->get($project_id);
+    my $total = 0;
 
     my $query = $project->{query};
     next if !$query;
@@ -110,58 +111,52 @@ foreach my $project_id(@project_ids){
     my @list = ();
 
     my $meercat = meercat();
+    my $res = $meercat->search($query,{rows=>0});
+    $total = $res->content->{response}->{numFound};
 
-    my($offset,$limit,$total) = (0,1000,0);
+    my($offset,$limit) = (0,1000);
 
-    my $fetch_successfull = 1;
-    try{
-        do{
 
-            my $res = $meercat->search($query,{start => $offset,rows => $limit});
-            $total = $res->content->{response}->{numFound};
-            my $hits = $res->content->{response}->{docs};
+    while($offset <= $total){
 
-            foreach my $hit(@$hits){
-                my $ref = from_xml($hit->{fXML},ForceArray => 1);
 
-                #zoek items in Z30 3, en nummering in Z30 h
-                my @items = ();
+        $res = $meercat->search($query,{start => $offset,rows => $limit});
+        my $hits = $res->content->{response}->{docs};
 
-                foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
-                    if($marc_datafield->{tag} eq "Z30"){
-                        my $item = {
-                            source => $hit->{source},
-                            fSYS => $hit->{fSYS}
-                        };
-                        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
-                            if($marc_subfield->{code} eq "3"){
-                                $item->{"location"} = $marc_subfield->{content};
-                            }
-                            if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
-                                $item->{"number"} = $1;
-                            }
+        foreach my $hit(@$hits){
+            my $ref = from_xml($hit->{fXML},ForceArray => 1);
+
+            #zoek items in Z30 3, en nummering in Z30 h
+            my @items = ();
+
+            foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
+                if($marc_datafield->{tag} eq "Z30"){
+                    my $item = {
+                        source => $hit->{source},
+                        fSYS => $hit->{fSYS}
+                    };
+                    foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+                        if($marc_subfield->{code} eq "3"){
+                            $item->{"location"} = $marc_subfield->{content};
                         }
-                        say "\t".join(',',values %$item);
-                        push @items,$item;
+                        if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
+                            $item->{"number"} = $1;
+                        }
                     }
+                    say "\t".join(',',values %$item);
+                    push @items,$item;
                 }
-                push @list,@items;
             }
-
-            $offset += $limit;
-
-        }while($offset < $total);
-
-    }catch{
-        $fetch_successfull = 0;
-        say STDERR $_;
-    };
-    if($fetch_successfull){
-        $project->{list} = \@list;
-        $project->{datetime_last_modified} = Time::HiRes::time;
-        projects()->add($project);
-        project2index($project);
+            push @list,@items;
+        }
+        $offset += $limit;
     }
+
+    $project->{list} = \@list;
+    $project->{datetime_last_modified} = Time::HiRes::time;
+
+    projects()->add($project);
+    project2index($project);
 };
 {
     my($success,$error) = index_project->commit;   
@@ -337,7 +332,7 @@ foreach my $id (@incoming_ok){
     say "\tcreating __MANIFEST-MD5.txt";   
     my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
     if(-f $path_manifest){
-        if(!unlink($path_manifest)){
+        if(!remove($path_manifest)){
             say STDERR "\tcannot remove old __MANIFEST-MD5.txt";
             next;
         }
