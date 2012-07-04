@@ -87,37 +87,43 @@ any('/user/:id/edit',sub{
     my(@errors,@messages);
 
     if($params->{submit}){
+        if(user_has_scans($params->{id})){
 
-        my($success,$errs)=check_params_new_user();
-        push @errors,@$errs;     
-        if(scalar(@errors)==0){
-            my $roles = join(', ',@{$params->{roles}});
-            my $new = {
-                roles   =>  $roles,
-                #wijzig login niet!
-                #login   =>  $params->{login},
-                name    =>  $params->{name}
-            };
-            #nieuw  wachtwoord  opgegeven?  ->  check!
-            if($params->{edit_passwords}){
-                if(!(
-                    is_string($params->{password1}) &&  
-                    is_string($params->{password2}) &&
-                    $params->{password1}    eq  $params->{password2}
-                    )
-                ){
-                    push  @errors,"paswoorden komen niet met elkaar overeen";
-                }else{
-                    $new->{password} = md5_hex($params->{password1});
+            push @errors,"Een of meerdere actieve scans zijn nog gekoppeld aan deze gebruiker. Verwijder de scans eerst.";
+
+        }else{
+
+            my($success,$errs)=check_params_new_user();
+            push    @errors,@$errs;     
+            if(scalar(@errors)==0){
+                my $roles = join(', ',@{$params->{roles}});
+                my $new = {
+                    roles   =>  $roles,
+                    #wijzig login niet!
+                    #login   =>  $params->{login},
+                    name    =>  $params->{name}
+                };
+                #nieuw  wachtwoord  opgegeven?  ->  check!
+                if($params->{edit_passwords}){
+                    if(!(
+                        is_string($params->{password1}) &&  
+                        is_string($params->{password2}) &&
+                        $params->{password1}    eq  $params->{password2}
+                        )
+                    ){
+                        push  @errors,"paswoorden komen niet met elkaar overeen";
+                    }else{
+                        $new->{password} = md5_hex($params->{password1});
+                    }
+                }
+                if(scalar(@errors)==0){
+                    $user = { %$user,%$new };
+                    dbi_handle->quick_update('users',{id => $params->{id}},$user);
+                    redirect(uri_for("/users"));
                 }
             }
-            if(scalar(@errors)==0){
-                $user = { %$user,%$new };
-                dbi_handle->quick_update('users',{id => $params->{id}},$user);
-                redirect(uri_for("/users"));
-            }
-        }
 
+        }
     }
     template('user/edit',{  
         user => $user,
