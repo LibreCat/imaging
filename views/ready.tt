@@ -1,5 +1,7 @@
 <h1>Scandirectory Status - [% mount_conf.subdirectories.ready %]/[% user.login %]</h1>
 
+[% PROCESS inc/countdown.tt %]
+
 [%- IF directories && directories.size > 0 %]
 <table class="table table-striped table-condensed">
   <tr>
@@ -35,16 +37,3 @@
   [%- END %]
 </table>
 [%- END %]
-[%- tt_description = settings.profiles.${user.profile_id}.description -%]
-[% IF tt_description %]
-<div style="padding:30px;background-color:#F4F4F4;border-radius:6px;">
-<dl>
-    <dt>validatie profiel</dt>
-    <dd>[% user.profile_id %]</dd>
-    <dt>beschrijving</dt>
-    <dd>[% PROCESS $tt_description %]</dd>
-</dl>
-</div>
-[% ELSE %]
-    TODO:profiel beschrijving bij automatische herkenning (beschrijvingen van alle geven?)
-[% END %]

@@ -178,7 +178,7 @@ status:
    reprocess_scans:
     values: ["problematic"]
    reprocess_metadata: 
-    values: ["registered","problematic"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_derivatives: 
@@ -197,6 +197,8 @@ status:
     values: ["published_ok","problematic"]
    published_ok:
     values: ["published"]
+   problematic:
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata"]
   admin: *statuschangeqamanager
 human_readable:
  problematic: "problematisch"
@@ -295,3 +297,4 @@ profiles:
 cron:
  register:
   pidfile: "/tmp/imaging-register.pid"
+  drush_command_create_derivatives: "drush -r /usr/share/mediamosa mmnara %s"

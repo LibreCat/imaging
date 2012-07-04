@@ -5,6 +5,9 @@
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
 
+[% PROCESS inc/countdown.tt %]
+
+
 [% TO_FIX = 1 %]
 [%- TRY %]
     [% FIXME = scan.path _ "/__FIXME.txt" %]

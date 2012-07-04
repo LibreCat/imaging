@@ -17,6 +17,7 @@ use all qw(Imaging::Dir::Query::*);
 use English '-no_match_vars';
 use Archive::BagIt;
 use File::Pid;
+use IO::CaptureOutput qw(capture_exec);
 
 my $pidfile;
 my $pid;
@@ -407,7 +408,19 @@ foreach my $id (@incoming_ok){
     status2index($scan,-1);
     ($success,$error) = index_log->commit;
     die(join('',@$error)) if !$success;
+
+
+    #laad op in mediamosa    
+    my $command = sprintf(config->{cron}->{register}->{drush_command_create_derivatives},$scan->{path});
+    say "\t$command";
+    my($stdout,$stderr,$exit_code);
+    ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+    if(!$success){
+        say STDERR $stderr;
+    }
+
 }
+
 
 index_log->store->solr->optimize();
 index_scan->store->solr->optimize();

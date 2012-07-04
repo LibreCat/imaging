@@ -30,8 +30,13 @@ sub test {
 
     }elsif($num > 1){
 
-        push @errors,"$basename_topdir: meer dan één AC gevonden:".join(',',@acs);
-
+        push @errors,"$basename_topdir: meer dan één AC gevonden:";
+        $topdir =~ s/\/$//o;
+        for(@acs){
+            my $subname = $_->{path};
+            $subname =~ s/^$topdir\///g;
+            push @errors," $subname";
+        }
     }
 
     scalar(@errors) == 0,\@errors;

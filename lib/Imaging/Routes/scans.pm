@@ -591,8 +591,11 @@ any('/scans/:_id/status',sub{
                 
                 push @errors,"Dit record moet exact één metadata record bevatten";
 
-            }
-            else{
+            }elsif(!is_string($comments)){
+
+                push @errors,"Gelieve een reden op te geven voor deze status wijziging";
+
+            }else{
 
                 if(
                     array_includes($status_to_allowed,$status_to)
