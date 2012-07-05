@@ -251,7 +251,7 @@ profiles:
    - class: "Imaging::Test::Dir::checkTIFF"
      args:
       valid_patterns:
-       - '\.(?:tif|fff)$'
+       - '\.(?:tif)$'
      on_error: "continue"
    - class: "Imaging::Test::Dir::checkJPEG"
      args:
