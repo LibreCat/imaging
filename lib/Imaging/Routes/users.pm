@@ -54,13 +54,18 @@ any('/users/add',sub{
                 push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";
             }else{
                 my $roles = join('',@{$params->{roles}});
-                dbi_handle->quick_insert('users',{
-                    login   =>  $params->{login},
-                    name    =>  $params->{name},
-                    roles   =>  join(', ',@{$params->{roles}}),
-                    password    =>  md5_hex($params->{password1})
-                });
-                redirect(uri_for("/users"));
+                try{
+                    dbi_handle->quick_insert('users',{
+                        login   =>  $params->{login},
+                        name    =>  $params->{name},
+                        roles   =>  join(', ',@{$params->{roles}}),
+                        password    =>  md5_hex($params->{password1})
+                    });
+                    redirect(uri_for("/users"));
+                }catch{
+                    say STDERR $_;
+                    push @errors,"er bestaat reeds een gebruiker met als login $params->{name}";       
+                };
             }
         }
     }
@@ -113,8 +118,13 @@ any('/user/:id/edit',sub{
             }
             if(scalar(@errors)==0){
                 $user = { %$user,%$new };
-                dbi_handle->quick_update('users',{id => $params->{id}},$user);
-                redirect(uri_for("/users"));
+                try{
+                    dbi_handle->quick_update('users',{id => $params->{id}},$user);
+                    redirect(uri_for("/users"));
+                }catch{
+                    say STDERR $_;
+                    push @errors,"Uw verzoek kon niet worden uitgevoerd. Mogelijks bestaat de naam of login reeds al";        
+                }
             }
         }
 
@@ -144,11 +154,15 @@ any('/user/:id/delete',sub{
             push @errors,"Een of meerdere actieve scans zijn nog gekoppeld aan deze gebruiker. Verwijder de scans eerst.";
 
         }else{
-
-            dbi_handle->quick_delete('users',{
-                id  =>  $params->{id}
-            });
-            redirect(uri_for("/users"));
+            try{
+                dbi_handle->quick_delete('users',{
+                    id  =>  $params->{id}
+                });
+                redirect(uri_for("/users"));
+            }catch{
+                say STDERR $_;
+                push @errors,"Record kon niet worden verwijderd door een systeemfout. Contacteer de administrator voor meer gegevens.";
+            }
         }
     }
 
