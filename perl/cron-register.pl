@@ -156,6 +156,7 @@ foreach my $project_id(@project_ids){
         say STDERR $_;
     };
     if($fetch_successfull){
+        say "storing new object list to database";
         $project->{list} = \@list;
         $project->{datetime_last_modified} = Time::HiRes::time;
         projects()->add($project);
