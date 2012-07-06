@@ -10,23 +10,28 @@
 </style>
 <script type="text/javascript">
     $(document).ready(function(){
-        var leapseconds = 60;
-        var $countdown = $("#countdown .timer");
-        var seconds = Math.floor(((new Date()).getTime() / 1000) + leapseconds);
-        $countdown.attr("time",seconds);
+        //wacht 1 seconde om te verhinderen dat pagina opnieuw herlaadt naar na seconde '59'
+        setTimeout(function(){
+            var $countdown = $("#countdown .timer");
+            //haal tijd voor volgende minuut op
+            //javascript noteert tijd in milliseconden
+            var seconds = Math.floor((new Date()).getTime() / 1000);
+            seconds = Math.ceil(seconds / 60) * 60;
+            $countdown.attr("time",seconds);
 
-        $countdown.kkcountdown({
-            dayText: "dag ",
-            daysText: "dagen ",
-            hoursText: "u ",
-            textAfterCount: "pagina wordt herladen..",
-            minutesText: "m ",
-            secondsText: "s ",
-            displayZeroDays: false,
-            callback: function(){
-                window.location.href = window.location.href;
-            }         
-        });
+            $countdown.kkcountdown({
+                dayText: "dag ",
+                daysText: "dagen ",
+                hoursText: "u ",
+                textAfterCount: "pagina wordt herladen..",
+                minutesText: "m ",
+                secondsText: "s ",
+                displayZeroDays: false,
+                callback: function(){
+                    window.location.href = window.location.href;
+                }         
+            });
+        },1000);
     });
 </script>
 <div id="countdown">
