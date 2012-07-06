@@ -30,7 +30,7 @@ plugins:
   type: "html"
   subject: "Dashboard Scanning workflow"
   to: "nicolas.franck@ugent.be"
-  cc: "Ariane.VandeVyver@UGent.be"
+  cc: "Ariane.VandeVyver@UGent.be, arjen.klop@inuits.eu"
  Database:
   driver: mysql
   database: imaging
