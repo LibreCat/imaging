@@ -63,17 +63,20 @@ any('/ready/:user_login/:scan_id',sub{
     $scan or return not_found();
 
     my @errors = ();
-    my $mount = mount();
-    my $subdirectories = subdirectories();
+    my $mount_conf = mount_conf();
+
+    my $expected_path = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
+
+    -d $expected_path or return not_found();
 
     #fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
     if(
-        $scan->{user_id} != $user->{id} && $scan->{status} ne "reprocess_scans_qa_manager"
+        $scan->{path} ne $expected_path
     ){
         my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
         push @errors,"$scan->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
         push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
-        push @errors,"Uw map: $mount/".$subdirectories->{ready}."/".$user->{login}."/".$scan->{_id};
+        push @errors,"Uw map: $expected_path";
 
     }
     

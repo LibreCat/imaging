@@ -13,10 +13,11 @@
         //wacht 1 seconde om te verhinderen dat pagina opnieuw herlaadt naar na seconde '59'
         setTimeout(function(){
             var $countdown = $("#countdown .timer");
-            //haal tijd voor volgende minuut op
+            //aantal seconden per iteratie: haal tijd top tot volgende iteratie
+            var next = 60;
             //javascript noteert tijd in milliseconden
             var seconds = Math.floor((new Date()).getTime() / 1000);
-            seconds = Math.ceil(seconds / 60) * 60;
+            seconds = Math.ceil(seconds / next) * next;
             $countdown.attr("time",seconds);
 
             $countdown.kkcountdown({
