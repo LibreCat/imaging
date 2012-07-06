@@ -246,7 +246,7 @@ profiles:
       conf:
        glob: "*.tif *.jpg *.fff *.pdf"
        all: 1
-       message: "map mag enkel deze bestanden bevatten: *.tif *.jpg *.fff *.pdf"
+       message: "map mag enkel deze bestanden bevatten: *.tif *.jpg *.fff *.pdf. Submappen zijn niet toegelaten"
      on_error: "stop"
    - class: "Imaging::Test::Dir::checkTIFF"
      args:
