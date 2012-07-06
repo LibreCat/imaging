@@ -67,7 +67,9 @@ any('/ready/:user_login/:scan_id',sub{
     my $subdirectories = subdirectories();
 
     #fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
-    if($scan->{user_id} != $user->{id}){
+    if(
+        $scan->{user_id} != $user->{id} && $scan->{status} ne "reprocess_scans_qa_manager"
+    ){
         my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
         push @errors,"$scan->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
         push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
