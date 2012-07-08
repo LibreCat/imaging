@@ -261,7 +261,7 @@ foreach my $scan_id(@scan_ids_ready){
     if(do_delete($scan)){
         say "ah too late man!";
         #voor later
-        return;
+        next;
         say "nothing too see here!";
 
         push @delete,$scan->{_id};
