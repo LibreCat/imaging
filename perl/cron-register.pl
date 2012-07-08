@@ -3,6 +3,7 @@ use Catmandu qw(store);
 use Dancer qw(:script);
 use Imaging::Util qw(:files :data);
 use Imaging::Dir::Info;
+use Imaging::Bag::Info;
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is :array);
 use File::Basename qw();
@@ -214,6 +215,12 @@ scans()->each(sub{
 foreach my $id(@ids_ok_for_metadata){
     my $scan = scans()->get($id);
     my $path = $scan->{path};
+    my $bag_info_path = $scan->{path}."/bag-info.txt";
+    my $bag_info;
+    if(-f $bag_info_path){
+        my $bag_info_parser = Imaging::Bag::Info->new(source => $bag_info_path);
+        $bag_info = $bag_info_parser->hash;
+    }
     my @queries = directory_to_queries($path);
     
     foreach my $query(@queries){
@@ -229,6 +236,7 @@ foreach my $id(@ids_ok_for_metadata){
                     fXML => $doc->{fXML},
                     baginfo => create_baginfo(
                         xml => $doc->{fXML},
+                        bag_info => $bag_info,
                         size => $scan->{size},
                         num_files => scalar(@{$scan->{files}})
                     )
@@ -363,8 +371,8 @@ if(!-w $dir_processed){
 
         }
 
-        my $oldpath = $scan->{path};
-        my $newpath = "$dir_processed/".File::Basename::basename($oldpath);   
+        my $old_path = $scan->{path};
+        my $new_path = "$dir_processed/".File::Basename::basename($old_path);   
 
 
         #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
@@ -401,7 +409,7 @@ if(!-w $dir_processed){
             open FILE,$file->{path} or die($!);
             my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
             my $filename = $file->{path};
-            $filename =~ s/^$oldpath\///;
+            $filename =~ s/^$old_path\///;
             print MANIFEST "$md5sum_file $filename\r\n";
             close FILE;
         }
@@ -409,16 +417,16 @@ if(!-w $dir_processed){
 
         
         #verplaats  
-        say "\tmoving from $oldpath to $newpath";
-        if(!move($oldpath,$newpath)){
-            say "\tcannot move $oldpath to $newpath";
+        say "\tmoving from $old_path to $new_path";
+        if(!move($old_path,$new_path)){
+            say "\tcannot move $old_path to $new_path";
             #not recoverable: aborting
             next;
         }
 
-        #chmod(0755,$newpath) is enkel van toepassing op bestanden en mappen direct onder newpath..
+        #chmod(0755,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
         {
-            my $command = "chmod -R $rights $newpath && chown -R $uid:$gid $newpath";
+            my $command = "chmod -R $rights $new_path && chown -R $uid:$gid $new_path";
             my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
 
             if(!$success){
@@ -426,7 +434,7 @@ if(!-w $dir_processed){
                 say STDERR $stderr;
             }
         }
-        $scan->{path} = $newpath;
+        $scan->{path} = $new_path;
 
         #update files
         my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});

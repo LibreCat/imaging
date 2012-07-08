@@ -75,6 +75,7 @@ sub create_baginfo {
     my $xml = $opts{xml};
     my $size = $opts{size};
     my $num_files = $opts{num_files};
+    my $old_bag_info = is_hash_ref($opts{bag_info}) ? $opts{bag_info} : {};
 
     use XML::XPath;
     use POSIX qw(strftime);
@@ -83,6 +84,7 @@ sub create_baginfo {
     my $rec = {};
     my @fields = qw(
         DC-Title DC-Identifier DC-Description DC-DateAccepted DC-Type DC-Creator DC-AccessRights DC-Subject
+        Archive-Id
     );
     $rec->{$_} = [] foreach(@fields);
 
@@ -137,6 +139,9 @@ sub create_baginfo {
 
     #Payload-Oxum: OctetCount.StreamCount
     $rec->{'Payload-Oxum'} = ["$size.$num_files"];
+
+    #merge result with old bag-info
+    $rec = { %$old_bag_info,%$rec };
     
     return $rec;
 }

@@ -59,17 +59,17 @@ sub process_scan {
     my $group_name = getgrgid($gid);
 
 
-    my $oldpath = $scan->{path};    
-    my $manifest = "$oldpath/__MANIFEST-MD5.txt";
-    my $newpath = $scan->{new_path};
-    say "$oldpath => $newpath";
+    my $old_path = $scan->{path};    
+    my $manifest = "$old_path/__MANIFEST-MD5.txt";
+    my $new_path = $scan->{new_path};
+    say "$old_path => $new_path";
 
     local(*FILE);
 
     #maak directory en plaats __FIXME.txt
-    mkpath($newpath);
+    mkpath($new_path);
     #plaats __FIXME.txt
-    open FILE,">$newpath/__FIXME.txt" or return complain($!);
+    open FILE,">$new_path/__FIXME.txt" or return complain($!);
     print FILE $scan->{status_history}->[-1]->{comments};
     close FILE;
 
@@ -83,24 +83,24 @@ sub process_scan {
         utf8::decode($line);
         my($checksum,$filename)=split(/\s+/o,$line);
 
-        mkpath(File::Basename::dirname("$newpath/$filename"));   
-        say "moving $oldpath/$filename to $newpath/$filename";
+        mkpath(File::Basename::dirname("$new_path/$filename"));   
+        say "moving $old_path/$filename to $new_path/$filename";
         if(
-            !move("$oldpath/$filename","$newpath/$filename")
+            !move("$old_path/$filename","$new_path/$filename")
         ){
-            say STDERR "could not move $oldpath/$filename to $newpath/$filename";
+            say STDERR "could not move $old_path/$filename to $new_path/$filename";
             return;
         }
     }
     close FILE; 
     
     #gelukt! verwijder nu oude map
-    rmtree($oldpath);
+    rmtree($old_path);
 
     
     #pas paden aan
-    $scan->{path} = $newpath;
-    my $dir_info = Imaging::Dir::Info->new(dir => $newpath);
+    $scan->{path} = $new_path;
+    my $dir_info = Imaging::Dir::Info->new(dir => $new_path);
     my @files = ();
     foreach my $file(@{ $dir_info->files }){
         push @files,file_info($file->{path});

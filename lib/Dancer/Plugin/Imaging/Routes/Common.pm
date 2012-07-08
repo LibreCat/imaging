@@ -54,7 +54,7 @@ sub sanity_check {
             my $sub = "$mount/".$subdirectories->{$_};
             mkpath($sub) if !-d $sub;
 			if(!-w $sub){
-				push @errors,"directory $_ is not writable";
+				push @errors,"systeem heeft geen schrijfrechten op map $_ ";
 			}
         }
     }catch{

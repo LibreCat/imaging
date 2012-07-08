@@ -174,7 +174,7 @@ sub scan2index {
     }
 
     #opkuisen
-    my @deletes = qw(metadata comments busy busy_reason warnings new_path new_id new_user);
+    my @deletes = qw(metadata comments busy warnings new_path new_user);
     delete $doc->{$_} for(@deletes);
 
     index_scan()->add($doc);
