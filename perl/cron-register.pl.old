@@ -215,7 +215,6 @@ scans()->each(sub{
 foreach my $id(@ids_ok_for_metadata){
     my $scan = scans()->get($id);
     my $path = $scan->{path};
-    my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
     my $bag_info_path = $scan->{path}."/bag-info.txt";
     my $bag_info;
     if(-f $bag_info_path){
@@ -238,8 +237,8 @@ foreach my $id(@ids_ok_for_metadata){
                     baginfo => create_baginfo(
                         xml => $doc->{fXML},
                         old_bag_info => $bag_info,
-                        size => $dir_info->size,
-                        num_files => scalar(@{ $dir_info->files() })
+                        size => $scan->{size},
+                        num_files => scalar(@{$scan->{files}})
                     )
                 };
             }
@@ -394,11 +393,9 @@ if(!-w $dir_processed){
             next;
         }
 
-        my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
-
         local(*MANIFEST);
         open MANIFEST,">$path_manifest" or die($!);
-        foreach my $file(@{ $dir_info->files() }){
+        foreach my $file(@{ $scan->{files} }){
             next if $file->{path} eq $path_manifest;
             local(*FILE);
             if(!(
@@ -439,6 +436,15 @@ if(!-w $dir_processed){
         }
         $scan->{path} = $new_path;
 
+        #update files
+        my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+        my @files = ();
+        foreach my $file(@{ $dir_info->files() }){
+            push @files,file_info($file->{path});
+        }
+        $scan->{files} = \@files;
+        $scan->{size} = $dir_info->size();
+        
         #status 'registered'
         $scan->{status} = "registered";
         delete $scan->{$_} for(qw(busy));

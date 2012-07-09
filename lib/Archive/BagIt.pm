@@ -556,7 +556,7 @@ sub _read_tag_manifest {
     }
 
     foreach my $line (read_file("$path/tagmanifest-md5.txt")) {
-    $line =~ s/\r\n$/\n/g;
+       $line =~ s/\r\n$/\n/g;
         chomp($line);
         my ($sum,$file) = split(/\s+/,$line,2);
         $self->_tag_sums->{$file} = $sum;
@@ -577,7 +577,7 @@ sub _read_manifest {
     }
 
     foreach my $line (read_file("$path/manifest-md5.txt")) {
-    $line =~ s/\r\n$/\n/g;
+        $line =~ s/\r\n$/\n/g;
         chomp($line);
         my ($sum,$file) = split(/\s+/,$line,2);
         $file =~ s/^data\///;
@@ -595,7 +595,7 @@ sub _read_tags {
     local(*F);
     open(F,"find $path -maxdepth 1 -type f |") || die "kan tag-bestanden niet vinden";
     while(<F>) {
-    $_ =~ s/\r\n$/\n/g;
+        $_ =~ s/\r\n$/\n/g;
         chomp($_);
         $_ =~ s/^$path.//;
 
@@ -623,11 +623,10 @@ sub _read_files {
     open(F,"find $path/data -type f |") || die "payload directory bevat geen bestanden";
 
     while(my $file = <F>) {
-    $file =~ s/\r\n$/\n/g;
+        $file =~ s/\r\n$/\n/g;
         chomp($file);
         my $name = $file;
         $name =~ s/^$path\/data\///;
-
 #        my $data = read_file($file, binmode => ':raw', scalar_ref => 1);
         my $data = IO::File->new($file);
 

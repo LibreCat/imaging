@@ -38,47 +38,6 @@ sub complain {
 
 sub process_scan {
     my $scan = shift;
-    my $new_path = $scan->{new_path};
-
-
-    #is de operatie gezond?
-    if(!(
-        is_string($scan->{path}) && -d $scan->{path}
-    )){
-        my $p = $scan->{path} || "";
-        say STDERR "Cannot move from 02_processed: scan directory '$p' does not exist";
-        return;
-
-    }elsif(!is_string($new_path)){
-
-        say STDERR "Cannot move from $scan->{path} to '': new_path is empty";
-        return;
-
-    }elsif(! -d dirname($new_path) ){
-
-        say STDERR "Will not move from $scan->{path} to $new_path: parent directory of $new_path does not exist";
-        return;
-
-    }elsif(-d $new_path){
-
-        say STDERR "Will not move from $scan->{path} to $new_path: directory already exists";
-        return;
-
-    }elsif(!( 
-        -w dirname($scan->{path}) &&
-        -w $scan->{path})
-    ){
-
-        say STDERR "Cannot move from $scan->{path} to $new_path: system has no write permissions to $scan->{path} or its parent directory";
-        return;
-
-    }elsif(! -w dirname($new_path) ){
-        
-        say STDERR "Cannot move from $scan->{path} to $new_path: system has no write permissions to parent directory of $new_path";
-        return;
-
-    }
-
 
     #gebruiker bestaat?
     my $login;
@@ -102,9 +61,7 @@ sub process_scan {
 
     my $old_path = $scan->{path};    
     my $manifest = "$old_path/__MANIFEST-MD5.txt";
-   
-
-
+    my $new_path = $scan->{new_path};
     say "$old_path => $new_path";
 
     local(*FILE);
@@ -143,6 +100,12 @@ sub process_scan {
     
     #pas paden aan
     $scan->{path} = $new_path;
+    my $dir_info = Imaging::Dir::Info->new(dir => $new_path);
+    my @files = ();
+    foreach my $file(@{ $dir_info->files }){
+        push @files,file_info($file->{path});
+    }
+    $scan->{files} = \@files;
 
     #update databank en index
     $scan->{status} = "incoming";

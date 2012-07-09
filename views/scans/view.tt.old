@@ -95,7 +95,7 @@
 <div class="tabbable">
   <ul class="nav nav-tabs">
     <li class="active"><a href="#tab-status-history" data-toggle="tab">Status geschiedenis</a></li>
-    <li><a href="#tab-files" data-toggle="tab">Bestanden <span class="badge badge-info">[% files.size || 0 %]</span></a></li>
+    <li><a href="#tab-files" data-toggle="tab">Bestanden <span class="badge badge-info">[% scan.files.size || 0 %]</span></a></li>
     <li>
       <a href="#tab-metadata" data-toggle="tab">
       Metadata
@@ -165,7 +165,7 @@
           <th>laatst gewijzigd</th>
           <th>type</th>
         </tr>
-        [%- FOREACH file IN files %]
+        [%- FOREACH file IN scan.files %]
         <tr>
         [% IF !file.error %]
           <td>
@@ -257,27 +257,12 @@
                 [%- END %]
                 </ul>
               </div>
-              <!--archive-keys-(variabel)
-              <div class="control-group baginfo">
-                <label class="control-label"><b>Archive-Id</b></label>
-                <div class="controls">[% metadata.baginfo.item("Archive_id").0 || "-" %]</div>                
-              </div>                               
-              <div class="control-group baginfo">
-                <label class="control-label"><b>Bag-Size</b></label>
-                <div class="controls">[% size.size_pretty %]</div>               
-              </div>
-              <div class="control-group baginfo">
-                <label class="control-label"><b>Payload-Oxum</b></label>
-                <div class="controls">[% size _ "." _ files.size %]</div>               
-              </div>
-                -->
-
               [%- FOREACH element IN settings.app.scans.edit.baginfo %]
                 [%- NEXT IF !(metadata.baginfo.${element.key} && metadata.baginfo.${element.key}.size > 0) -%]
                 [%- FOREACH value IN metadata.baginfo.${element.key} %]
                 <div class="control-group baginfo">
                   <label class="control-label"><b>[% element.key %]</b></label>
-                  <div class="controls">                    
+                  <div class="controls">
                   [% IF element.edit %]
                     [% tag = element.item("tag") %]
                     [% IF tag == "select" %]

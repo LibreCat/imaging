@@ -75,58 +75,63 @@ sub create_baginfo {
     my $xml = $opts{xml};
     my $size = $opts{size};
     my $num_files = $opts{num_files};
-    my $old_bag_info = is_hash_ref($opts{bag_info}) ? $opts{bag_info} : {};
+    my $old_bag_info = is_hash_ref($opts{old_bag_info}) ? $opts{old_bag_info} : {};
 
-    use XML::XPath;
-    use POSIX qw(strftime);
-
-    my $xpath = XML::XPath->new(xml => $xml);
     my $rec = {};
-    my @fields = qw(
-        DC-Title DC-Identifier DC-Description DC-DateAccepted DC-Type DC-Creator DC-AccessRights DC-Subject
-        Archive-Id
-    );
-    $rec->{$_} = [] foreach(@fields);
 
-    my $id = &marc_controlfield($xpath,'001');
+    if(is_string($xml)){
 
-    push(@{$rec->{'DC-Title'}}, "RUG01-$id");
+        use XML::XPath;
+        use POSIX qw(strftime);
 
-    push(@{$rec->{'DC-Identifier'}}, "rug01:$id");
-    for my $val (&marc_datafield_array($xpath,'852','j')){
-        push(@{$rec->{'DC-Identifier'}}, $val) if $val =~ /\S/o;
-    }
-    my $f035 = &marc_datafield($xpath,'035','a');
-    push(@{$rec->{'DC-Identifier'}}, $f035) if $f035;
+        my $xpath = XML::XPath->new(xml => $xml);
+        my @fields = qw(
+            DC-Title DC-Identifier DC-Description DC-DateAccepted DC-Type DC-Creator DC-AccessRights DC-Subject
+            Archive-Id
+        );
+        $rec->{$_} = [] foreach(@fields);
 
-    my $description = &marc_datafield($xpath,'245');
-    push(@{$rec->{'DC-Description'}}, $description);
+        my $id = &marc_controlfield($xpath,'001');
 
-    push(@{$rec->{'DC-DateAccepted'}}, strftime("%Y-%m-%d",localtime));
+        push(@{$rec->{'DC-Title'}}, "RUG01-$id");
 
-    my $type = &marc_datafield($xpath,'920','a');
-    push(@{$rec->{'DC-Type'}}, $marc_type_map->{$type} || $marc_type_map->{'-'});
+        push(@{$rec->{'DC-Identifier'}}, "rug01:$id");
+        for my $val (&marc_datafield_array($xpath,'852','j')){
+            push(@{$rec->{'DC-Identifier'}}, $val) if $val =~ /\S/o;
+        }
+        my $f035 = &marc_datafield($xpath,'035','a');
+        push(@{$rec->{'DC-Identifier'}}, $f035) if $f035;
 
-    my $creator = &marc_datafield($xpath,'100','a');
-    push(@{$rec->{'DC-Creator'}}, $creator) if $creator;
+        my $description = &marc_datafield($xpath,'245');
+        push(@{$rec->{'DC-Description'}}, $description);
 
-    for my $val (&marc_datafield_array($xpath,'700','a')) {
-        push(@{$rec->{'DC-Creator'}}, $val) if $val =~ /\S/;
-    }
+        push(@{$rec->{'DC-DateAccepted'}}, strftime("%Y-%m-%d",localtime));
 
-    my $rights = &marc_datafield($xpath,'856','z');
-    if ($rights =~ /no access/io) {
-        push(@{$rec->{'DC-AccessRights'}}, 'closed');
-    }
-    elsif ($rights =~ /ugent/io) {
-        push(@{$rec->{'DC-AccessRights'}}, 'ugent');
-    }
-    else {
-        push(@{$rec->{'DC-AccessRights'}}, 'open');
-    }
+        my $type = &marc_datafield($xpath,'920','a');
+        push(@{$rec->{'DC-Type'}}, $marc_type_map->{$type} || $marc_type_map->{'-'});
 
-    for my $subject (&marc_datafield_array($xpath,'922','a')) {
-		push(@{$rec->{'DC-Subject'}}, $subject) if $subject =~ /\S/;
+        my $creator = &marc_datafield($xpath,'100','a');
+        push(@{$rec->{'DC-Creator'}}, $creator) if $creator;
+
+        for my $val (&marc_datafield_array($xpath,'700','a')) {
+            push(@{$rec->{'DC-Creator'}}, $val) if $val =~ /\S/;
+        }
+
+        my $rights = &marc_datafield($xpath,'856','z');
+        if ($rights =~ /no access/io) {
+            push(@{$rec->{'DC-AccessRights'}}, 'closed');
+        }
+        elsif ($rights =~ /ugent/io) {
+            push(@{$rec->{'DC-AccessRights'}}, 'ugent');
+        }
+        else {
+            push(@{$rec->{'DC-AccessRights'}}, 'open');
+        }
+
+        for my $subject (&marc_datafield_array($xpath,'922','a')) {
+            push(@{$rec->{'DC-Subject'}}, $subject) if $subject =~ /\S/;
+        }
+
     }
 
     #bagit fields:
@@ -134,14 +139,20 @@ sub create_baginfo {
     #Bagging-Date: YYYY-MM-DD
     $rec->{'Bagging-Date'} = [strftime("%Y-%m-%d",localtime)];
 
-    #Bag-Size: 90 MB
-    $rec->{'Bag-Size'} = [size_pretty($size)];
-
-    #Payload-Oxum: OctetCount.StreamCount
-    $rec->{'Payload-Oxum'} = ["$size.$num_files"];
-
-    #merge result with old bag-info
-    $rec = { %$old_bag_info,%$rec };
+    if(is_natural($size)){
+        #Bag-Size: 90 MB
+        $rec->{'Bag-Size'} = [size_pretty($size)];
+    }
+    if(is_natural($num_files)){
+        #Payload-Oxum: OctetCount.StreamCount
+        $rec->{'Payload-Oxum'} = ["$size.$num_files"];
+    }
+    
+    #merge with old bag-info
+    if($old_bag_info){
+        #merge result with old bag-info
+        $rec = { %$old_bag_info,%$rec };
+    }
     
     return $rec;
 }

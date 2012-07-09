@@ -130,6 +130,10 @@ sub scan2index {
     $doc->{marc} = [];
     push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
+    #files
+    $doc->{files} = [ map { $_->{path} } @{ $scan->{files} || [] } ];
+
+
     #status history
     for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
         my $item = $doc->{status_history}->[$i];

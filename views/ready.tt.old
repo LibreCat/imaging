@@ -14,15 +14,19 @@
   [%- FOREACH directory IN directories %]
   <tr>
     <td>
+      [%- IF directory.record %]
         <a href="/ready/[% user.login %]/[% directory.name %]">[% directory.name %]</a>
+      [%- ELSE %]
+        [% directory.name %]
+      [%- END %]
     </td>
-    <td>[% directory.info.files.size || "-" %]</td>
+    <td>[% directory.record.files.size || "-" %]</td>
     <td>[% settings.human_readable.${directory.record.status} || directory.record.status || "-" %]</td>
     <td>[% directory.record.profile_id || "-" %]</td>
     <td>
         [% TO_FIX = 1 %]
         [%- TRY %]
-            [% FIXME = directory.info.dir _ "/__FIXME.txt" %]
+            [% FIXME = directory.path _ "/__FIXME.txt" %]
             [%- USE File(FIXME) %]
         [% CATCH %]
             [% TO_FIX = 0 %]

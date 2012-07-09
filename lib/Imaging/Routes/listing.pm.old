@@ -38,11 +38,9 @@ any('/ready/:user_login',sub{
             next if $file eq "." || $file eq "..";
             my $path = "$dir/$file";
             next if !-d $path;
-
-            my $dir_info = dir_info($path);
             my $obj = {
                 name => $file,
-                info => $dir_info,
+                path => $path,
                 record => scans()->get($file)
             };
             push @directories,$obj;
@@ -58,43 +56,32 @@ any('/ready/:user_login',sub{
 });
 any('/ready/:user_login/:scan_id',sub{
     my $params = params;
-    my $mount_conf = mount_conf();
-
-    #user bestaat
     my $user = dbi_handle->quick_select('users',{ login => $params->{user_login} });
     $user or return not_found();
 
-    #directory bestaat
-    my $scan_id = $params->{scan_id};
-    my $path = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/$scan_id";
-    -d $path or return not_found();
+    my $scan = scans()->get($params->{scan_id});
+    $scan or return not_found();
 
     my @errors = ();
+    my $mount_conf = mount_conf();
 
-    #controleer op conflict
-    my $scan = scans()->get($scan_id);
-    if($scan){
+    my $expected_path = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
 
-        my $expected_path = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
-        #fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
-        if(
-            $scan->{path} ne $expected_path
-        ){
-            my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
-            push @errors,"$scan->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
-            push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
-            push @errors,"Uw map: $expected_path";
+    -d $expected_path or return not_found();
 
-        }
+    #fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
+    if(
+        $scan->{path} ne $expected_path
+    ){
+        my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
+        push @errors,"$scan->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
+        push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
+        push @errors,"Uw map: $expected_path";
+
     }
-    my($files,$size) = list_files($path);
     
     template('ready/view',{
-        scan_id => $scan_id,
-        path => $path,
         scan => $scan,
-        files => $files,
-        size => $size,
         user => $user,
         errors => \@errors,
         auth => auth()

@@ -167,7 +167,7 @@ foreach my $user(@users){
 
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
     if(! -d $ready ){
-        #say STDERR "user $user->{login} has no directory ready";
+        say STDERR "user $user->{login} has no directory ready";
         next;
     }elsif(!getpwnam($user->{login})){
         say STDERR "$user->{login} does not exist";
@@ -215,6 +215,7 @@ foreach my $user(@users){
                         comments => ""
                     }],
                     check_log => [],
+                    files => [],
                     user_id => $user->{id},
                     #mtime van de nieuwste file in deze directory (!= mtime(dir))
                     datetime_directory_last_modified => $mtime,
@@ -345,6 +346,12 @@ foreach my $scan_id(@scan_ids_test){
 
     #lijst bestanden
     my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+    my @files = ();
+    foreach my $stats(@{ $dir_info->files() }){
+        push @files,file_info($stats->{path});
+    }
+    $scan->{size} = $dir_info->size();
+    $scan->{files} = \@files;
 
     #initialise check_log
     $scan->{check_log} = [];

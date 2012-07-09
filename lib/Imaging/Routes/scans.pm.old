@@ -18,10 +18,6 @@ use File::Basename qw();
 use Data::UUID;
 use Hash::Merge qw(merge);
 
-use Imaging::Dir::Info;
-use Imaging::Util qw(:files);
-use Imaging::Bag::Info;
-
 Hash::Merge::specify_behavior({
     "SCALAR" => {
             "SCALAR" => sub { $_[1] },
@@ -128,8 +124,14 @@ any('/scans/:_id',sub {
         }
     }
 
-    #lijst bestanden
-    my($files,$size) = list_files($scan->{path});
+    #sorteer bestanden
+    my $files = $scan->{files} || [];
+    our($a,$b);
+    $files = [sort {
+        $a->{name} cmp $b->{name};
+    } @$files];
+    $scan->{files} = $files;
+
 
     #bewerk metadata
     if(is_string($params->{action})){
@@ -186,20 +188,14 @@ any('/scans/:_id',sub {
                     }else{
 
                         my $doc = $result->content->{response}->{docs}->[0];
-                        my $old_bag_info = {};
-                        my $path_bag_info = $scan->{path}."/bag-info.txt";
-                        if(-f $path_bag_info){
-                            $old_bag_info = Imaging::Bag::Info->new(source => $path_bag_info);
-                        }
                         $scan->{metadata}->[0] = {
                             fSYS => $doc->{fSYS},#000000001
                             source => $doc->{source},#rug01
                             fXML => $doc->{fXML},
                             baginfo => create_baginfo(
                                 xml => $doc->{fXML},
-                                size => $size,
-                                num_files => scalar(@$files),
-                                old_bag_info => $old_bag_info->hash
+                                size => $scan->{size},
+                                num_files => scalar(@{$scan->{files}})
                             )            
                         };
                         push @messages,"metadata $metadata_id werd aangepast";
@@ -241,8 +237,6 @@ any('/scans/:_id',sub {
     my $user = ($scan) ? (dbi_handle->quick_select('users',{ id => $scan->{user_id} })) : undef;
     template('scans/view',{
         scan => $scan,
-        files => $files,
-        size => $size,
         user => $user,
         auth => $auth,
         errors => \@errors,

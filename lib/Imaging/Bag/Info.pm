@@ -40,7 +40,6 @@ sub _build_hash {
         while(defined($line = $source->getline)){
             $line =~ s/\r\n$/\n/o;
             chomp($line);
-            say $line;
             my $index = index($line,':');
             if($index >= 0){
                 my $key = trim( substr($line,0,$index) );
