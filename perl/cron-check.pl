@@ -167,7 +167,6 @@ foreach my $user(@users){
 
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
     if(! -d $ready ){
-        #say STDERR "user $user->{login} has no directory ready";
         next;
     }elsif(!getpwnam($user->{login})){
         say STDERR "$user->{login} does not exist";
@@ -384,7 +383,6 @@ foreach my $scan_id(@scan_ids_test){
             }
         }
 
-        #nu worden enkel gewijzigde mappen meegenomen, dus niet meer nodig om laatste incoming_error te overschrijven
         $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
         my $status_history_object = {
             user_login => "-",
@@ -395,6 +393,17 @@ foreach my $scan_id(@scan_ids_test){
         push @{ $scan->{status_history} },$status_history_object;
 
     }
+
+    #verwijder alle status:incoming_error
+
+    #in de databank: alle behalve de laatste
+#    for(my $i = 0;$i < scalar(@{ $scan->{status_history} }) - 1;$i++){
+#        if($scan->{status_history}->[$i]->{status} eq "incoming_error"){
+#            splice(@{ $scan->{status_history} },$i,1);
+#        }
+#    }
+    #in de index: alle
+#    index_log->delete_by_query(query => "status:\"incoming_error\" AND scan_id:\"".$scan->{_id}."\"");
 
     $scan->{datetime_last_modified} = Time::HiRes::time;
     $scans->add($scan);

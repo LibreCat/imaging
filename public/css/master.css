@@ -7,3 +7,6 @@ select.baginfostyle {
 textarea.baginfostyle {
     height:100px;
 }
+th, td {
+    overflow:hidden;
+}
