@@ -85,7 +85,7 @@
   </caption>
 	<tr>
 		<th>naam</th>
-		<!--<th>aantal bestanden</th>-->
+		<th>aantal bestanden</th>
 		<th>aangeboden</th>
 		<th>laatste wijziging</th>
 		<th>eigenaar</th>
@@ -96,7 +96,7 @@
   [%- FOREACH scan IN scans %]
 	<tr>
 		<td><a href="/scans/[% scan.item("_id") %]">[% scan.item("_id") %]</a></td>
-		<!--<td>[% scan.item("files").size || 0 %]</td>-->
+		<td>[% scan.item("files").size || 0 %]</td>
 		<td>
 			[%- parts = scan.item("status_history").0.split('\$\$') -%]
 			[%- matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
