@@ -77,11 +77,18 @@ any('/qa_control',sub {
         $opts{sort} = $config->{app}->{qa_control}->{default_sort} if $config->{app}->{qa_control} && $config->{app}->{qa_control}->{default_sort};
     }
 
+    my $hits = [];
     try {
         $result= index_scan->search(%opts);
+        $hits = $result->hits();
     }catch{
         push @errors,"ongeldige zoekvraag";
     };
+
+    for my $hit(@$hits){
+        $hit->{files} = dir_info($hit->{path})->files();
+    }
+
     if(scalar(@errors)==0){
         my $page_info = Data::Pageset->new({
             'total_entries'       => $result->total,
@@ -91,7 +98,7 @@ any('/qa_control',sub {
             'mode'                => 'fixed'
         });
         template('qa_control',{
-            scans => $result->hits,
+            scans => $hits,
             page_info => $page_info,
             auth => auth(),
             facet_status => $facet_status,
