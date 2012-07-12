@@ -79,7 +79,7 @@ sub project2index {
     index_project->add($doc);
 }
 sub status2index {
-    my($scan,$history_index) = @_;
+    my($scan,$history_index) = @_;    
     my $doc;
     my $index_log = index_log();
     my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
@@ -92,6 +92,7 @@ sub status2index {
     }
 
     foreach my $history(@$history_objects){
+        next if $history->{status} =~ /incoming_/o;
         $doc = clone($history);
         $doc->{datetime} = formatted_date($doc->{datetime});
         $doc->{scan_id} = $scan->{_id};

@@ -394,17 +394,6 @@ foreach my $scan_id(@scan_ids_test){
 
     }
 
-    #verwijder alle status:incoming_error
-
-    #in de databank: alle behalve de laatste
-#    for(my $i = 0;$i < scalar(@{ $scan->{status_history} }) - 1;$i++){
-#        if($scan->{status_history}->[$i]->{status} eq "incoming_error"){
-#            splice(@{ $scan->{status_history} },$i,1);
-#        }
-#    }
-    #in de index: alle
-#    index_log->delete_by_query(query => "status:\"incoming_error\" AND scan_id:\"".$scan->{_id}."\"");
-
     $scan->{datetime_last_modified} = Time::HiRes::time;
     $scans->add($scan);
 
