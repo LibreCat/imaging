@@ -195,26 +195,9 @@
       <hr/>
       [%- END%]
       <p>
-        [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]        
+        [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]
         <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
-
         [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
-
-        <form method="post" action="/scans/[% scan.item('_id') %]#tab-metadata" style="display:inline">
-            <button type="submit" onclick="return confirm('Hierdoor wordt de metadata overschreven. Bent je zeker?');" class="tip" title="Herstel originele metadata">
-                <i class="icon-repeat"></i>
-            </button>            
-            <input type="hidden" name="action" value="add_metadata" />
-            <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
-        </form>
-        <form method="post" action="/scans/[% scan.item('_id') %]#tab-metadata" style="display:inline">
-            <button type="submit" title="Verwijder metadata" onclick="return confirm('De metadata wordt onherroepelijk verwijderd. Ben je zeker?')" class="tip">
-                <i class="icon-trash"></i>
-            </button>
-            <input type="hidden" name="action" value="delete_metadata" />
-            <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
-        </form>
-        <!-- niet veilig: get-variabelen blijven bovenaan de pagina staan! Daardoor kan een simpele reload van de pagina eerdere wijzigingen via ajax ongedaan maken
         <a class="btn tip"
           title="Herstel originele metadata"
           href="/scans/[% scan.item('_id') %]?action=add_metadata&metadata_id=[% metadata_id %]#tab-metadata"
@@ -223,8 +206,6 @@
           title="Verwijder metadata"
           href="/scans/[% scan.item('_id') %]?action=delete_metadata&metadata_id=[% metadata_id %]#tab-metadata"
           data-confirm="De metadata wordt onherroepelijk verwijderd. Ben je zeker?"><i class="icon-trash"></i></a>
-        -->
-
         [%- END %]
       </p>
       <div class="tabbable">

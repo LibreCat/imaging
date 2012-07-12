@@ -189,7 +189,7 @@ any('/scans/:_id',sub {
                         my $old_bag_info = {};
                         my $path_bag_info = $scan->{path}."/bag-info.txt";
                         if(-f $path_bag_info){
-                            $old_bag_info = Imaging::Bag::Info->new(source => $path_bag_info);
+                            $old_bag_info = Imaging::Bag::Info->new(source => $path_bag_info)->hash;
                         }
                         $scan->{metadata}->[0] = {
                             fSYS => $doc->{fSYS},#000000001
@@ -199,7 +199,7 @@ any('/scans/:_id',sub {
                                 xml => $doc->{fXML},
                                 size => $size,
                                 num_files => scalar(@$files),
-                                old_bag_info => $old_bag_info->hash
+                                old_bag_info => $old_bag_info
                             )            
                         };
                         push @messages,"metadata $metadata_id werd aangepast";
