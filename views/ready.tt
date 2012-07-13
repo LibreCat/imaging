@@ -2,6 +2,14 @@
 
 [% PROCESS inc/countdown.tt %]
 
+[%- states_in_ready = settings.status.collection.in_ready -%]
+
+[% IF states_in_ready.grep(scan.status).size > 0 %]
+    <p>
+    <a class="btn btn-mini" href="[% settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login %]">open map</a>
+    </p>
+[% END %]
+
 [%- IF directories && directories.size > 0 %]
 <table class="table table-striped table-condensed">
   <tr>
