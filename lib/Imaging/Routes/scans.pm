@@ -191,19 +191,23 @@ any('/scans/:_id',sub {
                         if(-f $path_bag_info){
                             $old_bag_info = Imaging::Bag::Info->new(source => $path_bag_info)->hash;
                         }
+                        my $new_bag_info = create_baginfo(
+                            xml => $doc->{fXML},
+                            size => $size,
+                            num_files => scalar(@$files),
+                            old_bag_info => $old_bag_info
+                        );
                         $scan->{metadata}->[0] = {
                             fSYS => $doc->{fSYS},#000000001
                             source => $doc->{source},#rug01
                             fXML => $doc->{fXML},
-                            baginfo => create_baginfo(
-                                xml => $doc->{fXML},
-                                size => $size,
-                                num_files => scalar(@$files),
-                                old_bag_info => $old_bag_info
-                            )            
+                            baginfo => $new_bag_info
                         };
-                        push @messages,"metadata $metadata_id werd aangepast";
+                        
+                        #overschrijf oude bag-info.txt op de schijf
+                        write_to_bag_info($path_bag_info,$new_bag_info);
 
+                        push @messages,"metadata $metadata_id werd aangepast";
                     }
                 }                    
             }
@@ -221,6 +225,9 @@ any('/scans/:_id',sub {
                     if($index >= 0){
                         splice @{$scan->{metadata}},$index,1;
                         push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
+                    }
+                    if(scalar(@{ $scan->{metadata} }) == 1){
+                        write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {})
                     }
                 }
 
@@ -536,6 +543,11 @@ post('/scans/:_id/baginfo/edit',sub{
                 $baginfo = { %$baginfo,%$restricted };
                 
                 $scan->{metadata}->[$index_metadata_id]->{baginfo} = $baginfo;
+
+                if(scalar(@{ $scan->{metadata} }) == 0){
+                    write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {});
+                }
+
                 push @messages,"baginfo werd aangepast";
                 scans->add($scan);
             }
@@ -779,6 +791,15 @@ sub status_change_conf {
         $merge = merge($merge,$config->{status}->{change}->{$_} || {});
     }
     $merge;
+}
+sub write_to_bag_info {
+    my($path,$rec)=@_;
+    local(*FILE);
+    open FILE,">$path" or die($!);
+    for my $key(sort keys %$rec){
+        print FILE "$key:$_\r\n" for(@{ $rec->{$key} });
+    }
+    close FILE;
 }
 
 true;
