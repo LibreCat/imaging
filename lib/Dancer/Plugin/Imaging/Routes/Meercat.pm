@@ -69,7 +69,15 @@ sub size_pretty {
         return "0 KB";
     }
 }
-
+sub write_to_bag_info {
+    my($baginfo,$path)=@_;
+    local(*FILE);
+    open FILE,">:encoding(UTF-8)",$path or die($!);
+    for my $key(sort keys %$baginfo){
+        print FILE sprintf("%s:%s\r\n",$key,$_) for(@{ $baginfo->{$key} });
+    }
+    close FILE;
+}
 sub create_baginfo {
     my(%opts) = @_;
     my $xml = $opts{xml};

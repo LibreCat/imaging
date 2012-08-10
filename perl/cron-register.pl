@@ -87,6 +87,9 @@ sub directory_to_queries {
             last;
         }
     }
+    if(scalar @queries == 0){
+        push @queries,File::Basename::basename($path);
+    }
     @queries;
 }
 
@@ -477,8 +480,8 @@ if(!-w $dir_processed){
     }
 }
 
-index_log->store->solr->optimize();
-index_scan->store->solr->optimize();
-index_project->store->solr->optimize();
+#index_log->store->solr->optimize();
+#index_scan->store->solr->optimize();
+#index_project->store->solr->optimize();
 
 say "$this_file ended at ".local_time;

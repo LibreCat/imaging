@@ -792,14 +792,5 @@ sub status_change_conf {
     }
     $merge;
 }
-sub write_to_bag_info {
-    my($path,$rec)=@_;
-    local(*FILE);
-    open FILE,">$path" or die($!);
-    for my $key(sort keys %$rec){
-        print FILE "$key:$_\r\n" for(@{ $rec->{$key} });
-    }
-    close FILE;
-}
 
 true;
