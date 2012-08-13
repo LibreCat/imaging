@@ -28,7 +28,7 @@ sub parse {
         vpx_version => $ref->{header}->{vpx_version}
     );
     my $items = MediaMosa::Response::Items->new(
-        list => is_array_ref($ref->{items}->{item}) ? 
+        item => is_array_ref($ref->{items}->{item}) ? 
 
             $ref->{items}->{item} : 
 
@@ -73,11 +73,11 @@ use Catmandu::Sane;
 use Moo;
 use Data::Util qw(:check :validate);
 
-has list => (
+has item => (
     is => 'ro',isa => sub{
-        my $list = $_[0];
-        array_ref($list);
-        for(@$list){
+        my $item = $_[0];
+        array_ref($item);
+        for(@$item){
             hash_ref($_);
         }        
     }
@@ -87,8 +87,8 @@ sub generator {
     my $self = shift;
     my $sub = sub {
         state $i = 0;
-        if($i < scalar(@{ $self->list })){
-            return $self->list->[$i++];
+        if($i < scalar(@{ $self->item })){
+            return $self->item->[$i++];
         }else{
             return undef;
         }

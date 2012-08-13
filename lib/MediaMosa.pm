@@ -88,7 +88,7 @@ sub _authenticate {
     },"POST");
 
     #server: "DATA vpx 0 <challenge-server>"
-    my $answer1 = $vp->items->list->[0]->{dbus};
+    my $answer1 = $vp->items->item->[0]->{dbus};
     #say $answer1;
     if($answer1 !~ /^DATA vpx 0 ([a-f0-9]{32})$/o){
         confess("invalid dbus response from server: $answer1\n");
@@ -106,7 +106,7 @@ sub _authenticate {
         dbus => "DATA $random $response_string"
     },"POST");
 
-    my $answer2 =  $vp->items->list->[0]->{dbus};  
+    my $answer2 =  $vp->items->item->[0]->{dbus};  
     #say $answer2;
 
     #server: OK|REJECTED vpx
@@ -133,7 +133,7 @@ sub asset_delete {
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/create",$params,"POST");
 }
-sub assets {
+sub asset_list {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/asset",$params,"GET");
@@ -153,22 +153,22 @@ sub asset_still {
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/still",$params,"GET");
 }
-sub asset_joblist {
+sub asset_job_list {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/joblist",$params,"GET");
 }
-sub asset_collection {
+sub asset_collection_list {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/collection",$params,"GET");
 }
-sub asset_metadata {
+sub asset_metadata_add {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/metadata",$params,"POST");
 }
-sub asset_mediafile {
+sub asset_mediafile_list {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/mediafile",$params,"GET");
@@ -186,7 +186,7 @@ sub job_delete {
     $self->vp_request("/job/$params->{job_id}/delete",$params,"POST");
 }
 #collections
-sub collections {
+sub collection_list {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/collection",$params,"GET");
@@ -196,7 +196,7 @@ sub collection {
     $params ||= {};
     $self->vp_request("/collection/$params->{coll_id}",$params,"GET");
 }
-sub collection_asset {
+sub collection_asset_list {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/collection/$params->{coll_id}/asset",$params,"GET");
@@ -208,7 +208,7 @@ sub collection_create {
 }
 
 #trancode
-sub transcode_profiles {
+sub transcode_profile_list {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/transcode/profiles",$params,"GET");
@@ -223,13 +223,12 @@ sub mediafile_create {
 sub mediafile {
     my($self,$params) = @_;
     $params ||= {};
-    if(scalar keys %$params > 0){
-        #update informatie mediafile
-        $self->vp_request("/mediafile/$params->{mediafile_id}",$params,"POST");
-    }else{
-        #vraag informatie op
-        $self->vp_request("/mediafile/$params->{mediafile_id}",$params,"GET");
-    }
+    $self->vp_request("/mediafile/$params->{mediafile_id}",$params,"POST");
+}
+sub mediafile_update {
+    my($self,$params) = @_;
+    $params ||= {};
+    $self->vp_request("/mediafile/$params->{mediafile_id}",$params,"POST");
 }
 sub mediafile_upload_ticket_create {
     my($self,$params) = @_;
@@ -237,5 +236,35 @@ sub mediafile_upload_ticket_create {
     $self->vp_request("/mediafile/$params->{mediafile_id}/upload_ticket/create",$params,"POST");
 }
 
+=head1 NAME
+    
+    MediaMosa - Perl connector for the MediaMosa REST API
+
+=head1 SYNOPSIS
+
+    my $mm = MediaMosa->new( user => "foo",password => "mysecret" );
+
+    #login is handled automatically ;-), and only redone when the session cookie expires
+    #$mm->login;
+    
+    #equivalent of /asset?offset=0&limit=100
+    my $vpcore = $mm->asset_list({ offset => 0,limit => 1000});
+
+    say "total found:".$vp->header->item_count_total;
+    say "total fetched:".$vp->header->item_count;
+
+    #the result list 'items' is iterable!
+    $vpcore->items->each(sub{
+        my $item = shift;
+        say "asset_id:".$item->{asset_id};
+    });
+
+=head1 DESCRIPTION
+
+    A implementation of Grim::Acl must contain a method 'is_allowed'. This method
+    compares the information in the request environment with information in the
+    media-record, and returns true when allowed.
+
+=cut
 
 __PACKAGE__;
