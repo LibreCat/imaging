@@ -226,7 +226,9 @@ foreach my $user(@users){
                     comments => [],
                     warnings => [],
                     #default busy!
-                    busy => 1
+                    busy => 1,
+                    #mediamosa
+                    #asset_id => "lkfjkfj25df25df"
                 };
 
                 #voeg nieuwe scan toe aan tabel scans
