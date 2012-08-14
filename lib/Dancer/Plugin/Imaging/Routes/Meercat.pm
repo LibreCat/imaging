@@ -5,7 +5,7 @@ use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use Try::Tiny;
 use WebService::Solr;
-use POSIX qw(floor);
+use POSIX qw(floor strftime);
 use XML::XPath;
 
 our $marc_type_map = {
@@ -69,7 +69,7 @@ sub size_pretty {
         return "0 KB";
     }
 }
-sub write_to_bag_info {
+sub write_to_baginfo {
     my($path,$baginfo)=@_;
     local(*FILE);
     open FILE,">:encoding(UTF-8)",$path or die($!);
@@ -78,19 +78,12 @@ sub write_to_bag_info {
     }
     close FILE;
 }
-sub create_baginfo {
+sub marc_to_baginfo_dc {
     my(%opts) = @_;
     my $xml = $opts{xml};
-    my $size = $opts{size};
-    my $num_files = $opts{num_files};
-    my $old_bag_info = is_hash_ref($opts{old_bag_info}) ? $opts{old_bag_info} : {};
-
     my $rec = {};
 
     if(is_string($xml)){
-
-        use XML::XPath;
-        use POSIX qw(strftime);
 
         my $xpath = XML::XPath->new(xml => $xml);
         my @fields = qw(
@@ -142,26 +135,26 @@ sub create_baginfo {
 
     }
 
-    #bagit fields:
+    return $rec;
+}
+sub baginfo_bagit_fields {
+    my(%opts) = @_;
+    my $rec = {};
 
     #Bagging-Date: YYYY-MM-DD
     $rec->{'Bagging-Date'} = [strftime("%Y-%m-%d",localtime)];
 
-    if(is_natural($size)){
+    if(exists $opts{size} && is_natural($opts{size})){
+
         #Bag-Size: 90 MB
-        $rec->{'Bag-Size'} = [size_pretty($size)];
+        $rec->{'Bag-Size'} = [size_pretty($opts{size})];
+
     }
-    if(is_natural($num_files)){
+    if(exists $opts{num_files} && is_natural($opts{num_files})){
         #Payload-Oxum: OctetCount.StreamCount
-        $rec->{'Payload-Oxum'} = ["$size.$num_files"];
+        $rec->{'Payload-Oxum'} = ["$opts{size}.$opts{num_files}"];        
     }
-    
-    #merge with old bag-info
-    if($old_bag_info){
-        #merge result with old bag-info
-        $rec = { %$old_bag_info,%$rec };
-    }
-    
+
     return $rec;
 }
 sub str_clean {
@@ -257,8 +250,9 @@ sub meercat {
 }
 
 register meercat => \&meercat;
-register create_baginfo => \&create_baginfo;
-register write_to_bag_info => \&write_to_bag_info;
+register marc_to_baginfo_dc => \&marc_to_baginfo_dc;
+register baginfo_bagit_fields => \&baginfo_bagit_fields;
+register write_to_baginfo => \&write_to_baginfo;
 register_plugin;
 
 __PACKAGE__;

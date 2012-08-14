@@ -21,6 +21,7 @@ use Hash::Merge qw(merge);
 use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use Imaging::Bag::Info;
+use Imaging::Profile::BAG;
 
 Hash::Merge::specify_behavior({
     "SCALAR" => {
@@ -186,26 +187,23 @@ any('/scans/:_id',sub {
                     }else{
 
                         my $doc = $result->content->{response}->{docs}->[0];
-                        my $old_bag_info = {};
-                        my $path_bag_info = $scan->{path}."/bag-info.txt";
-                        if(-f $path_bag_info){
-                            $old_bag_info = Imaging::Bag::Info->new(source => $path_bag_info)->hash;
+                        my $baginfo = {};
+                        my $path_baginfo = $scan->{path}."/bag-info.txt";
+                        if(Imaging::Profile::BAG->new->test($scan->{path})){
+                            $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
                         }
-                        my $new_bag_info = create_baginfo(
-                            xml => $doc->{fXML},
-                            size => $size,
-                            num_files => scalar(@$files),
-                            old_bag_info => $old_bag_info
-                        );
+                        my $dc = marc_to_baginfo_dc(xml => $doc->{fXML});
+                        $baginfo = { %$baginfo,%$dc };
+
                         $scan->{metadata}->[0] = {
                             fSYS => $doc->{fSYS},#000000001
                             source => $doc->{source},#rug01
                             fXML => $doc->{fXML},
-                            baginfo => $new_bag_info
+                            baginfo => $baginfo
                         };
                         
                         #overschrijf oude bag-info.txt op de schijf
-                        write_to_bag_info($path_bag_info,$new_bag_info);
+                        write_to_baginfo($path_baginfo,$baginfo);
 
                         push @messages,"metadata $metadata_id werd aangepast";
                     }
@@ -227,7 +225,7 @@ any('/scans/:_id',sub {
                         push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
                     }
                     if(scalar(@{ $scan->{metadata} }) == 1){
-                        write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {})
+                        write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {})
                     }
                 }
 
@@ -471,7 +469,7 @@ post('/scans/:_id/baginfo/add',sub{
 
                 if(scalar(@{ $scan->{metadata} }) == 1){
                     #overschrijf oude bag-info.txt op de schijf
-                    write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {});
+                    write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {});
                 }
                 
             }
@@ -551,7 +549,7 @@ post('/scans/:_id/baginfo/edit',sub{
                 $scan->{metadata}->[$index_metadata_id]->{baginfo} = $baginfo;
 
                 if(scalar(@{ $scan->{metadata} }) == 1){
-                    write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {});
+                    write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {});
                 }
 
                 push @messages,"baginfo werd aangepast";

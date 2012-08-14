@@ -4,6 +4,7 @@ use Dancer qw(:script);
 use Imaging::Util qw(:files :data);
 use Imaging::Dir::Info;
 use Imaging::Bag::Info;
+use Imaging::Profile::BAG;
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is :array);
 use File::Basename qw();
@@ -134,36 +135,34 @@ foreach my $id(@ids_ok_for_metadata){
     my $scan = scans()->get($id);
     my $path = $scan->{path};
     my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
-    my $bag_info_path = $scan->{path}."/bag-info.txt";
-    my $bag_info;
-    if(-f $bag_info_path){
-        my $bag_info_parser = Imaging::Bag::Info->new(source => $bag_info_path);
-        $bag_info = $bag_info_parser->hash;
+
+    #parse hash indien bag-info.txt bestaat, en indien niet, maak nieuwe aan
+    my $baginfo_path = $scan->{path}."/bag-info.txt";
+    my $baginfo;
+    if(-f $baginfo_path){
+        my $baginfo_parser = Imaging::Bag::Info->new(source => $baginfo_path);
+        $baginfo = $baginfo_parser->hash;
     }
+
+    #haal metadata op
     my @queries = directory_to_queries($path);
-    
+
     foreach my $query(@queries){
         my $res = meercat()->search($query,{});
         $scan->{metadata} = [];
         if($res->content->{response}->{numFound} > 0){
 
             my $docs = $res->content->{response}->{docs};
-            foreach my $doc(@$docs){
+            foreach my $doc(@$docs){              
+
                 push @{ $scan->{metadata} },{
                     fSYS => $doc->{fSYS},#000000001
                     source => $doc->{source},#rug01
                     fXML => $doc->{fXML},
-                    baginfo => create_baginfo(
-                        xml => $doc->{fXML},
-                        old_bag_info => $bag_info,
-                        size => $dir_info->size,
-                        num_files => scalar(@{ $dir_info->files() })
-                    )
+                    baginfo => defined($baginfo) ? $baginfo : marc_to_baginfo_dc(xml => $doc->{fXML})
                 };
             }
-    
             last;
-
         }
 
     }
@@ -255,10 +254,11 @@ if(!-w $dir_processed){
             }
         }
 
-        #write bag_info to bag-info.txt
-        if(scalar(@{ $scan->{metadata} }) > 0){
+        #schrijf bag-info.txt uit indien het nog niet bestaat
+        my $path_baginfo = $scan->{path}."/bag-info.txt";
+        if(scalar(@{ $scan->{metadata} }) > 0 && !-f $path_baginfo){
 
-            write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo});
+            write_to_baginfo($path_baginfo,$scan->{metadata}->[0]->{baginfo});
 
         }
         
@@ -384,7 +384,7 @@ if(!-w $dir_processed){
         my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
         if(!$success){
             say STDERR $stderr;
-        }elsif($stdout =~ /import done. New asset_id: (\w+)/){
+        }elsif($stdout =~ /New asset_id: (\w+)/){
             $scan->{asset_id} = $1;
             update_scan($scan);
         }else{

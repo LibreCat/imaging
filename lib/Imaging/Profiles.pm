@@ -18,7 +18,7 @@ has list => (
                 }
             }
             $success;
-        } or die("format: [ ['BAG','Imaging::Profile::BAG'],['TAR','Imaging::Profile::TAR'], .. ]\n");
+        } or die("format: [ ['Bag','Imaging::Profile::Bag'],['TAR','Imaging::Profile::TAR'], .. ]\n");
     },
     default => sub{ []; }
 );
