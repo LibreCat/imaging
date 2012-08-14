@@ -61,22 +61,43 @@ sub _vp_request {
     }
     my $vp = _validate_vp_response($res);
 }
+sub _construct_params_as_array {
+    my $params = shift;
+    my @array = ();
+    for my $key(keys %$params){
+        if(is_array_ref($params->{$key})){
+            #PHP only recognizes 'arrays' when their keys are appended by '[]' (yuk!)
+            for my $val(@{ $params->{$key} }){
+                push @array,$key."[]" => $val;
+            }
+        }else{
+            push @array,$key => $params->{$key};
+        }
+    }
+    return \@array;
+}
 sub _post {
     my($self,$path,$data)=@_;
-    $self->_ua->post($self->base_url.$path,$data);
+    $self->_ua->post($self->base_url.$path,_construct_params_as_array($data));
 }
 sub _construct_query {
     my $data = shift;
     my @parts = ();
     for my $key(keys %$data){
-        push @parts,URI::Escape::uri_escape($key)."=".URI::Escape::uri_escape($data->{$key})
+        if(is_array_ref($data->{$key})){
+            for my $val(@{ $data->{$key} }){
+                push @parts,URI::Escape::uri_escape($key)."=".URI::Escape::uri_escape($val);
+            }
+        }else{
+            push @parts,URI::Escape::uri_escape($key)."=".URI::Escape::uri_escape($data->{$key});
+        }
     }
     join("&",@parts);
 }
 sub _get {
     my($self,$path,$data)=@_;
     my $query = _construct_query($data) || "";
-    $self->_ua->get($self->base_url.$path."?$query",%$data);
+    $self->_ua->get($self->base_url.$path."?$query");
 }
 sub _authenticate {
     my $self = shift;
@@ -143,6 +164,11 @@ sub asset {
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}",$params,"GET");
 }
+sub asset_update {
+    my($self,$params) = @_;
+    $params ||= {};
+    $self->vp_request("/asset/$params->{asset_id}",$params,"POST");
+}
 sub asset_play {
     my($self,$params) = @_;
     $params ||= {};
@@ -152,6 +178,11 @@ sub asset_still {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/still",$params,"GET");
+}
+sub asset_still_create {
+    my($self,$params) = @_;
+    $params ||= {};
+    $self->vp_request("/asset/$params->{asset_id}/still/create",$params,"POST");
 }
 sub asset_job_list {
     my($self,$params) = @_;
@@ -163,7 +194,7 @@ sub asset_collection_list {
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/collection",$params,"GET");
 }
-sub asset_metadata_add {
+sub asset_metadata_update {
     my($self,$params) = @_;
     $params ||= {};
     $self->vp_request("/asset/$params->{asset_id}/metadata",$params,"POST");
@@ -213,6 +244,11 @@ sub transcode_profile_list {
     $params ||= {};
     $self->vp_request("/transcode/profiles",$params,"GET");
 }
+sub preview_profile_id {
+    my($self,$params) = @_;
+    $params ||= {};
+    $self->vp_request("/preview_profile_id",$params,"GET");
+}
 
 #mediafile
 sub mediafile_create {
@@ -233,8 +269,21 @@ sub mediafile_update {
 sub mediafile_upload_ticket_create {
     my($self,$params) = @_;
     $params ||= {};
-    $self->vp_request("/mediafile/$params->{mediafile_id}/upload_ticket/create",$params,"POST");
+    $self->vp_request("/mediafile/$params->{mediafile_id}/uploadticket/create",$params,"POST");
 }
+sub mediafile_transcode {
+    my($self,$params) = @_;
+    $params ||= {};
+    $self->vp_request("/mediafile/$params->{mediafile_id}/transcode",$params,"POST");
+}
+
+#user
+sub user_job_list {
+    my($self,$params) = @_;
+    $params ||= {};
+    $self->vp_request("/user/$params->{owner_id}/joblist",$params,"GET");
+}
+
 
 =head1 NAME
     

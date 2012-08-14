@@ -51,7 +51,7 @@ sub data_at {
 }
 sub file_info {
     my $path = shift;
-    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=stat($path);
+    my($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks)=lstat($path);
     if($dev){
         return {
             name => basename($path),
@@ -72,7 +72,7 @@ sub file_info {
     }
 }
 sub mtime {
-    (stat(shift))[9];
+    (lstat(shift))[9];
 }
 sub mtime_latest_file {
     my $dir = shift;

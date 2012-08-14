@@ -468,6 +468,12 @@ post('/scans/:_id/baginfo/add',sub{
                 push @{ $scan->{metadata}->[0]->{baginfo}->{$key} },$value;
                 push @messages,"baginfo werd aangepast";
                 scans->add($scan);
+
+                if(scalar(@{ $scan->{metadata} }) == 1){
+                    #overschrijf oude bag-info.txt op de schijf
+                    write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {});
+                }
+                
             }
 
         }
@@ -544,7 +550,7 @@ post('/scans/:_id/baginfo/edit',sub{
                 
                 $scan->{metadata}->[$index_metadata_id]->{baginfo} = $baginfo;
 
-                if(scalar(@{ $scan->{metadata} }) == 0){
+                if(scalar(@{ $scan->{metadata} }) == 1){
                     write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {});
                 }
 

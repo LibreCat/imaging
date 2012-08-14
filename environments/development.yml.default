@@ -246,7 +246,7 @@ profiles:
       conf:
        glob: "*.tif *.jpg *.fff *.pdf"
        all: 1
-       message: "map mag enkel deze bestanden bevatten: *.tif *.jpg *.fff *.pdf. Submappen zijn niet toegelaten"
+       message: "map mag enkel deze bestanden bevatten: *.tif *.jpg *.fff *.pdf. (Submappen zijn niet toegelaten)"
      on_error: "stop"
    - class: "Imaging::Test::Dir::checkTIFF"
      args:
@@ -305,4 +305,6 @@ profiles:
 cron:
  register:
   pidfile: "/tmp/imaging-register.pid"
-  drush_command_create_derivatives: "drush -r /usr/share/mediamosa mmnara %s"
+  drush_command:
+   mmnara: "drush -r /usr/share/mediamosa mmnara %s"
+   import_directory: "drush -r /usr/share/mediamosa mm-import-directory %s"

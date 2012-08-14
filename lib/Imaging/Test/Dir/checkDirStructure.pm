@@ -29,12 +29,15 @@ sub is_fatal {
 sub test {
     my $self = shift;
     my $topdir = $self->dir_info->dir();
-    my $total = scalar(@{ $self->dir_info->files }) + scalar(@{ $self->dir_info->directories });
+    my $total = scalar(@{ $self->dir_info->files });
+    say "path => ".$_->{path} for(@{ $self->dir_info->files });
     my(@errors) = ();
 
     chdir($topdir);
 
     my @files = glob $self->conf->{'glob'};
+    say "file found: $_" for(@files);
+    say "total: $total";
 
     if(
         (scalar @files == 0) ||

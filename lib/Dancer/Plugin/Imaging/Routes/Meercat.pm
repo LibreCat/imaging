@@ -70,11 +70,11 @@ sub size_pretty {
     }
 }
 sub write_to_bag_info {
-    my($baginfo,$path)=@_;
+    my($path,$baginfo)=@_;
     local(*FILE);
     open FILE,">:encoding(UTF-8)",$path or die($!);
     for my $key(sort keys %$baginfo){
-        print FILE sprintf("%s:%s\r\n",$key,$_) for(@{ $baginfo->{$key} });
+        print FILE sprintf("%s: %s\r\n",$key,$_) for(@{ $baginfo->{$key} });
     }
     close FILE;
 }
@@ -258,6 +258,7 @@ sub meercat {
 
 register meercat => \&meercat;
 register create_baginfo => \&create_baginfo;
+register write_to_bag_info => \&write_to_bag_info;
 register_plugin;
 
 __PACKAGE__;

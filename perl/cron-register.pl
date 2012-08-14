@@ -92,114 +92,29 @@ sub directory_to_queries {
     }
     @queries;
 }
+sub update_scan {
+    my $scan = shift;
+    scans->add($scan);
+    scan2index($scan);
+    my($success,$error) = index_scan->commit;
+    die(join('',@$error)) if !$success;
+}
+sub update_status {
+    my($scan,$index) = @_;
+    status2index($scan,$index);
+    my($success,$error) = index_log->commit;
+    die(join('',@$error)) if !$success;
+}
 
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
 
-#stap 1: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
-say "updating list scans for projects";
-my @project_ids = ();
-projects()->each(sub{ 
-    push @project_ids,$_[0]->{_id}; 
-});
 
-foreach my $project_id(@project_ids){
-
-    my $project = projects()->get($project_id);
-
-    my $query = $project->{query};
-    next if !$query;
-
-    my @list = ();
-
-    my $meercat = meercat();
-
-    my($offset,$limit,$total) = (0,1000,0);
-
-    my $fetch_successfull = 1;
-    try{
-        do{
-
-            my $res = $meercat->search($query,{start => $offset,rows => $limit});
-            $total = $res->content->{response}->{numFound};
-            my $hits = $res->content->{response}->{docs};
-
-            foreach my $hit(@$hits){
-                my $ref = from_xml($hit->{fXML},ForceArray => 1);
-
-                #zoek items in Z30 3, en nummering in Z30 h
-                my @items = ();
-
-                foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
-                    if($marc_datafield->{tag} eq "Z30"){
-                        my $item = {
-                            source => $hit->{source},
-                            fSYS => $hit->{fSYS}
-                        };
-                        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
-                            if($marc_subfield->{code} eq "3"){
-                                $item->{"location"} = $marc_subfield->{content};
-                            }
-                            if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
-                                $item->{"number"} = $1;
-                            }
-                        }
-                        say "\t".join(',',values %$item);
-                        push @items,$item;
-                    }
-                }
-                push @list,@items;
-            }
-
-            $offset += $limit;
-
-        }while($offset < $total);
-
-    }catch{
-        $fetch_successfull = 0;
-        say STDERR $_;
-    };
-    if($fetch_successfull){
-        say "storing new object list to database";
-        $project->{list} = \@list;
-        $project->{datetime_last_modified} = Time::HiRes::time;
-        projects()->add($project);
-        project2index($project);
-    }
-};
-{
-    my($success,$error) = index_project->commit;   
-    die(join('',@$error)) if !$success;
-}
-
-
-#stap 2: ken scans toe aan projects
-say "assigning scans to projects";
-my @scan_ids = ();
-scans->each(sub{ 
-    push @scan_ids,$_[0]->{_id} if !-f $_[0]->{path}."/__FIXME.txt"; 
-});
-foreach my $scan_id(@scan_ids){
-    my $scan = scans->get($scan_id);
-    my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
-    if($result->total > 0){        
-        my @project_ids = map { $_->{_id} } @{ $result->hits };
-        $scan->{project_id} = \@project_ids;
-        say "assigning project $_ to scan ".$scan->{_id} foreach(@project_ids);
-    }else{
-        $scan->{project_id} = [];
-    }
-    scans->add($scan);
-    scan2index($scan);
-}
-
-{
-    my($success,$error) = index_scan->commit;   
-    die(join('',@$error)) if !$success;
-}
-
-#stap 3: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
+#stap 1: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
 #wijziging/update moet gebeuren door qa_manager
+#
+#   1ste metadata-record wordt neergeschreven in bag-info.txt: mediamosa pikt deze metadata op
+
 say "retrieving metadata for good scans";
 my @ids_ok_for_metadata = ();
 scans()->each(sub{
@@ -246,6 +161,7 @@ foreach my $id(@ids_ok_for_metadata){
                     )
                 };
             }
+    
             last;
 
         }
@@ -253,14 +169,11 @@ foreach my $id(@ids_ok_for_metadata){
     }
     my $num = scalar(@{$scan->{metadata}});
     say "\tscan ".$scan->{_id}." has $num metadata-records";
-    scans()->add($scan);
-    scan2index($scan);
 
-    my($success,$error) = index_scan->commit;
-    die(join('',@$error)) if !$success;
+    update_scan($scan);
 }
 
-#stap 4: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
+#stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
 my @incoming_ok = ();
 scans()->each(sub{
     my $scan = shift;
@@ -295,7 +208,8 @@ if(!-w $dir_processed){
             #not recoverable: aborting
             next;
 
-        }        
+        }         
+        
 
 
         #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
@@ -330,13 +244,8 @@ if(!-w $dir_processed){
                 push @{ $scan->{status_history} },$status_history_object;
                 $scan->{check_log} = \@errors;
 
-                scans->add($scan);
-                scan2index($scan);
-                my($success,$error) = index_scan->commit;
-                die(join('',@$error)) if !$success;
-                status2index($scan,-1);
-                ($success,$error) = index_log->commit;
-                die(join('',@$error)) if !$success;
+                update_scan($scan);
+                update_status($scan,-1);
 
                 #see you later!
                 #not recoverable: aborting
@@ -344,6 +253,13 @@ if(!-w $dir_processed){
             }else{
                 say "\t\tsuccessfull";
             }
+        }
+
+        #write bag_info to bag-info.txt
+        if(scalar(@{ $scan->{metadata} }) > 0){
+
+            write_to_bag_info($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo});
+
         }
         
         #ok, tijdelijk toekennen aan root zelf, opdat niemand kan tussenkomen..
@@ -453,35 +369,131 @@ if(!-w $dir_processed){
         };
         $scan->{datetime_last_modified} = Time::HiRes::time;
         
-        {
-            scans->add($scan);
-            scan2index($scan);
-            my($success,$error) = index_scan->commit;
-            die(join('',@$error)) if !$success;
-        }
 
-        {
-            status2index($scan,-1);
-            my ($success,$error) = index_log->commit;
-            die(join('',@$error)) if !$success;
-        }
-
+        update_scan($scan);
+        update_status($scan,-1);
 
         #laad op in mediamosa    
+        my $command;
         if(is_string($scan->{profile_id}) && $scan->{profile_id} eq "NARA"){
-            my $command = sprintf(config->{cron}->{register}->{drush_command_create_derivatives},$scan->{path});
-            say "\t$command";
-            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-            if(!$success){
-                say STDERR $stderr;
-            }
+            $command = sprintf(config->{cron}->{register}->{drush_command}->{mmnara},$scan->{path});
+        }else{            
+             $command = sprintf(config->{cron}->{register}->{drush_command}->{import_directory},$scan->{path});  
         }
-
+        say "\t$command";
+        my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+        if(!$success){
+            say STDERR $stderr;
+        }elsif($stdout =~ /import done. New asset_id: (\w+)/){
+            $scan->{asset_id} = $1;
+            update_scan($scan);
+        }else{
+            say STDERR "cannot find asset_id in response";
+        }
     }
 }
 
-#index_log->store->solr->optimize();
-#index_scan->store->solr->optimize();
-#index_project->store->solr->optimize();
+
+#stap 3: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
+say "updating list scans for projects";
+my @project_ids = ();
+projects()->each(sub{ 
+    push @project_ids,$_[0]->{_id}; 
+});
+
+foreach my $project_id(@project_ids){
+
+    my $project = projects()->get($project_id);
+
+    my $query = $project->{query};
+    next if !$query;
+
+    my @list = ();
+
+    my $meercat = meercat();
+
+    my($offset,$limit,$total) = (0,1000,0);
+
+    my $fetch_successfull = 1;
+    try{
+        do{
+
+            my $res = $meercat->search($query,{start => $offset,rows => $limit});
+            $total = $res->content->{response}->{numFound};
+            my $hits = $res->content->{response}->{docs};
+
+            foreach my $hit(@$hits){
+                my $ref = from_xml($hit->{fXML},ForceArray => 1);
+
+                #zoek items in Z30 3, en nummering in Z30 h
+                my @items = ();
+
+                foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
+                    if($marc_datafield->{tag} eq "Z30"){
+                        my $item = {
+                            source => $hit->{source},
+                            fSYS => $hit->{fSYS}
+                        };
+                        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+                            if($marc_subfield->{code} eq "3"){
+                                $item->{"location"} = $marc_subfield->{content};
+                            }
+                            if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
+                                $item->{"number"} = $1;
+                            }
+                        }
+                        say "\t".join(',',values %$item);
+                        push @items,$item;
+                    }
+                }
+                push @list,@items;
+            }
+
+            $offset += $limit;
+
+        }while($offset < $total);
+
+    }catch{
+        $fetch_successfull = 0;
+        say STDERR $_;
+    };
+    if($fetch_successfull){
+        say "storing new object list to database";
+        $project->{list} = \@list;
+        $project->{datetime_last_modified} = Time::HiRes::time;
+        projects()->add($project);
+        project2index($project);
+    }
+};
+{
+    my($success,$error) = index_project->commit;   
+    die(join('',@$error)) if !$success;
+}
+
+
+#stap 4: ken scans toe aan projects
+say "assigning scans to projects";
+my @scan_ids = ();
+scans->each(sub{ 
+    push @scan_ids,$_[0]->{_id} if !-f $_[0]->{path}."/__FIXME.txt"; 
+});
+foreach my $scan_id(@scan_ids){
+    my $scan = scans->get($scan_id);
+    my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
+    if($result->total > 0){        
+        my @project_ids = map { $_->{_id} } @{ $result->hits };
+        $scan->{project_id} = \@project_ids;
+        say "assigning project $_ to scan ".$scan->{_id} foreach(@project_ids);
+    }else{
+        $scan->{project_id} = [];
+    }    
+    scans->add($scan);
+    scan2index($scan);
+}
+
+{
+    my($success,$error) = index_scan->commit;   
+    die(join('',@$error)) if !$success;
+}
 
 say "$this_file ended at ".local_time;
