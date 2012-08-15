@@ -11,7 +11,6 @@ use Time::HiRes;
 use Clone qw(clone);
 use Digest::MD5 qw(md5_hex);
 use Dancer::Plugin::Database;
-
 use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 
@@ -200,6 +199,20 @@ sub list_files {
     \@files,$dir_info->size();
 }
 
+sub update_scan {
+    my $scan = shift;
+    scans->add($scan);
+    scan2index($scan);
+    my($success,$error) = index_scan->commit;
+    die(join('',@$error)) if !$success;
+}
+sub update_status {
+    my($scan,$index) = @_;
+    status2index($scan,$index);
+    my($success,$error) = index_log->commit;
+    die(join('',@$error)) if !$success;
+}
+
 register local_time => \&local_time;
 register core => \&core;
 register scans => \&scans;
@@ -213,7 +226,8 @@ register status2index => \&status2index;
 register project2index => \&project2index;
 register dir_info => \&dir_info;
 register list_files => \&list_files;
-
+register update_scan => \&update_scan;
+register update_status => \&update_status;
 
 register_plugin;
 

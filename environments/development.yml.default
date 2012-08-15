@@ -223,7 +223,7 @@ human_readable:
  archived_ok: "archivering ok"
  published: "gepubliceerd"
  published_ok: "publicatie ok"
-directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Location"]
+directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Default"]
 profile_detector:
  #opgelet: laatste in de lijst geldt als default, en wordt dus niet getest!
  list: [["BAG","Imaging::Profile::BAG"],["TAR","Imaging::Profile::TAR"],["NARA","Imaging::Profile::NARA"]]
@@ -305,6 +305,14 @@ profiles:
 cron:
  register:
   pidfile: "/tmp/imaging-register.pid"
-  drush_command:
-   mmnara: "drush -r /usr/share/mediamosa mmnara %s"
-   import_directory: "drush -r /usr/share/mediamosa mm-import-directory %s"
+mediamosa:
+ drush_command:
+  mmnara: "drush -r /usr/share/mediamosa mmnara %s"
+  import_directory: "drush -r /usr/share/mediamosa mm-import-directory %s"
+  bt-bag: "drush -r /usr/share/mediamosa bt-bag %s %s"
+ rest_api:
+  user: "BT boekentoren"
+  password: "PJMCBUSKLZSlSjTnHRKbBbw1"
+  base_url: "http://localhost:81"
+grep:
+ mount: "/mnt/data01/03_grep"

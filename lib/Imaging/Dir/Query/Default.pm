@@ -1,4 +1,4 @@
-package Imaging::Dir::Query::Location;
+package Imaging::Dir::Query::Default;
 use Catmandu::Sane;
 use File::Basename;
 use Moo;
@@ -9,12 +9,12 @@ my $re_not = qr/^RUG01-/;
 sub check {
     my($self,$path)=@_;
     my $basename = basename($path);
-    defined $path && -d $path && $basename !~ $re_not && $basename =~ $re;
+    $basename !~ $re_not && $basename =~ $re;
 }
 sub queries {
     my($self,$path)=@_;
     return () if !defined($path);
-    "location:".basename($path);
+    basename($path);
 }
 
 with qw(Imaging::Dir::Query);

@@ -231,17 +231,9 @@ foreach my $user(@users){
                     #asset_id => "lkfjkfj25df25df"
                 };
 
-                #voeg nieuwe scan toe aan tabel scans
-                $scans->add($scan);
-
-                #update index_scan en index_log
-                scan2index($scan);
-                my($success,$error)= index_scan->commit;
-                die(join('',@$error)) if !$success;
-                status2index($scan);
-                ($success,$error) = index_log->commit;
-                die(join('',@$error)) if !$success;
-    
+                #update scans, index_scan en index_log
+                update_scan($scan);
+                update_status($scan);
             }
 
             #voeg toe aan te verwerken directories
@@ -397,16 +389,10 @@ foreach my $scan_id(@scan_ids_test){
     }
 
     $scan->{datetime_last_modified} = Time::HiRes::time;
-    $scans->add($scan);
 
-    #update index_scan en index_log
-    scan2index($scan);
-    my($success,$error) = index_scan->commit;
-    die(join('',@$error)) if !$success;
-
-    status2index($scan,-1);
-    ($success,$error) = index_log->commit;
-    die(join('',@$error)) if !$success;
+    #update scans, index_scan en index_log
+    update_scan($scan);
+    update_status($scan,-1);
 
 }
 

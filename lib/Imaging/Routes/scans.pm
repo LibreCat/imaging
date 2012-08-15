@@ -21,7 +21,6 @@ use Hash::Merge qw(merge);
 use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use Imaging::Bag::Info;
-use Imaging::Profile::BAG;
 
 Hash::Merge::specify_behavior({
     "SCALAR" => {
@@ -189,7 +188,7 @@ any('/scans/:_id',sub {
                         my $doc = $result->content->{response}->{docs}->[0];
                         my $baginfo = {};
                         my $path_baginfo = $scan->{path}."/bag-info.txt";
-                        if(Imaging::Profile::BAG->new->test($scan->{path})){
+                        if(-f $path_baginfo){
                             $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
                         }
                         my $dc = marc_to_baginfo_dc(xml => $doc->{fXML});

@@ -105,28 +105,19 @@ say "$this_file started at ".local_time;
 
 say "retrieving metadata for good scans";
 my @ids_ok_for_metadata = ();
-{
-    do{
-        my($offset,$limit,$total) = (0,1000,0);
-        my $result = index_scan->search( 
-            query => "-status:\"incoming\" AND -status:\"incoming_error\"",
-            reify => scans(),
-            start => $offset,
-            limit => $limit
-        );
-        $total = $result->total;
-        for my $scan(@{ $result->hits }){
-            if(
-                !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
-                !(-f $scan->{path}."/__FIXME.txt")
-            ){
-                push @ids_ok_for_metadata,$scan->{_id};
-            }
-        }
-        $offset += $limit;
-    }while($offset < $total);
-}
+scans()->each(sub{
+    my $scan = shift;
+    my $status = $scan->{status};
+    my $metadata = $scan->{metadata};
+    if( 
+        !array_includes(["incoming","incoming_error"],$status) && 
+        !(is_array_ref($metadata) && scalar(@$metadata) > 0 ) &&
+        !(-f $scan->{path}."/__FIXME.txt")
+    ){
 
+        push @ids_ok_for_metadata,$scan->{_id};
+    }
+});
 foreach my $id(@ids_ok_for_metadata){
     my $scan = scans()->get($id);
     my $path = $scan->{path};
@@ -169,24 +160,15 @@ foreach my $id(@ids_ok_for_metadata){
 
 #stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
 my @incoming_ok = ();
-{
-    do{
-        my($offset,$limit,$total) = (0,1000,0);
-        my $result = index_scan->search(
-            query => "status:\"incoming_ok\"",
-            reify => scans(),
-            start => $offset,
-            limit => $limit
-        );
-        $total = $result->total;
-        for my $scan(@{ $result->hits }){
-            if(!(-f $scan->{path}."/__FIXME.txt")){
-                push @incoming_ok,$scan->{_id};
-            }
-        }
-        $offset += $limit;
-    }while($offset < $total);
-}
+scans()->each(sub{
+    my $scan = shift;
+    if(
+        $scan->{status} eq "incoming_ok" &&
+        !(-f $scan->{path}."/__FIXME.txt")
+    ){
+        push @incoming_ok,$scan->{_id};
+    }
+});
 
 say "registering incoming_ok";
 
@@ -215,6 +197,7 @@ if(!-w $dir_processed){
 
 
         #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
+        
         my $mtime_latest_file = mtime_latest_file($scan->{path});
         if($mtime_latest_file > $scan->{datetime_last_modified}){
             say "\t\tis changed since last check, I'm sorry! Aborting..";
@@ -401,63 +384,8 @@ if(!-w $dir_processed){
     }
 }
 
-#stap 3: opladen naar GREP
-{
-    do{
-        my($offset,$limit,$total) = (0,1000,0);
-        my $result = index_scan->search(
-            query => "status:\"qa_control_ok\"",
-            start => $offset,
-            limit => $limit
-        );
-        $total = $result->total;
-        for my $hit(@{ $result->hits }){
 
-            my $scan = scans->get($hit->{_id});
-            my $is_bag = Imaging::Profile::BAG->new($scan->{path})->test;
-            my $grep_path = config->{'grep'}->{mount}."/".File::Basename::basename($scan->{path});
-            my $command;
-
-            if(!$is_bag){
-                $command = sprintf(
-                    config->{mediamosa}->{drush_command}->{'bt-bag'},
-                    $scan->{path},                   
-                    $grep_path
-                );
-                
-            }else{
-                $command = "cp -R $scan->{path} $grep_path";
-            }
-            say "command: $command";
-            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-            say "stderr:";
-            say $stderr;
-            say "stdout:";
-            say $stdout;
-            if($success){
-
-                say "scan archived";
-                $scan->{status} = "archived";
-                push @{ $scan->{status_history} },{
-                    user_login =>"-",
-                    status => "archive",
-                    datetime => Time::HiRes::time,
-                    comments => ""
-                };
-                $scan->{datetime_last_modified} = Time::HiRes::time;            
-                update_scan($scan);
-                update_status($scan,-1);
-                say "scan record updated";
-
-            }else{
-                say STDERR $stderr;
-            }            
-        }
-        $offset += $limit;
-    }while($offset < $total);
-}
-
-#stap 4: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
+#stap 3: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
 say "updating list scans for projects";
 my @project_ids = ();
 projects()->each(sub{ 
