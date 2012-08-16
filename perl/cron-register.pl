@@ -394,7 +394,8 @@ if(!-w $dir_processed){
             say $stdout;
             if(!$success){
                 say STDERR $stderr;
-            }elsif($stdout =~ /New asset_id: (\w+)/){
+            }elsif($stdout =~ /new asset id: (\w+)\n/m){
+                say "asset_id found:$1";
                 $scan->{asset_id} = $1;
                 update_scan($scan);
             }else{
