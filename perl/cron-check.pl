@@ -231,6 +231,8 @@ foreach my $user(@users){
                     busy => 1,
                     #mediamosa
                     #asset_id => "lkfjkfj25df25df"
+                    #grep
+                    #archive_id => "archive.ugent.be:lkzejrzlrj-lfkjslfjsf"
                 };
 
                 #update scans, index_scan en index_log

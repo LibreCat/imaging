@@ -309,10 +309,13 @@ mediamosa:
  drush_command:
   mmnara: "drush -r /usr/share/mediamosa mmnara %s"
   import_directory: "drush -r /usr/share/mediamosa mm-import-directory %s"
-  bt-bag: "drush -r /usr/share/mediamosa bt-bag %s %s"
+  'bt-bag': "drush -r /usr/share/mediamosa bt-bag %s %s"
  rest_api:
   user: "BT boekentoren"
   password: "PJMCBUSKLZSlSjTnHRKbBbw1"
   base_url: "http://localhost:81"
 grep:
  mount: "/mnt/data01/03_grep"
+ base_url: "https://grep.ugent.be"
+grim:
+ base_url: "http://adore.ugent.be"

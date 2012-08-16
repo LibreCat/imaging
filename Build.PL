@@ -6,7 +6,7 @@ my $requires = {
 	perl => '>=5.10.0',
 	Dancer => '>=1.3091',
 	Plack => '>=0.9985',
-    all => 1,
+    all => 0,
     Catmandu => 0,
     'Catmandu::MARC' => 0,
 

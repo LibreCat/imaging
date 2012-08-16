@@ -19,6 +19,7 @@ use English '-no_match_vars';
 use Archive::BagIt;
 use File::Pid;
 use IO::CaptureOutput qw(capture_exec);
+use Data::UUID;
 
 my $pidfile;
 my $pid;
@@ -417,8 +418,25 @@ if(!-w $dir_processed){
         for my $hit(@{ $result->hits }){
 
             my $scan = scans->get($hit->{_id});
-            my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
+            my $baginfo = Imaging::Bag::Info(source => $scan->{path}."/bag-info.txt")->hash;
+
+            #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
+            if( 
+                is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0 &&
+                $baginfo->{'Archive-Id'}->[0] =~ /^archive\.ugent\.be:[\w_\-]+$/o 
+            ){
+                $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
+            }else{
+                $scan->{archive_id} = "archive.ugent.be:".Data::UUID->new->create_str;
+                $baginfo->{'Archive-Id'} = [];
+                push @{$baginfo->{'Archive-Id'}},$scan->{archive_id};
+                say "new archive_id:".$scan->{archive_id};
+                write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);                
+            }
+
+            #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
             my $grep_path = config->{'grep'}->{mount}."/".File::Basename::basename($scan->{path});
+            my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
             my $command;
 
             if(!$is_bag){

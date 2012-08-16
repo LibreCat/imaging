@@ -73,22 +73,23 @@
     [%- END %]
   </dd>
   <dt>archivering</dt>
-  [%- IF scan.links && scan.links.size > 0 %]
-  [%- FOREACH link IN scan.links %]
-  [%- NEXT IF link.type != "archive" -%]
-  <dd><a href="[% link.url %]">[% link.name || link.url %]</a></dd>
-  [%- END %]
-  [%- ELSE %]
-  <dd>-</dd>
-  [%- END %]
+  [% IF scan.archive_id && [ scan.status ].grep("^(?:archived|archived_ok|published|published_ok)$") %]
+    <dd>
+      <a href="[% settings.item("grep").base_url _ "/app/search?func=view&amp;_id=" _ scan.archive_id %]">grep</a>
+      (<span id="grep_status">bezig..</span>)
+    </dd>
+  [% ELSE %]
+    <dd>-</dd>
+  [% END %]
+
   <dt>publicatie</dt>
-  [%- IF scan.links && scan.links.size > 0 %]
-  [%- FOREACH link IN scan.links %]
-  [%- NEXT IF link.type != "public" -%]
-  <dd><a href="[% link.url %]">[% link.name || link.url %]</a></dd>
-  [%- END %]
-  [%- ELSE %]
-  <dd>-</dd>
+  [% IF scan.publication_id && [ scan.status ].grep("^(?:published|published_ok)$") %]
+    <dd>
+      <a href="[% settings.item("grim").base_url _ "/view/" _ scan.publication_id %]">grim</a>
+    (<span id="grim_status">bezig..</span>)
+    </dd>
+  [% ELSE %]
+    <dd>-</dd>
   [% END %]
 </dl>
 
@@ -453,6 +454,29 @@
             btn.button("reset");
         }, 'json');
     });
+
+    [% IF scan.archive_id && [ scan.status ].grep("^(?:archived|archived_ok|published|published_ok)$") %]
+      var archive_id = "[% scan.archive_id %]";
+      $.ajax({
+        url: "/external",
+        data: {
+          app_id: "grep",
+          func: "count",
+          q: "id:\""+archive_id+"\""
+        }, 
+        type: "POST",
+        success:function(data){
+          var grep_status = document.getElementById("grep_status");
+          if(data.found > 0)grep_status.innerHTML = "ok";
+        },
+        error:function(data){
+          var grep_status = document.getElementById("grep_status");
+          grep_status.innerHTML = "status ophalen mislukt";
+        }
+      });
+    [% END %]
+    [% IF scan.publication_id && [ scan.status ].grep("^(?:published|published_ok)$") %]
+
+    [% END %]
 </script>
 [%- END %]
-

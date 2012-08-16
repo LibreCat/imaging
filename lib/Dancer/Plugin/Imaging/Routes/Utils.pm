@@ -173,7 +173,7 @@ sub scan2index {
     }
 
     #opkuisen
-    my @deletes = qw(metadata comments busy warnings new_path new_user asset_id);
+    my @deletes = qw(metadata comments busy warnings new_path new_user asset_id archive_id publication_id);
     delete $doc->{$_} for(@deletes);
 
     index_scan()->add($doc);
