@@ -436,7 +436,7 @@ if(!-w $dir_processed){
             }
 
             #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
-            my $grep_path = config->{'grep'}->{mount}."/".File::Basename::basename($scan->{path});
+            my $grep_path = config->{'grep'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
             my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
             my $command;
 
