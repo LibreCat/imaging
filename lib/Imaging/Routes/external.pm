@@ -6,7 +6,7 @@ use Catmandu;
 use Data::Util qw(:check :validate);
 use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
-use LWP::UserAgent;
+use LWP::UserAgent ();
 
 
 hook before => sub {
@@ -48,7 +48,7 @@ any('/external',sub {
     my @messages = ();
     my @errors = ();
     
-    my $res = { status => "error", errors => \@errors, messages => \@messages };
+    my $r = { status => "error", errors => \@errors, messages => \@messages };
 
     my $app_id = $params->{app_id};
 
@@ -56,12 +56,12 @@ any('/external',sub {
         push @errors,"parameter \"app_id\" is missing";
         status '400';
         content_type 'json';
-        return to_json($res);
+        return to_json($r);
     }elsif(!array_contains($apps,$app_id)){        
         push @errors,"invalid app_id";
         status '400';
         content_type 'json';
-        return to_json($res);
+        return to_json($r);
     }
 
     delete $params->{app_id};
@@ -73,10 +73,10 @@ any('/external',sub {
         $url = config->{$app_id}->{base_url}."/app/api?".construct_query($params);    
     }
 
-    my $external_res = ua->get($url);
-    status $external_res->code;
-    content_type $external_res->content_type;
-    return $external_res->content;
+    my $res = ua->get($url);
+    status $res->code;
+    content_type $res->content_type;
+    return $res->content;
 });
 
 true;

@@ -419,7 +419,7 @@ if(!-w $dir_processed){
         for my $hit(@{ $result->hits }){
 
             my $scan = scans->get($hit->{_id});
-            my $baginfo = Imaging::Bag::Info(source => $scan->{path}."/bag-info.txt")->hash;
+            my $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash;
 
             #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
             if( 
@@ -433,6 +433,7 @@ if(!-w $dir_processed){
                 push @{$baginfo->{'Archive-Id'}},$scan->{archive_id};
                 say "new archive_id:".$scan->{archive_id};
                 write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);                
+                $scan->{metadata}->[0]->{baginfo} = $baginfo;
             }
 
             #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
