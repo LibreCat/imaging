@@ -73,7 +73,8 @@
     [%- END %]
   </dd>
   <dt>archivering</dt>
-  [% IF scan.archive_id && [ scan.status ].grep("^(?:archived|archived_ok|published|published_ok)$") %]
+  [% state = [ scan.status ] %]
+  [% IF scan.archive_id && state.grep("^(?:archived|archived_ok|published|published_ok)$") %]
     <dd>
       <a href="[% settings.item("grep").base_url _ "/app/search?func=view&amp;_id=" _ scan.archive_id %]">grep</a>
       (<span id="grep_status">bezig..</span>)
@@ -83,7 +84,8 @@
   [% END %]
 
   <dt>publicatie</dt>
-  [% IF scan.publication_id && [ scan.status ].grep("^(?:published|published_ok)$") %]
+    [% state = [ scan.status ] %]
+  [% IF scan.publication_id && state.grep("^(?:published|published_ok)$") %]
     <dd>
       <a href="[% settings.item("grim").base_url _ "/view/" _ scan.publication_id %]">grim</a>
     (<span id="grim_status">bezig..</span>)
@@ -454,8 +456,8 @@
             btn.button("reset");
         }, 'json');
     });
-
-    [% IF scan.archive_id && [ scan.status ].grep("^(?:archived|archived_ok|published|published_ok)$") %]
+    [% state = [ scan.status ] %]
+    [% IF scan.archive_id && state.grep("^(?:archived|archived_ok|published|published_ok)$") %]
       var archive_id = "[% scan.archive_id %]";
       $.ajax({
         url: "/external",
@@ -475,7 +477,7 @@
         }
       });
     [% END %]
-    [% IF scan.publication_id && [ scan.status ].grep("^(?:published|published_ok)$") %]
+    [% IF scan.publication_id && state.grep("^(?:published|published_ok)$") %]
 
     [% END %]
 </script>
