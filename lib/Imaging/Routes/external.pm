@@ -55,10 +55,12 @@ any('/external',sub {
     if(!is_string($app_id)){
         push @errors,"parameter \"app_id\" is missing";
         status '400';
+        content_type 'json';
         return to_json($res);
     }elsif(!array_contains($apps,$app_id)){        
         push @errors,"invalid app_id";
         status '400';
+        content_type 'json';
         return to_json($res);
     }
 
