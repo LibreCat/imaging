@@ -106,8 +106,9 @@ say "$this_file started at ".local_time;
 say "retrieving metadata for good scans";
 my @ids_ok_for_metadata = ();
 {
+
+    my($offset,$limit,$total) = (0,1000,0);
     do{
-        my($offset,$limit,$total) = (0,1000,0);
         my $result = index_scan->search( 
             query => "-status:\"incoming\" AND -status:\"incoming_error\"",
             reify => scans(),
@@ -170,8 +171,9 @@ foreach my $id(@ids_ok_for_metadata){
 #stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
 my @incoming_ok = ();
 {
+
+    my($offset,$limit,$total) = (0,1000,0);
     do{
-        my($offset,$limit,$total) = (0,1000,0);
         my $result = index_scan->search(
             query => "status:\"incoming_ok\"",
             reify => scans(),
@@ -403,8 +405,9 @@ if(!-w $dir_processed){
 
 #stap 3: opladen naar GREP
 {
+
+    my($offset,$limit,$total) = (0,1000,0);
     do{
-        my($offset,$limit,$total) = (0,1000,0);
         my $result = index_scan->search(
             query => "status:\"qa_control_ok\"",
             start => $offset,
@@ -414,7 +417,7 @@ if(!-w $dir_processed){
         for my $hit(@{ $result->hits }){
 
             my $scan = scans->get($hit->{_id});
-            my $is_bag = Imaging::Profile::BAG->new($scan->{path})->test;
+            my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
             my $grep_path = config->{'grep'}->{mount}."/".File::Basename::basename($scan->{path});
             my $command;
 

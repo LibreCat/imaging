@@ -88,7 +88,8 @@ sub do_warn {
     if($warn_after < 0){
         return 1;
     }else{
-        return ( $scan->{datetime_started} + $warn_after - time ) < 0;
+        my $mtime = mtime_latest_file($scan->{path});
+        return ( $mtime + $warn_after - time ) < 0;
     }
 }
 #how long before the scan is deleted?
@@ -118,7 +119,8 @@ sub do_delete {
     if($delete_after < 0){
         return 0;
     }else{
-        return ( ( $scan->{datetime_started} + $warn_after + $delete_after ) - time ) < 0;
+        my $mtime = mtime_latest_file($scan->{path});
+        return ( $mtime + $warn_after + $delete_after - time ) < 0;
     }
 }
 sub delete_scan_data {
