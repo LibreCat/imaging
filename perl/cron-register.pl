@@ -463,7 +463,7 @@ if(!-w $dir_processed){
                 $scan->{status} = "archived";
                 push @{ $scan->{status_history} },{
                     user_login =>"-",
-                    status => "archive",
+                    status => "archived",
                     datetime => Time::HiRes::time,
                     comments => ""
                 };

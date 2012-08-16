@@ -112,6 +112,7 @@ app:
   facet_fields: ["project_name","status"]
   edit:
    baginfo:
+    - key: "Archive-Id"
     - key: "Bag-Size"
     - key: "Bagging-Date"
     - key: "Payload-Oxum"
