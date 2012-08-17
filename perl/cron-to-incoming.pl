@@ -192,20 +192,23 @@ my $index_scan = index_scan();
 
 my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qa_manager\"";
 my($start,$limit,$total)=(0,1000,0);
+my @ids = ();
 do{
 
     my $result = $index_scan->search(
         query => $query,
         start => $start,
-        limit => $limit,
-        reify => $scans
+        limit => $limit
     );
     $total = $result->total;
     foreach my $hit(@{ $result->hits || [] }){
-        process_scan($hit);
+        push @ids,$hit->{_id};
     }
     $start += $limit;
 
 }while($start < $total);
+for my $id(@ids){
+    process_scan(scans->get($id));
+}
 
 say "$this_file ended at ".local_time;

@@ -168,6 +168,8 @@ foreach my $id(@ids_ok_for_metadata){
 
     update_scan($scan);
 }
+#release memory
+@ids_ok_for_metadata = ();
 
 #stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
 my @incoming_ok = ();
@@ -404,8 +406,11 @@ if(!-w $dir_processed){
         }
     }
 }
+#release memory
+@incoming_ok = ();
 
 #stap 3: opladen naar GREP
+my @qa_control_ok = ();
 {
 
     my($offset,$limit,$total) = (0,1000,0);
@@ -417,68 +422,72 @@ if(!-w $dir_processed){
         );
         $total = $result->total;
         for my $hit(@{ $result->hits }){
-
-            my $scan = scans->get($hit->{_id});
-            my $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash;
-
-            #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
-            if( 
-                is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0 &&
-                $baginfo->{'Archive-Id'}->[0] =~ /^archive\.ugent\.be:[\w_\-]+$/o 
-            ){
-                $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
-            }else{
-                $scan->{archive_id} = "archive.ugent.be:".Data::UUID->new->create_str;
-                $baginfo->{'Archive-Id'} = [];
-                push @{$baginfo->{'Archive-Id'}},$scan->{archive_id};
-                say "new archive_id:".$scan->{archive_id};
-                write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);                
-                $scan->{metadata}->[0]->{baginfo} = $baginfo;
-            }
-
-            #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
-            my $grep_path = config->{'grep'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
-            my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
-            my $command;
-
-            if(!$is_bag){
-                $command = sprintf(
-                    config->{mediamosa}->{drush_command}->{'bt-bag'},
-                    $scan->{path},                   
-                    $grep_path
-                );
-                
-            }else{
-                $command = "cp -R $scan->{path} $grep_path";
-            }
-            say "command: $command";
-            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-            say "stderr:";
-            say $stderr;
-            say "stdout:";
-            say $stdout;
-            if($success){
-
-                say "scan archived";
-                $scan->{status} = "archived";
-                push @{ $scan->{status_history} },{
-                    user_login =>"-",
-                    status => "archived",
-                    datetime => Time::HiRes::time,
-                    comments => ""
-                };
-                $scan->{datetime_last_modified} = Time::HiRes::time;            
-                update_scan($scan);
-                update_status($scan,-1);
-                say "scan record updated";
-
-            }else{
-                say STDERR $stderr;
-            }            
+            push @qa_control_ok,$hit->{_id};
         }
         $offset += $limit;
     }while($offset < $total);
 }
+for my $scan_id(@qa_control_ok){
+    my $scan = scans->get($scan_id);
+    my $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash;
+
+    #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
+    if( 
+        is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0 &&
+        $baginfo->{'Archive-Id'}->[0] =~ /^archive\.ugent\.be:[\w_\-]+$/o 
+    ){
+        $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
+    }else{
+        $scan->{archive_id} = "archive.ugent.be:".Data::UUID->new->create_str;
+        $baginfo->{'Archive-Id'} = [];
+        push @{$baginfo->{'Archive-Id'}},$scan->{archive_id};
+        say "new archive_id:".$scan->{archive_id};
+        write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);                
+        $scan->{metadata}->[0]->{baginfo} = $baginfo;
+    }
+
+    #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
+    my $grep_path = config->{'grep'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
+    my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
+    my $command;
+
+    if(!$is_bag){
+        $command = sprintf(
+            config->{mediamosa}->{drush_command}->{'bt-bag'},
+            $scan->{path},                   
+            $grep_path
+        );
+        
+    }else{
+        $command = "cp -R $scan->{path} $grep_path";
+    }
+    say "command: $command";
+    my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+    say "stderr:";
+    say $stderr;
+    say "stdout:";
+    say $stdout;
+    if($success){
+
+        say "scan archiving";
+        $scan->{status} = "archiving";
+        push @{ $scan->{status_history} },{
+            user_login =>"-",
+            status => "archived",
+            datetime => Time::HiRes::time,
+            comments => ""
+        };
+        $scan->{datetime_last_modified} = Time::HiRes::time;            
+        update_scan($scan);
+        update_status($scan,-1);
+        say "scan record updated";
+
+    }else{
+        say STDERR $stderr;
+    } 
+}
+#release memory
+@qa_control_ok = ();
 
 #stap 4: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
 say "updating list scans for projects";
@@ -555,6 +564,8 @@ foreach my $project_id(@project_ids){
     my($success,$error) = index_project->commit;   
     die(join('',@$error)) if !$success;
 }
+#release memory
+@project_ids = ();
 
 
 #stap 4: ken scans toe aan projects
@@ -567,9 +578,9 @@ foreach my $scan_id(@scan_ids){
     my $scan = scans->get($scan_id);
     my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
     if($result->total > 0){        
-        my @project_ids = map { $_->{_id} } @{ $result->hits };
-        $scan->{project_id} = \@project_ids;
-        say "assigning project $_ to scan ".$scan->{_id} foreach(@project_ids);
+        my @p_ids = map { $_->{_id} } @{ $result->hits };
+        $scan->{project_id} = \@p_ids;
+        say "assigning project $_ to scan ".$scan->{_id} foreach(@p_ids);
     }else{
         $scan->{project_id} = [];
     }    
@@ -581,5 +592,7 @@ foreach my $scan_id(@scan_ids){
     my($success,$error) = index_scan->commit;   
     die(join('',@$error)) if !$success;
 }
+#release memory
+@scan_ids = ();
 
 say "$this_file ended at ".local_time;
