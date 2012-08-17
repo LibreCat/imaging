@@ -72,27 +72,20 @@ any('/ready/:user_login/:scan_id',sub{
     my @errors = ();
 
     #controleer op conflict
+    my $has_conflict = 0;
     my $scan = scans()->get($scan_id);
-#    if($scan){
-#
-#        my $expected_path = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
-#        #fout: BHSL-PAP-000 in zowel 01_ready/geert als 01_ready/jan: enkel de 1ste werd opgenomen!
-#        if(
-#            $scan->{path} ne $expected_path
-#        ){
-#            my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
-#            push @errors,"$scan->{_id} eerst bij gebruiker $other_user->{login} aangetroffen.";
-#            push @errors,"De gegevens hieronder weerspiegelen dus zijn/haar map. Verwijder uw map of overleg.";
-#            push @errors,"Uw map: $expected_path";
-#
-#        }
-#    }
     my($files,$size) = list_files($path);
-    
+    if($scan && $scan->{path} ne $path){
+        $has_conflict = 1;
+        my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
+        push @errors,"$scan->{_id} werd eerst bij gebruiker $other_user->{login} aangetroffen.Deze map zal daarom niet verwerkt worden.";
+    }
+
     template('ready/view',{
         scan_id => $scan_id,
-        path => $path,
         scan => $scan,
+        has_conflict => $has_conflict,
+        path => $path,
         files => $files,
         size => $size,
         user => $user,

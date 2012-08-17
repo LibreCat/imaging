@@ -30,7 +30,7 @@
     <li class="active"><a href="#tab-files" data-toggle="tab">Files <span class="badge badge-info">[% files.size || 0 %]</span></a></li>
     <li>
         <a href="#tab-checklog" data-toggle="tab">
-            [% IF scan %]
+            [% IF scan && !has_conflict %]
                 <span class="badge badge-info">[% scan.check_log.size || 0 %]</span>
             [% ELSE %]
                 <span class="badge badge-warning">wacht op check log..</span>
@@ -40,6 +40,7 @@
   <div class="tab-content">
 
     <div class="tab-pane active" id="tab-files">
+      [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
       [% directory = settings.mounts.directories.path _ "/" _ settings.mounts.directories.subdirectories.ready _ "/" %]
       [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ path.replace(directory,"") %]
       <p>
