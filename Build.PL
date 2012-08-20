@@ -9,7 +9,7 @@ my $requires = {
     all => 0,
     Catmandu => 0,
     'Catmandu::MARC' => 0,
-
+    'File::Slurp' => 0,
 	'Dancer::Session::PSGI' => 0,
 	'Dancer::Session::Cookie' => 0,
 	'DBD::SQLite' => 0,
