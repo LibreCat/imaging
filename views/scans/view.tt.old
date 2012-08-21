@@ -77,6 +77,7 @@
   [% IF scan.archive_id && state.grep("^(?:archived|archived_ok|published|published_ok)$") %]
     <dd>
       <a href="[% settings.item("grep").base_url _ "/app/search?func=view&amp;_id=" _ scan.archive_id %]">grep</a>
+      (<span id="grep_status">bezig..</span>)
     </dd>
   [% ELSE %]
     <dd>-</dd>
@@ -87,6 +88,7 @@
   [% IF scan.publication_id && state.grep("^(?:published|published_ok)$") %]
     <dd>
       <a href="[% settings.item("grim").base_url _ "/view/" _ scan.publication_id %]">grim</a>
+    (<span id="grim_status">bezig..</span>)
     </dd>
   [% ELSE %]
     <dd>-</dd>
@@ -215,6 +217,17 @@
             <input type="hidden" name="action" value="delete_metadata" />
             <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
         </form>
+        <!-- niet veilig: get-variabelen blijven bovenaan de pagina staan! Daardoor kan een simpele reload van de pagina eerdere wijzigingen via ajax ongedaan maken
+        <a class="btn tip"
+          title="Herstel originele metadata"
+          href="/scans/[% scan.item('_id') %]?action=add_metadata&metadata_id=[% metadata_id %]#tab-metadata"
+          data-confirm="Hierdoor wordt de metadata overschreven. Bent je zeker?"><i class="icon-repeat"></i></a>
+        <a class="btn tip"
+          title="Verwijder metadata"
+          href="/scans/[% scan.item('_id') %]?action=delete_metadata&metadata_id=[% metadata_id %]#tab-metadata"
+          data-confirm="De metadata wordt onherroepelijk verwijderd. Ben je zeker?"><i class="icon-trash"></i></a>
+        -->
+
         [%- END %]
       </p>
       <div class="tabbable">
@@ -224,32 +237,35 @@
         </ul>
         <div class="tab-content">
           <div class="tab-pane" id="tab-marc-[% loop.index %]">
-            [% SET marc_aleph_seq = metadata.fXML.xml_to_aleph_sequential() %]
-            <table class="table">
-            [%- FOREACH line IN marc_aleph_seq %]
-                [% SET tag = line.1 %]
-                [% SET subfields = line.5 %]
-                
-                <tr>
-                    <th>[% tag %]</th>
-                    <td>
-                    [% IF subfields.size % 2 == 0 %]
-                        [% data = [] %]
-                        [% FOREACH val IN subfields %]
-                            [% IF loop.index % 2 == 0 %]
-                                [% data.push("|" _ val) %]
+            <!--
+            <pre style="max-height:300px;overflow:auto;"><code>[% metadata.fXML.xml_to_aleph_sequential() | html %]</code></pre>
+            -->
+                    [% SET marc_aleph_seq = metadata.fXML.xml_to_aleph_sequential() %]
+                    <table class="table">
+                    [%- FOREACH line IN marc_aleph_seq %]
+                        [% SET tag = line.1 %]
+                        [% SET subfields = line.5 %]
+                        
+                        <tr>
+                            <th>[% tag %]</th>
+                            <td>
+                            [% IF subfields.size % 2 == 0 %]
+                                [% data = [] %]
+                                [% FOREACH val IN subfields %]
+                                    [% IF loop.index % 2 == 0 %]
+                                        [% data.push("|" _ val) %]
+                                    [% ELSE %]
+                                        [% data.push(val) %]
+                                    [% END %]
+                                [% END %]                                
+                                [% data.join(" ") | html %]
                             [% ELSE %]
-                                [% data.push(val) %]
+                                [% subfields.join(" ") | html %]
                             [% END %]
-                        [% END %]                                
-                        [% data.join(" ") | html %]
-                    [% ELSE %]
-                        [% subfields.join(" ") | html %]
-                    [% END %]
-                    </td>
-                </tr>
-            [%- END %]
-            </table>
+                            </td>
+                        </tr>
+                    [%- END %]
+                    </table>
           </div>
           <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
           [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
@@ -440,5 +456,29 @@
             btn.button("reset");
         }, 'json');
     });
+    [% state = [ scan.status ] %]
+    [% IF scan.archive_id && state.grep("^(?:archived|archived_ok|published|published_ok)$") %]
+      var archive_id = "[% scan.archive_id %]";
+      $.ajax({
+        url: "/external",
+        data: {
+          app_id: "grep",
+          func: "count",
+          q: "id:\""+archive_id+"\""
+        }, 
+        type: "POST",
+        success:function(data){
+          var grep_status = document.getElementById("grep_status");
+          if(data.found > 0)grep_status.innerHTML = "ok";
+        },
+        error:function(data){
+          var grep_status = document.getElementById("grep_status");
+          grep_status.innerHTML = "status ophalen mislukt";
+        }
+      });
+    [% END %]
+    [% IF scan.publication_id && state.grep("^(?:published|published_ok)$") %]
+
+    [% END %]
 </script>
 [%- END %]

@@ -315,8 +315,10 @@ mediamosa:
   user: "BT boekentoren"
   password: "PJMCBUSKLZSlSjTnHRKbBbw1"
   base_url: "http://localhost:81"
-grep:
+archive_site:
  mount_incoming_bag: "/mnt/data01/03_grep/process-in/BAG"
  base_url: "https://grep.ugent.be"
-grim:
+ rest_api:
+  path: "/app/api"
+publication_site:
  base_url: "http://adore.ugent.be"

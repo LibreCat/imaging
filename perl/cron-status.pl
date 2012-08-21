@@ -13,6 +13,8 @@ use IO::CaptureOutput qw(capture_exec);
 use Imaging::Util qw(:files :data);
 use Imaging::Dir::Info;
 use File::Pid;
+use URI::Escape qw(uri_escape);
+use LWP::UserAgent;
 
 BEGIN {
     #load configuration
@@ -35,8 +37,21 @@ use Dancer::Plugin::Imaging::Routes::Utils;
 sub complain {
     say STDERR @_;
 }
-
-sub process_scan {
+sub construct_query {
+    my $data = shift;
+    my @parts = ();
+    for my $key(keys %$data){
+        if(is_array_ref($data->{$key})){
+            for my $val(@{ $data->{$key} }){
+                push @parts,uri_escape($key)."=".uri_escape($val);
+            }
+        }else{
+            push @parts,uri_escape($key)."=".uri_escape($data->{$key});
+        }
+    }
+    join("&",@parts);
+}
+sub move_scan {
     my $scan = shift;
     my $new_path = $scan->{new_path};
 
@@ -157,13 +172,8 @@ sub process_scan {
     #gedaan ermee
     delete $scan->{$_} for(qw(busy new_path new_user));
 
-    scans->add($scan);
-    scan2index($scan);
-    my($success,$error) = index_scan->commit;
-    die(join('',@$error)) if !$success;
-    status2index($scan,-1);
-    ($success,$error) = index_log->commit;
-    die(join('',@$error)) if !$success;
+    update_scan($scan);
+    update_status($scan,-1);
 
     #done? rechten aanpassen aan dat van 01_ready submap
     try{
@@ -190,25 +200,85 @@ say "$this_file started at ".local_time;
 my $scans = scans();
 my $index_scan = index_scan();
 
-my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qa_manager\"";
-my($start,$limit,$total)=(0,1000,0);
-my @ids = ();
-do{
+#status update 1: files die verplaatst moeten worden op vraag van dashboard
+{
+    my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qa_manager\"";
+    my($start,$limit,$total)=(0,1000,0);
+    my @ids = ();
+    do{
 
-    my $result = $index_scan->search(
-        query => $query,
-        start => $start,
-        limit => $limit
-    );
-    $total = $result->total;
-    foreach my $hit(@{ $result->hits || [] }){
-        push @ids,$hit->{_id};
+        my $result = $index_scan->search(
+            query => $query,
+            start => $start,
+            limit => $limit
+        );
+        $total = $result->total;
+        foreach my $hit(@{ $result->hits || [] }){
+            push @ids,$hit->{_id};
+        }
+        $start += $limit;
+
+    }while($start < $total);
+    for my $id(@ids){
+        move_scan(scans->get($id));
     }
-    $start += $limit;
-
-}while($start < $total);
-for my $id(@ids){
-    process_scan(scans->get($id));
 }
+#status update 2: zitten objecten in archivering reeds in archief?
+{
+
+    my $query = "status:\"archiving\"";
+    my($start,$limit,$total)=(0,1000,0);
+    my @ids = ();
+    do{
+
+        my $result = $index_scan->search(
+            query => $query,
+            start => $start,
+            limit => $limit
+        );
+        $total = $result->total;
+        foreach my $hit(@{ $result->hits || [] }){
+            push @ids,$hit->{_id};
+        }
+        $start += $limit;
+
+    }while($start < $total);
+
+    my $ua = LWP::UserAgent->new( cookie_jar => {}, ssl_opts => { verify_hostname => 0 } );
+    my $base_url = config->{archive_site}->{base_url}.config->{archive_site}->{rest_api}->{path};
+
+    for my $id(@ids){
+        my $scan = scans->get($id);
+        my $url = "$base_url?".construct_query({ func => "count",q => $id });
+        say "fetching $url";
+        my $res = $ua->get($url);        
+        if($res->is_error){            
+            say STDERR $res->content;
+            next;
+        }
+        say "fetch succcessfull";
+        say $res->content;
+        try{
+            my $json = to_json($res->content);
+            #opgelet: wat als je iets moet overschrijven? Want je gebruikt daarbij een id
+            #die reeds in het archief zit!
+            if($json->{found} == 1){
+                $scan->{status} = "archived";
+                push @{ $scan->{status_history} },{
+                    user_login =>"-",
+                    status => "archived",
+                    datetime => Time::HiRes::time,
+                    comments => ""
+                };
+                $scan->{datetime_last_modified} = Time::HiRes::time;
+                update_scan($scan);
+                update_status($scan,-1);
+            }
+        }catch{
+            say STDERR $_;
+        };
+    }
+}
+
 
 say "$this_file ended at ".local_time;
