@@ -179,7 +179,7 @@ my @incoming_ok = ();
     do{
         my $result = index_scan->search(
             query => "status:\"incoming_ok\"",
-            reify => scans(),
+            #reify => scans(),
             start => $offset,
             limit => $limit
         );
@@ -385,31 +385,47 @@ if(!-w $dir_processed){
         update_scan($scan);
         update_status($scan,-1);
 
-        #laad NARA op in mediamosa (want TAR en BagIt hebben geen afgeleiden nodig)
-        if(is_string($scan->{profile_id}) && $scan->{profile_id} eq "NARA"){
-            my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
-            say "\t$command";
-            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-            say "stderr:";
-            say $stderr;
-            say "stdout:";
-            say $stdout;
-            if(!$success){
-                say STDERR $stderr;
-            }elsif($stdout =~ /new asset id: (\w+)\n/m){
-                say "asset_id found:$1";
-                $scan->{asset_id} = $1;
-                update_scan($scan);
-            }else{
-                say STDERR "cannot find asset_id in response";
-            }
-        }
     }
 }
 #release memory
 @incoming_ok = ();
 
-#stap 3: opladen naar GREP
+say "uploading to mediamosa";
+#stap 3: opladen naar mediamosa
+{
+    my($offset,$limit,$total) = (0,1000,0);
+    do{
+        my $result = index_scan->search(
+            query => "status:\"registered\" AND profile_id:\"NARA\" AND -asset_id:*",
+            start => $offset,
+            limit => $limit
+        );
+        $total = $result->total;
+        for my $scan(@{ $result->hits }){
+            if(!(-f $scan->{path}."/__FIXME.txt")){
+                my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
+                say "\t$command";
+                my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+                say "stderr:";
+                say $stderr;
+                say "stdout:";
+                say $stdout;
+                if(!$success){
+                    say STDERR $stderr;
+                }elsif($stdout =~ /new asset id: (\w+)\n/m){
+                    say "asset_id found:$1";
+                    $scan->{asset_id} = $1;
+                    update_scan($scan);
+                }else{
+                    say STDERR "cannot find asset_id in response";
+                }      
+            }
+        }
+        $offset += $limit;
+    }while($offset < $total);
+}
+
+#stap 4: opladen naar GREP
 my @qa_control_ok = ();
 {
 
