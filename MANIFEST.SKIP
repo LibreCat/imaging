@@ -1,4 +1,4 @@
-^\.git\/
+^\.git.*$
 maint
 ^tags$
 .last_cover_stats
@@ -11,3 +11,11 @@ Makefile$
 ^cover_db
 ^.*\.log
 ^.*\.swp$
+^MYMETA\.yml$
+^MYMETA\.json$
+^_build.*$
+^Build$
+^test.*$
+^doc.*$
+^catmandu.yml$
+^environments\/development.yml$
