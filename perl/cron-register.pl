@@ -390,8 +390,10 @@ if(!-w $dir_processed){
 #release memory
 @incoming_ok = ();
 
-say "uploading to mediamosa";
 #stap 3: opladen naar mediamosa
+say "uploading to mediamosa";
+
+my @mediamosa_ok = ();
 {
     my($offset,$limit,$total) = (0,1000,0);
     do{
@@ -402,33 +404,38 @@ say "uploading to mediamosa";
         );
         $total = $result->total;
         for my $scan(@{ $result->hits }){
-            if(!(-f $scan->{path}."/__FIXME.txt")){
-                my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
-                say "\t$command";
-                my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-                say "stderr:";
-                say $stderr;
-                say "stdout:";
-                say $stdout;
-                if(!$success){
-                    say STDERR $stderr;
-                }elsif($stdout =~ /new asset id: (\w+)\n/m){
-                    say "asset_id found:$1";
-                    $scan->{asset_id} = $1;
-                    update_scan($scan);
-                }else{
-                    say STDERR "cannot find asset_id in response";
-                }      
-            }
-        }
+            push @mediamosa_ok,$scan->{_id};
+        }        
         $offset += $limit;
     }while($offset < $total);
 }
+foreach my $id(@mediamosa_ok){
+    my $scan = scans->get($id);
+    next if !$scan;    
+    next if -f $scan->{path}."/__FIXME.txt";
+    my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
+    say "\t$command";
+    my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+    say "stderr:";
+    say $stderr;
+    say "stdout:";
+    say $stdout;
+    if(!$success){
+        say STDERR $stderr;
+    }elsif($stdout =~ /new asset id: (\w+)\n/m){
+        say "asset_id found:$1";
+        $scan->{asset_id} = $1;
+        update_scan($scan);
+    }else{
+        say STDERR "cannot find asset_id in response";
+    }
+}
+#release memory
+@mediamosa_ok = ();
 
 #stap 4: opladen naar GREP
 my @qa_control_ok = ();
 {
-
     my($offset,$limit,$total) = (0,1000,0);
     do{
         my $result = index_scan->search(

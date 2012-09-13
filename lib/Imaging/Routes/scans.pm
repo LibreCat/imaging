@@ -119,6 +119,9 @@ any('/scans/:_id',sub {
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
 
+    #indien path verwijderd, maar index en databank nog niet geüpdated
+    -d $scan->{path} or return not_found();
+
     #projecten
     my @projects;
     if(is_array_ref($scan->{project_id})){
@@ -270,6 +273,8 @@ get('/scans/:_id/json',sub{
 
     if(!$scan){
         push @errors, "scandirectory $params->{_id} niet gevonden";
+    }elsif(!-d $scan->{path}){
+        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank";   
     }else{
         $response->{data} = $scan;
     }
@@ -293,9 +298,9 @@ get('/scans/:_id/comments',,sub{
     my $response = { };
 
     if(!$scan){
-
         push @errors, "scandirectory $params->{_id} niet gevonden";
-
+    }elsif(!-d $scan->{path}){
+        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank"; 
     }else{
         
         $comments = $scan->{comments};
@@ -328,7 +333,10 @@ post('/scans/:_id/comments/add',,sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!$auth->can('scans','comment')){
+    }elsif(!-d $scan->{path}){
+        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank"; 
+    }
+    elsif(!$auth->can('scans','comment')){
 
         push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
 
@@ -383,6 +391,8 @@ post('/scans/:_id/comments/clear',,sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
+    }elsif(!-d $scan->{path}){
+        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank"; 
     }elsif(!$auth->asa('admin')){
 
         push @errors,"U beschikt niet over de nodige rechten om alle commentaren te wissen";
@@ -425,6 +435,8 @@ post('/scans/:_id/baginfo/add',sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
+    }elsif(!-d $scan->{path}){
+        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank"; 
     }elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
         
         push @errors,"U mist de juiste rechten om de baginfo aan te passen";
@@ -498,7 +510,10 @@ post('/scans/:_id/baginfo/edit',sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
+    }elsif(!-d $scan->{path}){
+        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank"; 
+    }
+    elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
         
         push @errors,"U mist de juiste rechten om de baginfo aan te passen";
 
@@ -574,6 +589,7 @@ any('/scans/:_id/status',sub{
     my $session = session();
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
+    -d $scan->{path} or return not_found();
 
     if(! $auth->can('scans','status') ){
         return forward('/access_denied',{

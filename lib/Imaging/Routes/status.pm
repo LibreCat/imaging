@@ -38,7 +38,7 @@ any('/status',sub {
     my $mount_ready = mount()."/".$mount_conf->{subdirectories}->{ready};
     foreach my $user(@users){
         my $dir_ready = $mount_ready."/".$user->{login};
-        my @files = glob("$dir_ready/*");
+        my @files = glob("$dir_ready/*/");
         $stats->{ready}->{$user->{login}} = scalar(@files);
         $stats->{fixme}->{$user->{login}} = 0;
         for(@files){
