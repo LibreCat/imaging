@@ -559,7 +559,7 @@ for my $scan_id(@qa_control_ok){
         $scan->{status} = "archiving";
         push @{ $scan->{status_history} },{
             user_login =>"-",
-            status => "archived",
+            status => "archiving",
             datetime => Time::HiRes::time,
             comments => ""
         };

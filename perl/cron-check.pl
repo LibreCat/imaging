@@ -408,7 +408,7 @@ say "checking if all incoming are still there..";
 
     do{
 
-        my $result = index_scan->search(query => "status:incoming_*",limit => $limit,offset=>$offset);
+        my $result = index_scan->search(query => "status:incoming*",limit => $limit,offset=>$offset);
         $total_incoming = $result->total();
 
         foreach my $hit(@{ $result->hits }){
