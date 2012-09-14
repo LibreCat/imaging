@@ -60,6 +60,34 @@ use Dancer::Plugin::Imaging::Routes::Meercat;
 
 
 #variabelen
+sub list_names {
+    my($list) = @_;
+    my @new = ();
+    for(@$list){ push @new,File::Basename::basename($_); }
+    return \@new;
+}
+sub array_indexes {
+    my($array,$value,$ignorecase)=@_;    
+    my @indexes = ();
+    $value = lc($value) if $ignorecase;
+    for(my $i = 0;$i < scalar(@$array);$i++){
+        my $entry = $ignorecase ? lc($array->[$i]):$array->[$i];
+        if(($entry cmp $value) == 0){
+            push @indexes,$i;
+        }
+    }
+    return \@indexes;
+}
+sub array_delete_indexes {
+    my($array,$indexes)=@_;
+    my @copy = ();
+    for(my $i = 0;$i < @$array;$i++){
+        if(!array_includes($indexes,$i)){
+            push @copy,$array->[$i];
+        }
+    }
+    return \@copy;
+}
 sub mount_conf {
     config->{mounts}->{directories} ||= {};
 }
@@ -97,7 +125,6 @@ sub directory_to_queries {
 
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
-
 
 #stap 1: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
 #wijziging/update moet gebeuren door qa_manager
@@ -179,7 +206,6 @@ my @incoming_ok = ();
     do{
         my $result = index_scan->search(
             query => "status:\"incoming_ok\"",
-            #reify => scans(),
             start => $offset,
             limit => $limit
         );
@@ -210,21 +236,58 @@ if(!-w $dir_processed){
 
         say "\tscan $id:";
 
-        if(!-w dirname($scan->{path})){
-
-            say "\t\tcannot move $scan->{path} from parent directory";
-            #not recoverable: aborting
-            next;
-
-        }         
-
-
         #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
         my $mtime_latest_file = mtime_latest_file($scan->{path});
         if($mtime_latest_file > $scan->{datetime_last_modified}){
             say "\t\tis changed since last check, I'm sorry! Aborting..";
             #not recoverable: aborting
             next;
+        }
+
+        if(!-w dirname($scan->{path})){
+            say "\t\tcannot move $scan->{path} from parent directory";
+            #not recoverable: aborting
+            next;
+        }         
+
+        #verwijder irritante bestanden
+        my $bad_files = config->{bad_files} || [];
+
+        for(@$bad_files){    
+            my $c = "find ".$scan->{path}." -iname '$_' -exec rm -f {} \\;";
+            say $c;
+            `$c`;
+        }
+        #opgelet indien deze thumbs.db in manifest-md5.txt voorkomt..
+        if(-f $scan->{path}."/manifest-md5.txt"){
+            my $entries = [];
+            local(*F);
+            open F,$scan->{path}."/manifest-md5.txt" or die($!);
+            binmode F,":utf8";
+            while(<F>){ chomp($_);say $_; push @$entries,$_; }
+            close F;
+
+            my $names = list_names($entries);
+            my $indexes = [];
+
+            for my $bad_file(@$bad_files){
+                say "bad_file:$bad_file";
+                my $indexes_found = array_indexes($names,$bad_file,1);
+                say "indexes found:".join(',',@$indexes_found);                    
+                if(scalar(@$indexes_found) > 0){
+                    push @$indexes,@$indexes_found;
+                }
+            }
+            $indexes = array_uniq($indexes);
+
+            if(scalar(@$indexes) > 0){
+                my $copy = array_delete_indexes($entries,$indexes);
+                say $_ for(@$copy);
+                open F,">".$scan->{path}."/manifest-md5.txt" or die($!);
+                binmode F,":utf8";
+                say F $_ for(@$copy);
+                close F;
+            }
         }
 
         #check BAGS!
