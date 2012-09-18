@@ -533,7 +533,7 @@ for my $scan_id(@qa_control_ok){
     }
 
     #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
-    my $grep_path = config->{'grep'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
+    my $grep_path = config->{archive_site}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
     my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
     my $command;
 
