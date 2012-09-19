@@ -280,5 +280,42 @@ my $index_scan = index_scan();
     }
 }
 
+#status update 3: wat is reeds succesvol gearchiveerd EN aanvaard als dusdanig?
+{
+
+    my $query = "status:\"archived_ok\"";
+    my($start,$limit,$total)=(0,1000,0);
+    my @ids = ();
+    do{
+
+        my $result = $index_scan->search(
+            query => $query,
+            start => $start,
+            limit => $limit
+        );
+        $total = $result->total;
+        foreach my $hit(@{ $result->hits || [] }){
+            push @ids,$hit->{_id};
+        }
+        $start += $limit;
+
+    }while($start < $total);
+
+    for my $id(@ids){
+        my $scan = scans->get($id);
+        next if !$scan;
+        say "$id is 'archived_ok': removing ".$scan->{path}." and setting status to 'done'";
+        $scan->{status} = "done";
+        push @{ $scan->{status_history} },{
+            user_login =>"-",
+            status => "done",
+            datetime => Time::HiRes::time,
+            comments => ""
+        };
+        #update_scan($scan);
+        #update_status($scan,-1);
+        #rmtree($scan->{path});
+    }
+}
 
 say "$this_file ended at ".local_time;
