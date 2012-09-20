@@ -96,6 +96,17 @@
     [% END %]
   </dd>
 
+  <dt>Onderweg naar grep</dt>
+  <dd>
+    [% IF facet_status.archiving > 0 %]
+        <a href="/scans?q=[% "status:archiving" | url %]">
+            [% facet_status.archiving %]
+        </a>
+    [% ELSE %]
+        [% facet_status.archiving || 0 %]
+    [% END %]
+  </dd>
+
   <dt>Archivering OK</dt>
   <dd>
     [% IF facet_status.archived_ok > 0 %]

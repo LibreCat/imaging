@@ -259,7 +259,7 @@ my $index_scan = index_scan();
         say "fetch succcessfull";
         say $res->content;
         try{
-            my $json = to_json($res->content);
+            my $json = from_json($res->content);
             #opgelet: wat als je iets moet overschrijven? Want je gebruikt daarbij een id
             #die reeds in het archief zit!
             if($json->{found} == 1){
@@ -312,6 +312,7 @@ my $index_scan = index_scan();
             datetime => Time::HiRes::time,
             comments => ""
         };
+        $scan->{datetime_last_modified} = Time::HiRes::time;
         #update_scan($scan);
         #update_status($scan,-1);
         #rmtree($scan->{path});
