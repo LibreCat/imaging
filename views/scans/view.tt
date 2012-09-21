@@ -76,7 +76,7 @@
   [% state = [ scan.status ] %]
   [% IF scan.archive_id && state.grep("^(?:archived|archived_ok|published|published_ok)$") %]
     <dd>
-      <a href="[% settings.item("grep").base_url _ "/app/search?func=view&amp;_id=" _ scan.archive_id %]">grep</a>
+      <a href="[% settings.item("archive_site").base_url _ "/app/search?func=view&amp;_id=" _ scan.archive_id %]">grep</a>
     </dd>
   [% ELSE %]
     <dd>-</dd>
