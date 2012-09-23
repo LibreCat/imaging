@@ -621,12 +621,6 @@ any('/scans/:_id/status',sub{
 
                 push @errors,"gelieve de nieuwe status op te geven";
 
-            }elsif(
-                $status_to eq "reprocess_metadata" 
-            ){
-                
-                push @errors,"Dit record moet exact één metadata record bevatten";
-
             }elsif(!is_string($comments)){
 
                 push @errors,"Gelieve een reden op te geven voor deze status wijziging";

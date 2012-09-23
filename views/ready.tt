@@ -4,11 +4,9 @@
 
 [%- states_in_ready = settings.status.collection.in_ready -%]
 
-[% IF states_in_ready.grep(scan.status).size > 0 %]
-    <p>
-    <a class="btn btn-mini" href="[% settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login %]">open map</a>
-    </p>
-[% END %]
+<p>
+<a class="btn btn-mini" href="[% settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login %]">open map</a>
+</p>
 
 [%- IF directories && directories.size > 0 %]
 <table class="table table-striped table-condensed">
@@ -20,22 +18,46 @@
     <th>FIXME?</th>
   </tr>
   [%- FOREACH directory IN directories %]
+    [% already_delivered = 0 %]
+    [% IF states_in_ready.grep(directory.record.status).size <= 0 %]
+        [% already_delivered = 1 %]
+    [% END %]
   <tr>
     <td>
-        <a href="/ready/[% user.login %]/[% directory.name %]">[% directory.name %]</a>
+        [% IF already_delivered %]
+            [% directory.name %]
+        [% ELSE %]
+            <a href="/ready/[% user.login %]/[% directory.name %]">[% directory.name %]</a>
+        [% END %]
     </td>
     <td>[% directory.info.files.size || "-" %]</td>
-    <td>[% settings.human_readable.${directory.record.status} || directory.record.status || "-" %]</td>
-    <td>[% directory.record.profile_id || "-" %]</td>
     <td>
-        [% TO_FIX = 1 %]
-        [%- TRY %]
-            [% FIXME = directory.info.dir _ "/__FIXME.txt" %]
-            [%- USE File(FIXME) %]
-        [% CATCH %]
-            [% TO_FIX = 0 %]
+        [% IF already_delivered %]
+            <span class="label label-warning" title="reeds aangeleverd">
+                reeds aangeleverd
+            </span>
+        [% ELSE %]
+            [% settings.human_readable.${directory.record.status} || directory.record.status || "-" %]
         [% END %]
-        <input type="checkbox" disabled="disabled" [% IF TO_FIX %]checked="checked"[% END %] >
+    </td>
+    <td>
+        [% IF already_delivered %]
+            -
+        [% ELSE %]
+            [% directory.record.profile_id || "-" %]
+        [% END %]
+    </td>
+    <td>
+        [% IF !already_delivered %]
+            [% TO_FIX = 1 %]
+            [%- TRY %]
+                [% FIXME = directory.info.dir _ "/__FIXME.txt" %]
+                [%- USE File(FIXME) %]
+            [% CATCH %]
+                [% TO_FIX = 0 %]
+            [% END %]
+            <input type="checkbox" disabled="disabled" [% IF TO_FIX %]checked="checked"[% END %] >
+        [% END %]
     </td>
   </tr>
   [%- END %]

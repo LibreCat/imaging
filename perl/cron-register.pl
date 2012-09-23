@@ -251,44 +251,44 @@ if(!-w $dir_processed){
         }         
 
         #verwijder irritante bestanden
-        my $bad_files = config->{bad_files} || [];
-
-        for(@$bad_files){    
-            my $c = "find ".$scan->{path}." -iname '$_' -exec rm -f {} \\;";
-            say $c;
-            `$c`;
-        }
+#        my $bad_files = config->{bad_files} || [];
+#
+#        for(@$bad_files){    
+#            my $c = "find ".$scan->{path}." -iname '$_' -exec rm -f {} \\;";
+#            say $c;
+#            `$c`;
+#        }
         #opgelet indien deze thumbs.db in manifest-md5.txt voorkomt..
-        if(-f $scan->{path}."/manifest-md5.txt"){
-            my $entries = [];
-            local(*F);
-            open F,$scan->{path}."/manifest-md5.txt" or die($!);
-            binmode F,":utf8";
-            while(<F>){ chomp($_);say $_; push @$entries,$_; }
-            close F;
-
-            my $names = list_names($entries);
-            my $indexes = [];
-
-            for my $bad_file(@$bad_files){
-                say "bad_file:$bad_file";
-                my $indexes_found = array_indexes($names,$bad_file,1);
-                say "indexes found:".join(',',@$indexes_found);                    
-                if(scalar(@$indexes_found) > 0){
-                    push @$indexes,@$indexes_found;
-                }
-            }
-            $indexes = array_uniq($indexes);
-
-            if(scalar(@$indexes) > 0){
-                my $copy = array_delete_indexes($entries,$indexes);
-                say $_ for(@$copy);
-                open F,">".$scan->{path}."/manifest-md5.txt" or die($!);
-                binmode F,":utf8";
-                say F $_ for(@$copy);
-                close F;
-            }
-        }
+#        if(-f $scan->{path}."/manifest-md5.txt"){
+#            my $entries = [];
+#            local(*F);
+#            open F,$scan->{path}."/manifest-md5.txt" or die($!);
+#            binmode F,":utf8";
+#            while(<F>){ chomp($_);say $_; push @$entries,$_; }
+#            close F;
+#
+#            my $names = list_names($entries);
+#            my $indexes = [];
+#
+#            for my $bad_file(@$bad_files){
+#                say "bad_file:$bad_file";
+#                my $indexes_found = array_indexes($names,$bad_file,1);
+#                say "indexes found:".join(',',@$indexes_found);                    
+#                if(scalar(@$indexes_found) > 0){
+#                    push @$indexes,@$indexes_found;
+#                }
+#            }
+#            $indexes = array_uniq($indexes);
+#
+#            if(scalar(@$indexes) > 0){
+#                my $copy = array_delete_indexes($entries,$indexes);
+#                say $_ for(@$copy);
+#                open F,">".$scan->{path}."/manifest-md5.txt" or die($!);
+#                binmode F,":utf8";
+#                say F $_ for(@$copy);
+#                close F;
+#            }
+#        }
 
         #check BAGS!
         if($scan->{profile_id} eq "BAG"){
@@ -433,35 +433,55 @@ if(!-w $dir_processed){
             }
         }
 
-        #status 'registered'
-        $scan->{status} = "registered";
+        #status 'process'
+        $scan->{status} = "process";
         delete $scan->{$_} for(qw(busy));
         push @{ $scan->{status_history} },{
             user_login =>"-",
-            status => "registered",
+            status => "process",
             datetime => Time::HiRes::time,
             comments => ""
         };
         $scan->{datetime_last_modified} = Time::HiRes::time;
-        
 
         update_scan($scan);
         update_status($scan,-1);
+
+        #status direct naar registered voor -profile_id:NARA
+        if($scan->{profile_id} ne "NARA"){
+            $scan->{status} = "registered";
+            push @{ $scan->{status_history} },{
+                user_login =>"-",
+                status => "registered",
+                datetime => Time::HiRes::time,
+                comments => ""
+            };
+            $scan->{datetime_last_modified} = Time::HiRes::time;
+            update_scan($scan);
+            update_status($scan,-1);
+        }
+        #profile_id:NARA wordt gewijzigd naar registered door cron-status.pl
 
     }
 }
 #release memory
 @incoming_ok = ();
 
+#verwijder oude assets voor status:reprocess_derivatives
+#TODO: uit mediamosa, verwijder attribuut 'asset_id', en update index
+
 #stap 3: opladen naar mediamosa
 say "uploading to mediamosa";
+
+#TODO: reprocess_derivatives wordt op deze manier verscheidene malen opgeladen..
 
 my @mediamosa_ok = ();
 {
     my($offset,$limit,$total) = (0,1000,0);
+    my $q = "((status:\"process\") OR (status:\"reprocess_derivatives\")) AND -asset_id:* AND profile_id:\"NARA\"";
     do{
         my $result = index_scan->search(
-            query => "status:\"registered\" AND profile_id:\"NARA\" AND -asset_id:*",
+            query => $q,
             start => $offset,
             limit => $limit
         );

@@ -84,13 +84,7 @@
     <th>laatst gewijzigd</th>
     <th>melding</th>
   </tr>
-    [%- states_in_ready = settings.status.collection.in_ready-%]
   [%- FOREACH scan IN scans %]
-    [% already_delivered = 0 %]
-    [% IF states_in_ready.grep(scan.status).size <= 0 -%]
-        [% already_delivered = 1 %]
-    [% END %]
-
   <tr>
     <td><a href="/scans/[% scan.item("_id") %]?fq=[% params.fq | uri %]">[% scan.item("_id") %]</a></td>
     <td>
@@ -99,9 +93,7 @@
         </a>
     </td>
     <td>
-        [% IF already_delivered %]
-            -
-        [% ELSIF scan.project_id.size > 1 %]
+        [% IF scan.project_id.size > 1 %]
             (meerdere)
         [% ELSE %]
             <a href="/scans?q=[% "project_id:\"" _ scan.project_id.0 _ "\"" | uri %]">
@@ -110,37 +102,25 @@
         [% END %]
     </td>
     <td>
-        [% IF already_delivered %]
-            -
-        [% ELSIF scan.project_id.size > 1 %]
+        [% IF scan.project_id.size > 1 %]
             (meerdere)
         [% ELSE %]
             [% scan.project_name_subproject.0 || "-" %]
         [% END %]
     </td>
     <td>
-        [% IF already_delivered %]
-            -
-        [% ELSE %]
-    		[% status = scan.item("status") %]
-            <a href="/scans?q=[% "status:\"" _ status _ "\"" | html  %]">[% settings.human_readable.${status} || status %]</a>
-        [% END %]
+		[% status = scan.item("status") %]
+        <a href="/scans?q=[% "status:\"" _ status _ "\"" | html  %]">[% settings.human_readable.${status} || status %]</a>
     </td>
     <td>
       <input type="checkbox" disabled="disabled" [% IF scan.item("done") %] checked="checked"[% END %] />
     </td>
     <td>
-        [% IF already_delivered %]
-            -
-        [% ELSE %]
-          [%- matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
-          [%- matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
-        [% END %]
+      [%- matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
+      [%- matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
     </td>
     <td>
-        [% IF already_delivered %]
-            <span class="label label-warning" title="Deze scan werd reeds aangeboden! Zie /scans/[% scan.item("_id") %]. Deze scan zal niet worden verwerkt">reeds aangeboden</span>
-        [% ELSIF !( scan.metadata_id && scan.metadata_id.size == 1 ) %]
+        [% IF !( scan.metadata_id && scan.metadata_id.size == 1 ) %]
             <span class="label label-warning" title="scan bevat [% scan.metadata_id.size || 0 %] metadata records">metadata!</span>
         [% END %]
     </td>

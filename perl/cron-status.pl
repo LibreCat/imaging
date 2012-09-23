@@ -280,6 +280,8 @@ my $index_scan = index_scan();
     }
 }
 
+#check toestand jobs in mediamosa voor status:process en profile_id:NARA
+
 #status update 3: wat is reeds succesvol gearchiveerd EN aanvaard als dusdanig?
 {
 
