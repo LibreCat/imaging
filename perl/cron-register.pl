@@ -508,6 +508,7 @@ foreach my $id(@mediamosa_ok){
     }elsif($stdout =~ /new asset id: (\w+)\n/m){
         say "asset_id found:$1";
         $scan->{asset_id} = $1;
+        $scan->{datetime_last_modified} = Time::HiRes::time;
         update_scan($scan);
     }else{
         say STDERR "cannot find asset_id in response";
