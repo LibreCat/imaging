@@ -142,10 +142,13 @@ mounts:
   path: "/mnt/data01"
   owner:
    processed: root
+   archive: fedora
   group:
    processed: nginx
+   archive: fedora
   rights:
    processed: "775" 
+   archive: "775"
   subdirectories:
    ready: "01_ready"
    processed: "02_processed"   
