@@ -134,11 +134,11 @@ say "$this_file started at ".local_time;
 say "retrieving metadata for good scans";
 my @ids_ok_for_metadata = ();
 {
-
+    my $query = "-status:\"incoming\" AND -status:\"incoming_error\"";
     my($offset,$limit,$total) = (0,1000,0);
     do{
         my $result = index_scan->search( 
-            query => "-status:\"incoming\" AND -status:\"incoming_error\"",
+            query => $query,
             reify => scans(),
             start => $offset,
             limit => $limit
@@ -201,11 +201,11 @@ foreach my $id(@ids_ok_for_metadata){
 #stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
 my @incoming_ok = ();
 {
-
+    my $query = "status:\"incoming_ok\"";
     my($offset,$limit,$total) = (0,1000,0);
     do{
         my $result = index_scan->search(
-            query => "status:\"incoming_ok\"",
+            query => $query,
             start => $offset,
             limit => $limit
         );
@@ -438,10 +438,10 @@ say "uploading to mediamosa";
 my @mediamosa_ok = ();
 {
     my($offset,$limit,$total) = (0,1000,0);
-    my $q = "((status:\"process\") OR (status:\"reprocess_derivatives\")) AND -asset_id:* AND profile_id:\"NARA\"";
+    my $query = "((status:\"process\") OR (status:\"reprocess_derivatives\")) AND -asset_id:* AND profile_id:\"NARA\"";
     do{
         my $result = index_scan->search(
-            query => $q,
+            query => $query,
             start => $offset,
             limit => $limit
         );
@@ -515,6 +515,9 @@ for my $scan_id(@qa_control_ok){
 
     #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
     my $grep_path = config->{archive_site}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
+    my $owner_archive = data_at(config,"mounts.directories.owner.archive") || "root";
+    my $group_archive = data_at(config,"mounts.directories.group.archive") || "root";
+    my $rights_archive = data_at(config,"mounts.directories.rights.archive") || "775";
     my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
     my $command;
 
@@ -528,12 +531,14 @@ for my $scan_id(@qa_control_ok){
     }else{
         $command = "cp -R $scan->{path} $grep_path";
     }
+    $command .= " && chown -R $owner_archive:$group_archive $grep_path && chmod -R $rights_archive $grep_path";
     say "command: $command";
     my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
     say "stderr:";
     say $stderr;
     say "stdout:";
     say $stdout;
+
     if($success){
 
         say "scan archiving";

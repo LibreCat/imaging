@@ -36,18 +36,19 @@ use Dancer::Plugin::Imaging::Routes::Utils;
 
 sub index_scan_attr {
     my($opts) = @_;
-    $opts = is_hash_ref($opts) || {};
+    $opts = is_hash_ref($opts) ? $opts : {};
+    $opts->{query} = is_string($opts->{query}) ? $opts->{query} : "*:*";
     delete $opts->{$_} for(qw(start limit));
-    my $attr = is_string($opts->{attr}) ? $opts->{attr}:"_id";
+    my $attr = delete $opts->{attr};
+    $attr = is_string($attr) ? $attr : "_id";
     my($start,$limit,$total)=(0,1000,0);
     my @ids = ();
     do{
 
-        my $result = $index_scan->search(
-            query => $query,
+        my $result = index_scan->search(
+            %$opts,
             start => $start,
             limit => $limit,
-            %$opts
         );
         $total = $result->total;
         foreach my $hit(@{ $result->hits || [] }){
@@ -274,30 +275,43 @@ my $index_scan = index_scan();
     }
 }
 
-#check toestand jobs in mediamosa voor status:processing en profile_id:NARA
-
-#status update 3: wat is reeds succesvol gearchiveerd EN aanvaard als dusdanig?
+#status update 3: wat is reeds succesvol gearchiveerd EN gepubliceerd?
 {
 
     my $query = "status:\"archived_ok\"";
     my $ids = index_scan_attr({ query => $query }) || [];
+    my $ua = LWP::UserAgent->new( cookie_jar => {}, ssl_opts => { verify_hostname => 0 } );
 
     for my $id(@$ids){
         my $scan = scans->get($id);
         next if !$scan;
-        say "$id is 'archived_ok': removing ".$scan->{path}." and setting status to 'done'";
-        $scan->{status} = "done";
+
+        my $publication_site = data_at(config,"publication_site.base_url");
+        my $res = $ua->get("$publication_site/json/$id");
+        if($res->is_error){
+            say STDERR $res->content;
+            next;
+        }       
+        my $hash = from_json($res->content) || {};
+        if(!is_string($hash->{_id})){
+            next;
+        }
+
+        $scan->{status} = "published";
         push @{ $scan->{status_history} },{
             user_login =>"-",
-            status => "done",
+            status => "published",
             datetime => Time::HiRes::time,
             comments => ""
         };
         $scan->{datetime_last_modified} = Time::HiRes::time;
         #update_scan($scan);
         #update_status($scan,-1);
-        #rmtree($scan->{path});
     }
 }
+
+#verwijder wat 'DONE' is, enkel uit filesysteem
+#TODO: in scans/view enkel directory indien directory aanwezig!
+#misschien best niet te automatisch
 
 say "$this_file ended at ".local_time;
