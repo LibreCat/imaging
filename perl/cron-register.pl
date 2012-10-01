@@ -250,46 +250,6 @@ if(!-w $dir_processed){
             next;
         }         
 
-        #verwijder irritante bestanden
-#        my $bad_files = config->{bad_files} || [];
-#
-#        for(@$bad_files){    
-#            my $c = "find ".$scan->{path}." -iname '$_' -exec rm -f {} \\;";
-#            say $c;
-#            `$c`;
-#        }
-        #opgelet indien deze thumbs.db in manifest-md5.txt voorkomt..
-#        if(-f $scan->{path}."/manifest-md5.txt"){
-#            my $entries = [];
-#            local(*F);
-#            open F,$scan->{path}."/manifest-md5.txt" or die($!);
-#            binmode F,":utf8";
-#            while(<F>){ chomp($_);say $_; push @$entries,$_; }
-#            close F;
-#
-#            my $names = list_names($entries);
-#            my $indexes = [];
-#
-#            for my $bad_file(@$bad_files){
-#                say "bad_file:$bad_file";
-#                my $indexes_found = array_indexes($names,$bad_file,1);
-#                say "indexes found:".join(',',@$indexes_found);                    
-#                if(scalar(@$indexes_found) > 0){
-#                    push @$indexes,@$indexes_found;
-#                }
-#            }
-#            $indexes = array_uniq($indexes);
-#
-#            if(scalar(@$indexes) > 0){
-#                my $copy = array_delete_indexes($entries,$indexes);
-#                say $_ for(@$copy);
-#                open F,">".$scan->{path}."/manifest-md5.txt" or die($!);
-#                binmode F,":utf8";
-#                say F $_ for(@$copy);
-#                close F;
-#            }
-#        }
-
         #check BAGS!
         if($scan->{profile_id} eq "BAG"){
             say "\t\tvalidating as bagit";
@@ -434,11 +394,11 @@ if(!-w $dir_processed){
         }
 
         #status 'process'
-        $scan->{status} = "process";
+        $scan->{status} = "processing";
         delete $scan->{$_} for(qw(busy));
         push @{ $scan->{status_history} },{
             user_login =>"-",
-            status => "process",
+            status => "processing",
             datetime => Time::HiRes::time,
             comments => ""
         };

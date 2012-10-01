@@ -34,6 +34,30 @@ BEGIN {
 
 use Dancer::Plugin::Imaging::Routes::Utils;
 
+sub index_scan_attr {
+    my($opts) = @_;
+    $opts = is_hash_ref($opts) || {};
+    delete $opts->{$_} for(qw(start limit));
+    my $attr = is_string($opts->{attr}) ? $opts->{attr}:"_id";
+    my($start,$limit,$total)=(0,1000,0);
+    my @ids = ();
+    do{
+
+        my $result = $index_scan->search(
+            query => $query,
+            start => $start,
+            limit => $limit,
+            %$opts
+        );
+        $total = $result->total;
+        foreach my $hit(@{ $result->hits || [] }){
+            push @ids,$hit->{$attr};
+        }
+        $start += $limit;
+
+    }while($start < $total);
+    return \@ids;
+}
 sub complain {
     say STDERR @_;
 }
@@ -203,23 +227,8 @@ my $index_scan = index_scan();
 #status update 1: files die verplaatst moeten worden op vraag van dashboard
 {
     my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qa_manager\"";
-    my($start,$limit,$total)=(0,1000,0);
-    my @ids = ();
-    do{
-
-        my $result = $index_scan->search(
-            query => $query,
-            start => $start,
-            limit => $limit
-        );
-        $total = $result->total;
-        foreach my $hit(@{ $result->hits || [] }){
-            push @ids,$hit->{_id};
-        }
-        $start += $limit;
-
-    }while($start < $total);
-    for my $id(@ids){
+    my $ids = index_scan_attr({query => $query}) || [];
+    for my $id(@$ids){
         move_scan(scans->get($id));
     }
 }
@@ -227,27 +236,12 @@ my $index_scan = index_scan();
 {
 
     my $query = "status:\"archiving\"";
-    my($start,$limit,$total)=(0,1000,0);
-    my @ids = ();
-    do{
-
-        my $result = $index_scan->search(
-            query => $query,
-            start => $start,
-            limit => $limit
-        );
-        $total = $result->total;
-        foreach my $hit(@{ $result->hits || [] }){
-            push @ids,$hit->{_id};
-        }
-        $start += $limit;
-
-    }while($start < $total);
+    my $ids = index_scan_attr({ query => $query }) || [];
 
     my $ua = LWP::UserAgent->new( cookie_jar => {}, ssl_opts => { verify_hostname => 0 } );
     my $base_url = config->{archive_site}->{base_url}.config->{archive_site}->{rest_api}->{path};
 
-    for my $id(@ids){
+    for my $id(@$ids){
         my $scan = scans->get($id);
         my $url = "$base_url?".construct_query({ func => "count",q => $id });
         say "fetching $url";
@@ -280,30 +274,15 @@ my $index_scan = index_scan();
     }
 }
 
-#check toestand jobs in mediamosa voor status:process en profile_id:NARA
+#check toestand jobs in mediamosa voor status:processing en profile_id:NARA
 
 #status update 3: wat is reeds succesvol gearchiveerd EN aanvaard als dusdanig?
 {
 
     my $query = "status:\"archived_ok\"";
-    my($start,$limit,$total)=(0,1000,0);
-    my @ids = ();
-    do{
+    my $ids = index_scan_attr({ query => $query }) || [];
 
-        my $result = $index_scan->search(
-            query => $query,
-            start => $start,
-            limit => $limit
-        );
-        $total = $result->total;
-        foreach my $hit(@{ $result->hits || [] }){
-            push @ids,$hit->{_id};
-        }
-        $start += $limit;
-
-    }while($start < $total);
-
-    for my $id(@ids){
+    for my $id(@$ids){
         my $scan = scans->get($id);
         next if !$scan;
         say "$id is 'archived_ok': removing ".$scan->{path}." and setting status to 'done'";
