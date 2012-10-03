@@ -429,6 +429,47 @@ if(!-w $dir_processed){
 
 #verwijder oude assets voor status:reprocess_derivatives
 #TODO: uit mediamosa, verwijder attribuut 'asset_id', en update index
+#verwijder oude assets voor status:reprocess_derivatives
+say "removing assets for status:reprocess_derivatives";
+my @reprocess_ids = ();
+{
+    my $query = "profile_id:\"NARA\" AND status:\"reprocess_derivatives\"";
+    my($offset,$limit,$total) = (0,1000,0);
+    do{
+        my $result = index_scan->search(
+            query => $query,
+            start => $offset,
+            limit => $limit
+        );
+        $total = $result->total;
+        for my $scan(@{ $result->hits }){
+            push @reprocess_ids,$scan->{_id};
+        }
+        $offset += $limit;
+    }while($offset < $total);
+
+    use MediaMosa;
+    my $mediamosa = MediaMosa->new(
+         %{ config->{mediamosa}->{rest_api} }
+    );
+    for my $id(@reprocess_ids){
+        my $scan = scans->get($id);
+        next if(!($scan && is_string($scan->{asset_id})));
+
+        try{
+            my $vpcore = $mediamosa->asset_delete({
+                user_id => "Nara",
+                asset_id => $scan->{asset_id},
+                'delete' => 'cascade'
+            });
+            say "$id => asset ".$scan->{asset_id}." removed";
+        }catch{
+            say STDERR $_;
+        };
+        delete $scan->{asset_id};
+        update_scan($scan);
+    }
+}
 
 #stap 3: opladen naar mediamosa
 say "uploading to mediamosa";

@@ -31,8 +31,14 @@ BEGIN {
     Catmandu->load($appdir);
 }
 
-
+use MediaMosa;
 use Dancer::Plugin::Imaging::Routes::Utils;
+
+sub mediamosa {
+    state $mediamosa = MediaMosa->new(
+        %{ config->{mediamosa}->{rest_api} }
+    );
+}
 
 sub index_scan_attr {
     my($opts) = @_;
@@ -194,8 +200,23 @@ sub move_scan {
     };
     $scan->{datetime_last_modified} = Time::HiRes::time;
 
-    #gedaan ermee
-    delete $scan->{$_} for(qw(busy new_path new_user));
+    #verwijder uit mediamosa
+    if(is_string($scan->{asset_id})){
+        say "removing asset_id $scan->{asset_id}";
+        try{
+            my $vpcore = mediamosa->asset_delete({
+                user_id => "Nara",
+                asset_id => $scan->{asset_id},
+                'delete' => 'cascade'
+            });
+            say "asset $scan->{asset_id} removed";
+        }catch{
+            say STDERR $_;
+        }
+    }
+    
+    #gedaan ermee => TODO: asset_id eerst uit mediamosa verwijderen!!
+    delete $scan->{$_} for(qw(busy new_path new_user asset_id));
 
     update_scan($scan);
     update_status($scan,-1);
