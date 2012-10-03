@@ -254,7 +254,39 @@ my $index_scan = index_scan();
         move_scan(scans->get($id));
     }
 }
-#status update 2: zitten objecten in archivering reeds in archief?
+
+#status update 2: processing gedaan?
+{
+    my $query = "status:\"processing\"";
+    my @processing_ids = index_scan_attr({ query => $query });
+    for my $id(@processing_ids){
+        my $scan = shift;
+        next if !($scan && is_string($scan->{asset_id}));
+        try{
+            my $vpcore = mediamosa->asset_job_list({
+                user_id => "Nara",
+                asset_id => $scan->{asset_id}
+            });
+            my $items = $vpcore->item() || [];
+            if(scalar(@$items) == 0){
+                $scan->{status} = "registered";
+                push @{ $scan->{status_history} },{
+                    user_login =>"-",
+                    status => "registered",
+                    datetime => Time::HiRes::time,
+                    comments => ""
+                };
+                $scan->{datetime_last_modified} = Time::HiRes::time;
+                delete $scan->{busy};
+                update_scan($scan);
+                update_status($scan,-1);
+            }
+        }catch{
+            say STDERR $_;
+        };
+    }
+}
+#status update 3: zitten objecten in archivering reeds in archief?
 {
 
     my $query = "status:\"archiving\"";

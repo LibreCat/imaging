@@ -395,7 +395,6 @@ if(!-w $dir_processed){
 
         #status 'process'
         $scan->{status} = "processing";
-        delete $scan->{$_} for(qw(busy));
         push @{ $scan->{status_history} },{
             user_login =>"-",
             status => "processing",
@@ -409,7 +408,11 @@ if(!-w $dir_processed){
 
         #status direct naar registered voor -profile_id:NARA
         if($scan->{profile_id} ne "NARA"){
+
+            delete $scan->{$_} for(qw(busy));
+
             $scan->{status} = "registered";
+
             push @{ $scan->{status_history} },{
                 user_login =>"-",
                 status => "registered",
