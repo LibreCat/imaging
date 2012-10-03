@@ -152,7 +152,7 @@ sub asset_create {
 sub asset_delete {
     my($self,$params) = @_;
     $params ||= {};
-    $self->vp_request("/asset/$params->{asset_id}/create",$params,"POST");
+    $self->vp_request("/asset/$params->{asset_id}/delete",$params,"POST");
 }
 sub asset_list {
     my($self,$params) = @_;
