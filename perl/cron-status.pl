@@ -267,8 +267,23 @@ my $index_scan = index_scan();
                 user_id => "Nara",
                 asset_id => $scan->{asset_id}
             });
-            my $items = $vpcore->item() || [];
+            my $items = $vpcore->items->item() || [];
+            my $is_done = 0;
             if(scalar(@$items) == 0){
+                $is_done = 1;
+            }else{
+                my($total,$total_finished) = (0,0);
+                $vpcore->items->each(sub{
+                    my $jobs = shift;
+                    for my $id(keys %$jobs){      
+                        $total++;                  
+                        $total_finished++ if $jobs->{$id}->{status} eq "FINISHED";
+                    }
+                });
+                $is_done = $total == $total_finished;                
+            }
+
+            if($is_done){
                 $scan->{status} = "registered";
                 push @{ $scan->{status_history} },{
                     user_login =>"-",
