@@ -48,6 +48,9 @@ BEGIN {
     }
 
     #plaats lock
+    say "this process id: $$";
+    -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
+    $pid->pid($$);
     $pid->write or die("unable to place lock!");
 }
 END {

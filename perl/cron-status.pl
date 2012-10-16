@@ -41,6 +41,9 @@ BEGIN {
     }
 
     #plaats lock
+    say "this process id: $$";
+    -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
+    $pid->pid($$);
     $pid->write or die("unable to place lock!");
 }
 END {
@@ -50,10 +53,6 @@ END {
 
 use MediaMosa;
 use Dancer::Plugin::Imaging::Routes::Utils;
-
-say "sleeping";
-sleep 3600;
-say "sleeping done";
 
 sub mediamosa {
     state $mediamosa = MediaMosa->new(
