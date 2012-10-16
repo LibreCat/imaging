@@ -17,6 +17,7 @@ use Time::Interval;
 use File::Pid;
 our($a,$b);
 
+my($pid,$pidfile);
 BEGIN {
     #load configuration
     my $appdir = Cwd::realpath(
@@ -30,6 +31,23 @@ BEGIN {
     Dancer::Config::setting(envdir => "$appdir/environments");
     Dancer::Config::load();
     Catmandu->load($appdir);
+
+    #voer niet uit wanneer andere instantie draait!
+    $pidfile = "/var/run/imaging-check.pid";
+    $pid = File::Pid->new({
+        file => $pidfile
+    });
+    if(-f $pid->file && $pid->running){
+        die("Cannot run while other instance is running\n");
+    }
+
+    #plaats lock
+    $pid->write or die("unable to place lock!");
+
+}
+END {
+    #verwijder lock
+    $pid->remove if $pid;
 }
 use Dancer::Plugin::Imaging::Routes::Utils;
 
@@ -141,11 +159,11 @@ sub file_is_busy {
 
 #voer niet uit wanneer imaging-register.pl draait!
 
-my $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
-my $pid = File::Pid->new({
-    file => $pidfile
+my $pidfile_register = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
+my $pid_register = File::Pid->new({
+    file => $pidfile_register
 });
-if(-f $pid->file && $pid->running){
+if(-f $pid_register->file && $pid_register->running){
     die("Cannot run while registration is running\n");
 }
 

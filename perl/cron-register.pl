@@ -48,7 +48,7 @@ BEGIN {
     }
 
     #plaats lock
-    $pid->write;
+    $pid->write or die("unable to place lock!");
 }
 END {
     #verwijder lock
