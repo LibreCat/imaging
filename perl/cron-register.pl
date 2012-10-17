@@ -462,6 +462,7 @@ my @reprocess_ids = ();
         my $scan = scans->get($id);
         next if(!($scan && is_string($scan->{asset_id})));
 
+        #verwijder uit mediamosa
         try{
             my $vpcore = $mediamosa->asset_delete({
                 user_id => "Nara",
@@ -472,8 +473,21 @@ my @reprocess_ids = ();
         }catch{
             say STDERR $_;
         };
+
+        #verwijder asset_id!
         delete $scan->{asset_id};
+
+        #status terug 'registered'
+        $scan->{status} = "registered";
+        push @{ $scan->{status_history} },{
+            user_login =>"-",
+            status => "registered",
+            datetime => Time::HiRes::time,
+            comments => ""
+        };
+        $scan->{datetime_last_modified} = Time::HiRes::time;
         update_scan($scan);
+        update_status($scan,-1);
     }
 }
 
@@ -485,7 +499,7 @@ say "uploading to mediamosa";
 my @mediamosa_ok = ();
 {
     my($offset,$limit,$total) = (0,1000,0);
-    my $query = "((status:\"process\") OR (status:\"reprocess_derivatives\")) AND -asset_id:* AND profile_id:\"NARA\"";
+    my $query = "status:\"process\" AND -asset_id:* AND profile_id:\"NARA\"";
     do{
         my $result = index_scan->search(
             query => $query,
