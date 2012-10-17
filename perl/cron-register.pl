@@ -396,7 +396,7 @@ if(!-w $dir_processed){
             }
         }
 
-        #status 'process'
+        #status 'processing'
         $scan->{status} = "processing";
         push @{ $scan->{status_history} },{
             user_login =>"-",
@@ -477,11 +477,11 @@ my @reprocess_ids = ();
         #verwijder asset_id!
         delete $scan->{asset_id};
 
-        #status terug 'registered'
-        $scan->{status} = "registered";
+        #status terug 'processing'
+        $scan->{status} = "processing";
         push @{ $scan->{status_history} },{
             user_login =>"-",
-            status => "registered",
+            status => "processing",
             datetime => Time::HiRes::time,
             comments => ""
         };
@@ -494,12 +494,10 @@ my @reprocess_ids = ();
 #stap 3: opladen naar mediamosa
 say "uploading to mediamosa";
 
-#TODO: reprocess_derivatives wordt op deze manier verscheidene malen opgeladen..
-
 my @mediamosa_ok = ();
 {
     my($offset,$limit,$total) = (0,1000,0);
-    my $query = "status:\"process\" AND -asset_id:* AND profile_id:\"NARA\"";
+    my $query = "status:\"processing\" AND -asset_id:* AND profile_id:\"NARA\"";
     do{
         my $result = index_scan->search(
             query => $query,
@@ -703,11 +701,12 @@ foreach my $project_id(@project_ids){
 
 #stap 4: ken scans toe aan projects
 say "assigning scans to projects";
+
 my @scan_ids = ();
 scans->each(sub{ 
     push @scan_ids,$_[0]->{_id} if !-f $_[0]->{path}."/__FIXME.txt"; 
 });
-foreach my $scan_id(@scan_ids){
+while(my $scan_id = shift(@scan_ids)){
     my $scan = scans->get($scan_id);
     my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
     if($result->total > 0){        
@@ -725,7 +724,5 @@ foreach my $scan_id(@scan_ids){
     my($success,$error) = index_scan->commit;   
     die(join('',@$error)) if !$success;
 }
-#release memory
-@scan_ids = ();
 
 say "$this_file ended at ".local_time;
