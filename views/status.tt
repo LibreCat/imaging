@@ -140,14 +140,12 @@
 
   <dt>Done</dt>
   <dd>
-    [% IF num_done > 0 %]
-        [% states_done = settings.status.collection.done %]
-        [% FOREACH status IN states_done %]
-            [% parts.push("status:" _ status) %]
-        [% END %]
-        <a href="/scans?q=[% parts.join(" AND ") | url %]">[% num_done %]</a>
+    [% IF facet_status.done > 0 %]
+        <a href="/scans?q=[% "status:done" | url %]">
+            [% facet_status.done %]
+        </a>
     [% ELSE %]
-        [% num_done || 0 %]
+        [% facet_status.done || 0 %]
     [% END %]
   </dd>
 
