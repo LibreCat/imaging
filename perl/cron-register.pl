@@ -463,16 +463,16 @@ my @reprocess_ids = ();
         next if(!($scan && is_string($scan->{asset_id})));
 
         #verwijder uit mediamosa
-        try{
-            my $vpcore = $mediamosa->asset_delete({
-                user_id => "Nara",
-                asset_id => $scan->{asset_id},
-                'delete' => 'cascade'
-            });
-            say "$id => asset ".$scan->{asset_id}." removed";
-        }catch{
-            say STDERR $_;
-        };
+#        try{
+#            my $vpcore = $mediamosa->asset_delete({
+#                user_id => "Nara",
+#                asset_id => $scan->{asset_id},
+#                'delete' => 'cascade'
+#            });
+#            say "$id => asset ".$scan->{asset_id}." removed";
+#        }catch{
+#            say STDERR $_;
+#        };
 
         #verwijder asset_id!
         delete $scan->{asset_id};

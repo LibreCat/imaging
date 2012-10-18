@@ -221,19 +221,19 @@ sub move_scan {
     $scan->{datetime_last_modified} = Time::HiRes::time;
 
     #verwijder uit mediamosa
-    if(is_string($scan->{asset_id})){
-        say "removing asset_id $scan->{asset_id}";
-        try{
-            my $vpcore = mediamosa->asset_delete({
-                user_id => "Nara",
-                asset_id => $scan->{asset_id},
-                'delete' => 'cascade'
-            });
-            say "asset $scan->{asset_id} removed";
-        }catch{
-            say STDERR $_;
-        }
-    }
+#    if(is_string($scan->{asset_id})){
+#        say "removing asset_id $scan->{asset_id}";
+#        try{
+#            my $vpcore = mediamosa->asset_delete({
+#                user_id => "Nara",
+#                asset_id => $scan->{asset_id},
+#                'delete' => 'cascade'
+#            });
+#            say "asset $scan->{asset_id} removed";
+#        }catch{
+#            say STDERR $_;
+#        }
+#    }
     
     #gedaan ermee => TODO: asset_id eerst uit mediamosa verwijderen!!
     delete $scan->{$_} for(qw(busy new_path new_user asset_id));
