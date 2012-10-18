@@ -117,6 +117,18 @@
         [% facet_status.archived_ok || 0 %]
     [% END %]
   </dd>
+
+  <dt>Archivering FOUT</dt>
+  <dd>
+    [% IF facet_status.archived_error > 0 %]
+        <a href="/scans?q=[% "status:archived_error" | url %]">
+            [% facet_status.archived_error %]
+        </a>
+    [% ELSE %] 
+        [% facet_status.archived_error || 0 %]
+    [% END %]
+  </dd>
+
   <dt>Gepubliceerd</dt>
   <dd>
     [% IF facet_status.published > 0 %]
