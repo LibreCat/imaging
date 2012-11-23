@@ -559,8 +559,7 @@ for my $scan_id(@qa_control_ok){
 
     #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
     if( 
-        is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0 &&
-        $baginfo->{'Archive-Id'}->[0] =~ /^archive\.ugent\.be:[\w_\-]+$/o 
+        is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0
     ){
         $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
     }else{
