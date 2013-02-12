@@ -33,9 +33,9 @@
     <td>[% directory.info.files.size || "-" %]</td>
     <td>
         [% IF already_delivered %]
-            <span class="label label-warning" title="reeds aangeleverd">
-                reeds aangeleverd
-            </span>
+		<span class="label label-warning" title="reeds aangeleverd">
+			reeds aangeleverd
+		</span>
         [% ELSE %]
             [% settings.human_readable.${directory.record.status} || directory.record.status || "-" %]
         [% END %]

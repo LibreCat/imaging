@@ -1,4 +1,6 @@
 #!/usr/bin/env perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Dancer qw(:script);
 use Catmandu;
 use Catmandu::Util qw(require_package :is :array);
@@ -32,21 +34,19 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 
-    #voer niet uit wanneer andere instantie draait!
-    $pidfile = "/var/run/imaging-check.pid";
-    $pid = File::Pid->new({
-        file => $pidfile
-    });
-    if(-f $pid->file && $pid->running){
-        die("Cannot run while other instance is running\n");
-    }
-
-    #plaats lock
-    say "this process id: $$";
+	#voer niet uit wanneer andere instantie draait!
+	$pidfile = "/var/run/imaging-check.pid";
+	$pid = File::Pid->new({
+		file => $pidfile
+	});
+	if(-f $pid->file && $pid->running){
+		die("Cannot run while other instance is running\n");
+	}
+	#plaats lock
+	say "this process id: $$";
     -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
     $pid->pid($$);
-    $pid->write or die("unable to place lock!");
-
+	$pid->write or die("unable to place lock!");
 }
 END {
     #verwijder lock
@@ -273,35 +273,35 @@ foreach my $user(@users){
 #stap 2: zijn er scandirectories die hier al te lang staan?
 my @delete = ();
 my @warn = ();
-foreach my $scan_id(@scan_ids_ready){
-    my $scan = $scans->get($scan_id);
-    if(do_delete($scan)){
-        say "ah too late man!";
-        #voor later
-        next;
-        say "nothing too see here!";
-
-        push @delete,$scan->{_id};
-    }elsif(do_warn($scan)){
-        say "ah a warning!";
-        push @warn,$scan->{_id};
-    }
-};
-foreach my $id(@delete){
-    my $scan = $scans->get($id);
-    say "ah no! You're deleting things!";
-    delete_scan_data($scan);
-    $scans->delete($id);
-}
-foreach my $id(@warn){
-    my $scan = $scans->get($id);
-    $scan->{warnings} = [{
-        datetime => Time::HiRes::time,
-        text => "Deze map heeft de tijdslimiet op validatie niet gehaald, en zal binnenkort verwijderd worden",
-        username => "-"
-    }];   
-    $scans->add($scan);
-}
+#foreach my $scan_id(@scan_ids_ready){
+#    my $scan = $scans->get($scan_id);
+#    if(do_delete($scan)){
+#        say "ah too late man!";
+#        #voor later
+#        next;
+#        say "nothing too see here!";
+#
+#        push @delete,$scan->{_id};
+#    }elsif(do_warn($scan)){
+#        say "ah a warning!";
+#        push @warn,$scan->{_id};
+#    }
+#};
+#foreach my $id(@delete){
+#    my $scan = $scans->get($id);
+#    say "ah no! You're deleting things!";
+#    delete_scan_data($scan);
+#    $scans->delete($id);
+#}
+#foreach my $id(@warn){
+#    my $scan = $scans->get($id);
+#    $scan->{warnings} = [{
+#        datetime => Time::HiRes::time,
+#        text => "Deze map heeft de tijdslimiet op validatie niet gehaald, en zal binnenkort verwijderd worden",
+#        username => "-"
+#    }];   
+#    $scans->add($scan);
+#}
 
 #stap 3: doe check -> filter lijst van scan_ids_ready op mappen die gecontroleerd moeten worden:
 # 1. mappen die nog geen controle zijn gepasseerd, worden gecontroleerd
@@ -422,29 +422,30 @@ foreach my $scan_id(@scan_ids_test){
 }
 
 #check of alle incoming_* er nog staan
-say "checking if all incoming are still there..";
-{
-    my $total_incoming = 0;
-    my($offset,$limit) = (0,1000);
-
-    do{
-
-        my $result = index_scan->search(query => "status:incoming*",limit => $limit,offset=>$offset);
-        $total_incoming = $result->total();
-
-        foreach my $hit(@{ $result->hits }){
-            my $scan = scans->get($hit->{_id});            
-            if(!-d $scan->{path}){
-                say "\t".$scan->{_id}." removed or renamed";
-                index_scan->delete($scan->{_id});
-                index_scan->commit;
-                index_log->delete_by_query(query => "scan_id:\"".$scan->{_id}."\"");
-                index_log->commit;
-                scans->delete($scan->{_id});
-            }
-        }
-        $offset += $limit;
-    }while($offset < $total_incoming);
-}
+#gevaarlijk voor oude records die terug naar incoming moeten, en dan plotseling verwijderd worden!
+#say "checking if all incoming are still there..";
+#{
+#    my $total_incoming = 0;
+#    my($offset,$limit) = (0,1000);
+#
+#    do{
+#
+#        my $result = index_scan->search(query => "status:incoming*",limit => $limit,offset=>$offset);
+#        $total_incoming = $result->total();
+#
+#        foreach my $hit(@{ $result->hits }){
+#            my $scan = scans->get($hit->{_id});            
+#            if(!-d $scan->{path}){
+#                say "\t".$scan->{_id}." removed or renamed";
+#                index_scan->delete($scan->{_id});
+#                index_scan->commit;
+#                index_log->delete_by_query(query => "scan_id:\"".$scan->{_id}."\"");
+#                index_log->commit;
+#                scans->delete($scan->{_id});
+#            }
+#        }
+#        $offset += $limit;
+#    }while($offset < $total_incoming);
+#}
 
 say "$this_file ended at ".local_time;

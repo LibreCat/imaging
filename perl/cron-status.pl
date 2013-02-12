@@ -1,4 +1,6 @@
 #!/usr/bin/env perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Catmandu;
 use Dancer qw(:script);
 use Catmandu::Sane;
@@ -31,19 +33,18 @@ BEGIN {
     Dancer::Config::load();
     Catmandu->load($appdir);
 
-    #voer niet uit wanneer andere instantie draait!
-    $pidfile = "/var/run/imaging-status.pid";
+	$pidfile = "/var/run/imaging-status.pid";
     $pid = File::Pid->new({
         file => $pidfile
     });
     if(-f $pid->file && $pid->running){
         die("Cannot run while other instance is running\n");
     }
-
+	
     #plaats lock
     say "this process id: $$";
-    -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
-    $pid->pid($$);
+	-f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
+	$pid->pid($$);
     $pid->write or die("unable to place lock!");
 }
 END {
@@ -54,36 +55,12 @@ END {
 use MediaMosa;
 use Dancer::Plugin::Imaging::Routes::Utils;
 
+$| = 1;
+
 sub mediamosa {
-    state $mediamosa = MediaMosa->new(
+	state $mediamosa = MediaMosa->new(
         %{ config->{mediamosa}->{rest_api} }
-    );
-}
-
-sub index_scan_attr {
-    my($opts) = @_;
-    $opts = is_hash_ref($opts) ? $opts : {};
-    $opts->{query} = is_string($opts->{query}) ? $opts->{query} : "*:*";
-    delete $opts->{$_} for(qw(start limit));
-    my $attr = delete $opts->{attr};
-    $attr = is_string($attr) ? $attr : "_id";
-    my($start,$limit,$total)=(0,1000,0);
-    my @ids = ();
-    do{
-
-        my $result = index_scan->search(
-            %$opts,
-            start => $start,
-            limit => $limit,
-        );
-        $total = $result->total;
-        foreach my $hit(@{ $result->hits || [] }){
-            push @ids,$hit->{$attr};
-        }
-        $start += $limit;
-
-    }while($start < $total);
-    return \@ids;
+	);
 }
 sub complain {
     say STDERR @_;
@@ -200,6 +177,7 @@ sub move_scan {
             say STDERR "could not move $old_path/$filename to $new_path/$filename";
             return;
         }
+	say "moving $old_path/$filename to $new_path/$filename successfull";
     }
     close FILE; 
     
@@ -220,21 +198,21 @@ sub move_scan {
     };
     $scan->{datetime_last_modified} = Time::HiRes::time;
 
-    #verwijder uit mediamosa
-#    if(is_string($scan->{asset_id})){
-#        say "removing asset_id $scan->{asset_id}";
-#        try{
-#            my $vpcore = mediamosa->asset_delete({
-#                user_id => "Nara",
-#                asset_id => $scan->{asset_id},
-#                'delete' => 'cascade'
-#            });
-#            say "asset $scan->{asset_id} removed";
-#        }catch{
-#            say STDERR $_;
-#        }
-#    }
-    
+	#verwijder uit mediamosa
+	if(is_string($scan->{asset_id})){
+		say "removing asset_id $scan->{asset_id}";
+		try{
+			my $vpcore = mediamosa->asset_delete({
+				user_id => "Nara",
+				asset_id => $scan->{asset_id},
+				'delete' => 'cascade'
+			});
+			say "asset $scan->{asset_id} removed";
+		}catch{
+			say STDERR $_;
+		}
+	}
+	
     #gedaan ermee => TODO: asset_id eerst uit mediamosa verwijderen!!
     delete $scan->{$_} for(qw(busy new_path new_user asset_id));
 
@@ -269,80 +247,71 @@ my $index_scan = index_scan();
 #status update 1: files die verplaatst moeten worden op vraag van dashboard
 {
     my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qa_manager\"";
-    my $ids = index_scan_attr({query => $query}) || [];
-    for my $id(@$ids){
+    my($start,$limit,$total)=(0,1000,0);
+    my @ids = ();
+    do{
+
+        my $result = $index_scan->search(
+            query => $query,
+            start => $start,
+            limit => $limit
+        );
+        $total = $result->total;
+        foreach my $hit(@{ $result->hits || [] }){
+            push @ids,$hit->{_id};
+        }
+        $start += $limit;
+
+    }while($start < $total);
+    for my $id(@ids){
         move_scan(scans->get($id));
     }
 }
-
-#status update 2: processing gedaan?
-{
-    my $query = "status:\"processing\"";
-    my @processing_ids = index_scan_attr({ query => $query });
-    for my $id(@processing_ids){
-        my $scan = shift;
-        next if !($scan && is_string($scan->{asset_id}));
-        try{
-            my $vpcore = mediamosa->asset_job_list({
-                user_id => "Nara",
-                asset_id => $scan->{asset_id}
-            });
-            my $items = $vpcore->items->item() || [];
-            my $is_done = 0;
-            if(scalar(@$items) == 0){
-                $is_done = 1;
-            }else{
-                my($total,$total_finished) = (0,0);
-                $vpcore->items->each(sub{
-                    my $jobs = shift;
-                    for my $id(keys %$jobs){      
-                        $total++;                  
-                        $total_finished++ if $jobs->{$id}->{status} eq "FINISHED";
-                    }
-                });
-                $is_done = $total == $total_finished;                
-            }
-
-            if($is_done){
-                $scan->{status} = "registered";
-                push @{ $scan->{status_history} },{
-                    user_login =>"-",
-                    status => "registered",
-                    datetime => Time::HiRes::time,
-                    comments => ""
-                };
-                $scan->{datetime_last_modified} = Time::HiRes::time;
-                delete $scan->{busy};
-                update_scan($scan);
-                update_status($scan,-1);
-            }
-        }catch{
-            say STDERR $_;
-        };
-    }
-}
-#status update 3: zitten objecten in archivering reeds in archief?
+#status update 2: zitten objecten in archivering reeds in archief?
 {
 
     my $query = "status:\"archiving\"";
-    my $ids = index_scan_attr({ query => $query }) || [];
+    my($start,$limit,$total)=(0,1000,0);
+    my @ids = ();
+    do{
 
-    my $ua = LWP::UserAgent->new( cookie_jar => {}, ssl_opts => { verify_hostname => 0 } );
+        my $result = $index_scan->search(
+            query => $query,
+            start => $start,
+            limit => $limit
+        );
+        $total = $result->total;
+        foreach my $hit(@{ $result->hits || [] }){
+            push @ids,$hit->{_id};
+        }
+        $start += $limit;
+
+    }while($start < $total);
+
+    #segmentation fault bij https
+    #my $ua = LWP::UserAgent->new( cookie_jar => {}, ssl_opts => { verify_hostname => 0 } );
     my $base_url = config->{archive_site}->{base_url}.config->{archive_site}->{rest_api}->{path};
 
-    for my $id(@$ids){
+    for my $id(@ids){
         my $scan = scans->get($id);
-        my $url = "$base_url?".construct_query({ func => "count",q => $id });
+	my $q = "id:\"".$scan->{archive_id}."\"";
+        my $url = "$base_url?".construct_query({ func => "count",q => $q });
         say "fetching $url";
-        my $res = $ua->get($url);        
-        if($res->is_error){            
-            say STDERR $res->content;
-            next;
-        }
-        say "fetch succcessfull";
-        say $res->content;
+	my $command = "curl -k \"$url\"";
+        say "\t$command";
+        my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+	if(!$success){
+		say STDERR $stderr if $stderr;
+		say STDERR $stdout if $stdout;
+	}
+        say "\tfetch succcessfull";
         try{
-            my $json = from_json($res->content);
+            my $json = from_json($stdout);
+            if(!is_hash_ref($json)){
+		say STDERR "cannot parse response:";
+		say STDERR $stdout;
+		return;
+            }
             #opgelet: wat als je iets moet overschrijven? Want je gebruikt daarbij een id
             #die reeds in het archief zit!
             if($json->{found} == 1){
@@ -356,50 +325,14 @@ my $index_scan = index_scan();
                 $scan->{datetime_last_modified} = Time::HiRes::time;
                 update_scan($scan);
                 update_status($scan,-1);
-            }
+            }else{
+		say "not in archive yet";
+	    }
         }catch{
             say STDERR $_;
         };
     }
 }
 
-#status update 3: wat is reeds succesvol gearchiveerd EN gepubliceerd?
-{
-
-    my $query = "status:\"archived_ok\"";
-    my $ids = index_scan_attr({ query => $query }) || [];
-    my $ua = LWP::UserAgent->new( cookie_jar => {}, ssl_opts => { verify_hostname => 0 } );
-
-    for my $id(@$ids){
-        my $scan = scans->get($id);
-        next if !$scan;
-
-        my $publication_site = data_at(config,"publication_site.base_url");
-        my $res = $ua->get("$publication_site/json/$id");
-        if($res->is_error){
-            say STDERR $res->content;
-            next;
-        }       
-        my $hash = from_json($res->content) || {};
-        if(!is_string($hash->{_id})){
-            next;
-        }
-
-        $scan->{status} = "published";
-        push @{ $scan->{status_history} },{
-            user_login =>"-",
-            status => "published",
-            datetime => Time::HiRes::time,
-            comments => ""
-        };
-        $scan->{datetime_last_modified} = Time::HiRes::time;
-        #update_scan($scan);
-        #update_status($scan,-1);
-    }
-}
-
-#verwijder wat 'DONE' is, enkel uit filesysteem
-#TODO: in scans/view enkel directory indien directory aanwezig!
-#misschien best niet te automatisch
 
 say "$this_file ended at ".local_time;

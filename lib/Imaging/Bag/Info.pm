@@ -10,7 +10,7 @@ has source => (
     required => 0,
     lazy => 1,
     trigger => sub {
-        $_[0]->_source( io( $_[0]->source() ) );
+        $_[0]->_source( io( $_[0]->source(),'binmode' => 'utf-8' ) );
     }
 );
 has _source => (
@@ -29,6 +29,8 @@ sub trim {
     my $str = shift;
     $str =~ s/^\s+//go;
     $str =~ s/\s+$//go;
+    #remove BOM (yuk!)
+    $str =~ tr/\x{feff}//d;
     $str;
 }
 sub _build_hash {
@@ -36,16 +38,20 @@ sub _build_hash {
     my $source = $self->_source();
     my $hash = {};
     if(defined($source) && $source->opened && !$source->error){
-        my $line;
+        my($line,$key);
         while(defined($line = $source->getline)){
             $line =~ s/\r\n$/\n/o;
             chomp($line);
             my $index = index($line,':');
+            #eerste lijn key : value
             if($index >= 0){
-                my $key = trim( substr($line,0,$index) );
+                $key = trim( substr($line,0,$index) );
                 my $value = trim( substr($line,$index + 1) );
                 $hash->{$key} ||= [];
                 push @{$hash->{$key}},$value;
+            }elsif(defined($key)){
+                $line =~ s/^\t+//go;
+                $hash->{$key}->[-1] .= $line;
             }
         }
         $source->close;

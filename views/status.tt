@@ -84,6 +84,16 @@
     [% END %]
   </dd>
  
+	<dt>Onderweg naar grep</dt>
+  <dd>
+    [% IF facet_status.archiving > 0 %]
+        <a href="/scans?q=[% "status:archiving" | url %]">
+            [% facet_status.archiving %]
+        </a>
+    [% ELSE %]
+        [% facet_status.archiving || 0 %]
+    [% END %]
+  </dd>
 
   <dt>Gearchiveerd</dt>
   <dd>
@@ -93,17 +103,6 @@
         </a>
     [% ELSE %]
         [% facet_status.archived || 0 %]
-    [% END %]
-  </dd>
-
-  <dt>Onderweg naar grep</dt>
-  <dd>
-    [% IF facet_status.archiving > 0 %]
-        <a href="/scans?q=[% "status:archiving" | url %]">
-            [% facet_status.archiving %]
-        </a>
-    [% ELSE %]
-        [% facet_status.archiving || 0 %]
     [% END %]
   </dd>
 
@@ -118,17 +117,17 @@
     [% END %]
   </dd>
 
-  <dt>Archivering FOUT</dt>
+	<dt>Archivering FOUT</dt>
   <dd>
     [% IF facet_status.archived_error > 0 %]
         <a href="/scans?q=[% "status:archived_error" | url %]">
             [% facet_status.archived_error %]
         </a>
-    [% ELSE %] 
+    [% ELSE %]
         [% facet_status.archived_error || 0 %]
     [% END %]
   </dd>
-
+	
   <dt>Gepubliceerd</dt>
   <dd>
     [% IF facet_status.published > 0 %]
@@ -152,7 +151,7 @@
 
   <dt>Done</dt>
   <dd>
-    [% IF facet_status.done > 0 %]
+		[% IF facet_status.done > 0 %]
         <a href="/scans?q=[% "status:done" | url %]">
             [% facet_status.done %]
         </a>

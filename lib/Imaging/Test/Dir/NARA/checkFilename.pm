@@ -4,6 +4,7 @@ use Catmandu::Sane;
 use Data::Util qw(:check :validate);
 use Catmandu::Util qw(:array);
 use File::Basename;
+use List::Util qw(max);
 
 has types => (
     is => 'ro',
@@ -101,10 +102,15 @@ sub test {
             push @errors,$stats->{basename}." mist naam van de hoofdmap als eerste deel van de bestandsnaam (hoofdmap: ".basename($topdir).")";
 
         }else{
+			my $num = int($3);
 
-            #{ MA => [1,2,3,4], ST => [1,2,3] }
-            $type_numbers->{$4} ||= [];
-            push @{ $type_numbers->{$4} },int($3);
+			if($num < 1){
+				push @errors,$stats->{basename}.": sequentienummer moet minstens 0001 zijn";	
+			}
+
+	        #{ MA => [1,2,3,4], ST => [1,2,3] }
+    	    $type_numbers->{$4} ||= [];
+        	push @{ $type_numbers->{$4} },int($num);
 
         }
     }
@@ -120,17 +126,13 @@ sub test {
     #check volgorde binnen MA, ST
     foreach my $type(keys %$type_numbers){
         my $numbers = $type_numbers->{$type};
-        $numbers = [ sort { $a <=> $b } @$numbers ];
+		my $max = max @$numbers; 
         my @missing_numbers = ();
-        for(my $i = 0;$i<scalar(@$numbers);$i++){
-            if($i > 0){
-                if($numbers->[$i - 1] != ($numbers->[$i] - 1)){
-                    my $start = $numbers->[$i - 1] + 1;
-                    my $end = $numbers->[$i] - 1;
-                    push @missing_numbers,($start..$end);
-                }
-            }
-        }
+		for(my $i = 1;$i <= $max;$i++){ 
+			if(!array_includes($numbers,$i)){
+				push @missing_numbers,$i;
+			}
+		}
         $missing_type_numbers->{$type} = \@missing_numbers;
     }
 

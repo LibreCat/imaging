@@ -131,8 +131,8 @@ sub scan2index {
     push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
     #status history
-    for(my $i = 0;$i < scalar(@{ $doc->{status_history} });$i++){
-        my $item = $doc->{status_history}->[$i];
+    for(my $i = 0;$i < scalar(@{ $scan->{status_history} });$i++){
+        my $item = $scan->{status_history}->[$i];
         $doc->{status_history}->[$i] = $item->{user_login}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
     }
 

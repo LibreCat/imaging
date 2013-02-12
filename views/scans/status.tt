@@ -43,7 +43,11 @@
   <div class="control-group">
     <label for="comments" class="control-label">opmerkingen</label>
     <div class="controls">
-      <textarea name="comments" class="span6">[% params.comments | html %]</textarea>
+			[% comments = params.comments %]
+			[% IF comments == "" %]
+				[% comments = "Status wijziging" %]
+			[% END %]
+      <textarea name="comments" class="span6">[% comments | html %]</textarea>
     </div>
   </div>
   <div class="form-actions">

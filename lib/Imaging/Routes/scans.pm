@@ -119,10 +119,6 @@ any('/scans/:_id',sub {
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
 
-    #indien path verwijderd, maar index en databank nog niet geüpdated
-    #=> problematisch na status 'DONE', want moet de map weg!
-    #-d $scan->{path} or return not_found();
-
     #projecten
     my @projects;
     if(is_array_ref($scan->{project_id})){
@@ -132,12 +128,14 @@ any('/scans/:_id',sub {
         }
     }
 
+	my($files,$size);
     #lijst bestanden
-    my($files,$size) = ([],0)
-    if(is_string($scan->{path}) && (-r -d $scan->{path})){
-        ($files,$size) = list_files($scan->{path});
-    }
-
+    if(-d -r $scan->{path}){
+		($files,$size) = list_files($scan->{path});
+	}else{
+		($files,$size) = ([],0);
+	}
+    
     #bewerk metadata
     if(is_string($params->{action})){
         if(!(
@@ -149,15 +147,6 @@ any('/scans/:_id',sub {
         }elsif($scan->{busy}){
 
             push @errors,"Systeem is bezig met een operatie op deze scan";
-
-        }elsif(
-            !(
-                is_string($scan->{path}) && (-r -d $scan->{path})
-            )
-        ){
-
-            push @errors,"Map is verwijderd uit het bestandssysteem. Gelieve de status te wijzigen naar
-'reprocess_scans' of 'reprocess_scans_qa_manager'";            
 
         }elsif(-f $scan->{path}."/__FIXME.txt"){
 
@@ -286,8 +275,6 @@ get('/scans/:_id/json',sub{
 
     if(!$scan){
         push @errors, "scandirectory $params->{_id} niet gevonden";
-    }elsif(!-d $scan->{path}){
-        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank, of is reeds verwijderd";   
     }else{
         $response->{data} = $scan;
     }
@@ -311,9 +298,9 @@ get('/scans/:_id/comments',,sub{
     my $response = { };
 
     if(!$scan){
+
         push @errors, "scandirectory $params->{_id} niet gevonden";
-    }elsif(!-d $scan->{path}){
-        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank, of is reeds verwijderd"; 
+
     }else{
         
         $comments = $scan->{comments};
@@ -346,10 +333,7 @@ post('/scans/:_id/comments/add',,sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!-d $scan->{path}){
-        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank, of is reeds verwijderd"; 
-    }
-    elsif(!$auth->can('scans','comment')){
+    }elsif(!$auth->can('scans','comment')){
 
         push @errors,"U beschikt niet over de nodige rechten om commentaar toe te voegen";
 
@@ -404,8 +388,6 @@ post('/scans/:_id/comments/clear',,sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!-d $scan->{path}){
-        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank, of is reeds verwijderd"; 
     }elsif(!$auth->asa('admin')){
 
         push @errors,"U beschikt niet over de nodige rechten om alle commentaren te wissen";
@@ -448,8 +430,6 @@ post('/scans/:_id/baginfo/add',sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!-d $scan->{path}){
-        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank, of is reeds verwijderd"; 
     }elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
         
         push @errors,"U mist de juiste rechten om de baginfo aan te passen";
@@ -523,10 +503,7 @@ post('/scans/:_id/baginfo/edit',sub{
 
         push @errors, "scandirectory $params->{_id} niet gevonden";
 
-    }elsif(!-d $scan->{path}){
-        push @errors,"scandirectory $params->{_id} zal verwijderd worden uit de databank, of is reeds verwijderd"; 
-    }
-    elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
+    }elsif(!($auth->asa('admin') || $auth->can('scans','metadata'))){
         
         push @errors,"U mist de juiste rechten om de baginfo aan te passen";
 
@@ -602,9 +579,6 @@ any('/scans/:_id/status',sub{
     my $session = session();
     my $scan = scans->get($params->{_id});
     $scan or return not_found();
-
-    #TODO: scan met status 'DONE' terug naar incoming zetten: dir aanmaken!
-    -d $scan->{path} or return not_found();
 
     if(! $auth->can('scans','status') ){
         return forward('/access_denied',{

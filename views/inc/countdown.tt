@@ -14,7 +14,7 @@
         setTimeout(function(){
             var $countdown = $("#countdown .timer");
             //aantal seconden per iteratie: haal tijd top tot volgende iteratie
-            var next = 60;
+            var next = 120;
             //javascript noteert tijd in milliseconden
             var seconds = Math.floor((new Date()).getTime() / 1000);
             seconds = Math.ceil(seconds / next) * next;
