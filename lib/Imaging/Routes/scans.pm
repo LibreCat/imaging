@@ -15,6 +15,7 @@ use List::MoreUtils qw(first_index);
 use Clone qw(clone);
 use Time::HiRes;
 use File::Basename qw();
+use File::Path qw(mkpath);
 use Data::UUID;
 use Hash::Merge qw(merge);
 
@@ -668,6 +669,8 @@ any('/scans/:_id/status',sub{
                     #reprocess_scans: verplaats naar 01_ready van owner + __FIXME.txt
                     elsif($status_to eq "reprocess_scans"){
 
+                        ensure_path($scan->{path});
+
                         $scan->{busy} = 1;
                         my $user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
                         $scan->{new_path} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
@@ -675,6 +678,8 @@ any('/scans/:_id/status',sub{
                     }
                     #reprocess_scans_qa_manager: verplaats naar eigen 01_ready + __FIXME.txt
                     elsif($status_to eq "reprocess_scans_qa_manager"){
+
+                        ensure_path($scan->{path});
 
                         $scan->{busy} = 1;
                         $scan->{new_path} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".session('user')->{login}."/".$scan->{_id};
@@ -792,6 +797,18 @@ sub status_change_conf {
         $merge = merge($merge,$config->{status}->{change}->{$_} || {});
     }
     $merge;
+}
+
+sub ensure_path {
+  my $path = shift;
+
+  if(! (-d $path)){
+    mkpath($path);
+  }
+  if(! (-f "$path/__MANIFEST.txt")){
+    open my $fh,">:utf8","$path/__MANIFEST.txt" or die($!);
+    close $fh;
+  }
 }
 
 true;
