@@ -22,6 +22,7 @@ use Archive::BagIt;
 use File::Pid;
 use IO::CaptureOutput qw(capture_exec);
 use Data::UUID;
+use MediaMosa;
 
 my $pidfile;
 my $pid;
@@ -100,6 +101,28 @@ sub directory_to_queries {
     @queries;
 }
 
+sub ensure_archive_id {
+  my $scan = $_[0];
+
+  my $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash;
+
+  if(
+    is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0
+  ){
+
+    $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
+
+  }else{
+
+    $scan->{archive_id} = "archive.ugent.be:".Data::UUID->new->create_str;
+    $baginfo->{'Archive-Id'} = [ $scan->{archive_id} ];
+    say "new archive_id:".$scan->{archive_id};
+    write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);
+
+  }
+
+}
+
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
 
@@ -109,14 +132,14 @@ say "$this_file started at ".local_time;
 #
 #   1ste metadata-record wordt neergeschreven in bag-info.txt: mediamosa pikt deze metadata op
 
-say "retrieving metadata for good scans";
+say "retrieving metadata for good scans (-status:incoming AND -status:incoming_error AND -status:done";
 my @ids_ok_for_metadata = ();
 {
 
     my($offset,$limit,$total) = (0,1000,0);
     do{
         my $result = index_scan->search( 
-            query => "-status:\"incoming\" AND -status:\"incoming_error\"",
+            query => "-status:\"incoming\" AND -status:\"incoming_error\" AND -status:\"done\"",
             reify => scans(),
             start => $offset,
             limit => $limit
@@ -184,7 +207,6 @@ my @incoming_ok = ();
     do{
         my $result = index_scan->search(
             query => "status:\"incoming_ok\"",
-            #reify => scans(),
             start => $offset,
             limit => $limit
         );
@@ -222,7 +244,6 @@ if(!-w $dir_processed){
             next;
 
         }         
-
 
         #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
         my $mtime_latest_file = mtime_latest_file($scan->{path});
@@ -325,8 +346,8 @@ if(!-w $dir_processed){
         open MANIFEST,">$path_manifest" or die($!);
         foreach my $file(@{ $dir_info->files() }){
             next if $file->{path} eq $path_manifest;
-		
-			say "\t\tmaking checksum for ".$file->{path};
+    
+            say "\t\tmaking checksum for ".$file->{path};
             local(*FILE);
             if(!(
                 -f -r $file->{path}
@@ -398,140 +419,130 @@ if(!-w $dir_processed){
 @incoming_ok = ();
 
 #verwijder oude assets voor status:reprocess_derivatives
-say "removing assets for status:reprocess_derivatives";
-my @reprocess_ids = ();
 {
- 	my $query = "profile_id:\"NARA\" AND status:\"reprocess_derivatives\"";
-    my($offset,$limit,$total) = (0,1000,0);
-    do{
-        my $result = index_scan->search(
-            query => $query,
-            start => $offset,
-            limit => $limit
-        );
-        $total = $result->total;
-        for my $scan(@{ $result->hits }){
-        	push @reprocess_ids,$scan->{_id};
-        }
-        $offset += $limit;
-    }while($offset < $total);
 
-	use MediaMosa;	
-	my $mediamosa = MediaMosa->new(
-		 %{ config->{mediamosa}->{rest_api} }
-	);
-	for my $id(@reprocess_ids){
-		my $scan = scans->get($id);
-		next if(!($scan && is_string($scan->{asset_id})));
-		
-		#verwijder asset_id in mediamosa		
-		try{
-			my $vpcore = $mediamosa->asset_delete({
-				user_id => "Nara",
-                asset_id => $scan->{asset_id},
-                'delete' => 'cascade'
-        	});
-          	say "$id => asset ".$scan->{asset_id}." removed";
-        }catch{
-            say STDERR $_;
-        };
+  say "removing assets for status:reprocess_derivatives";
+  my @reprocess_ids = ();
 
-		#verwijder attribuut asset_id
-        delete $scan->{asset_id};
+  my $query = "status:\"reprocess_derivatives\"";
+  my($offset,$limit,$total) = (0,1000,0);
+  do{
 
-		#status terug 'registered'
-		$scan->{status} = "registered";
-        push @{ $scan->{status_history} },{
-            user_login =>"-",
-            status => "registered",
-            datetime => Time::HiRes::time,
-            comments => ""
-        };
-        $scan->{datetime_last_modified} = Time::HiRes::time;
-        update_scan($scan);
-		update_status($scan,-1);
-	}	
+    my $result = index_scan->search(
+        query => $query,
+        start => $offset,
+        limit => $limit
+    );
+    $total = $result->total;
+    for my $scan(@{ $result->hits }){
+      push @reprocess_ids,$scan->{_id};
+    }
+    $offset += $limit;
+
+  }while($offset < $total);
+
+  my $mediamosa = MediaMosa->new(
+     %{ config->{mediamosa}->{rest_api} }
+  );
+
+  for my $id(@reprocess_ids){
+
+    my $scan = scans->get($id);
+
+    next if(!($scan && is_string($scan->{asset_id})));
+    
+    #verwijder asset_id in mediamosa    
+    try{
+
+      my $vpcore = $mediamosa->asset_delete({
+        user_id => "Nara",
+        asset_id => $scan->{asset_id},
+        'delete' => 'cascade'
+      });
+      say "$id => asset ".$scan->{asset_id}." removed";
+
+    }catch{
+
+      say STDERR $_;
+
+    };
+
+    #verwijder attribuut asset_id
+    delete $scan->{asset_id};
+
+    #status terug 'registered'
+    $scan->{status} = "registered";
+    push @{ $scan->{status_history} },{
+      user_login =>"-",
+      status => "registered",
+      datetime => Time::HiRes::time,
+      comments => ""
+    };
+    $scan->{datetime_last_modified} = Time::HiRes::time;
+    update_scan($scan);
+    update_status($scan,-1);
+  } 
 }
 
 
 say "uploading to mediamosa";
 my @mediamosa_ids = ();
 {
-	#van belang: enkel reprocess_derivatives indien asset weggegooid!
-	my $query = "profile_id:\"NARA\" AND -asset_id:* AND status:\"registered\"";
-    my($offset,$limit,$total) = (0,1000,0);
-    do{
-        my $result = index_scan->search(
-            query => $query,
-            start => $offset,
-            limit => $limit            
-        );
-        $total = $result->total;
-		for my $scan(@{ $result->hits }){
-			push @mediamosa_ids,$scan->{_id};
-		}
-		$offset += $limit;
-    }while($offset < $total);
+
+  #van belang: enkel reprocess_derivatives indien asset weggegooid!
+  my $query = "-asset_id:* AND status:\"registered\"";
+  my($offset,$limit,$total) = (0,1000,0);
+  do{
+    my $result = index_scan->search(
+        query => $query,
+        start => $offset,
+        limit => $limit            
+    );
+    $total = $result->total;
+    for my $scan(@{ $result->hits }){
+      push @mediamosa_ids,$scan->{_id};
+    }
+    $offset += $limit;
+  }while($offset < $total);
+
 }
 
 #stap 3: opladen naar mediamosa
 
 foreach my $id(@mediamosa_ids){
-	my $scan = scans->get($id);
-	if(!(-f $scan->{path}."/__FIXME.txt")){
-        my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
-        say "\t$command";
-        my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-        say "stderr:";
-        say $stderr;
-        say "stdout:";
-        say $stdout;
-        if(!$success){
-            say STDERR $stderr;
-        }elsif($stdout =~ /new asset id: (\w+)\n/m){
-            say "asset_id found:$1";
-            $scan->{asset_id} = $1;
-	    $scan->{datetime_last_modified} = Time::HiRes::time;
-            update_scan($scan);
-        }else{
-            say STDERR "cannot find asset_id in response";
-        }
-    }
-}
+  my $scan = scans->get($id);
 
-#{
-#    my($offset,$limit,$total) = (0,1000,0);
-#    do{
-#        my $result = index_scan->search(
-#            query => "status:\"registered\" AND profile_id:\"NARA\" AND -asset_id:*",
-#            start => $offset,
-#            limit => $limit,
-#	    reify => scans
-#        );
-#        $total = $result->total;
-#        for my $scan(@{ $result->hits }){
-#            if(!(-f $scan->{path}."/__FIXME.txt")){
-#                my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
-#                say "\t$command";
-#                my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-#                say "stderr:";
-#                say $stderr;
-#                say "stdout:";
-#                say $stdout;
-#                if(!$success){
-#                    say STDERR $stderr;
-#                }elsif($stdout =~ /new asset id: (\w+)\n/m){
-#                    say "asset_id found:$1";
-#                    $scan->{asset_id} = $1;
-#                    update_scan($scan);
-#                }else{
-#                    say STDERR "cannot find asset_id in response";
-#                }      
-#            }
-#        }
-#        $offset += $limit;
-#    }while($offset < $total);
-#}
+  next if -f $scan->{path}."/__FIXME.txt";
+
+  #creëer Archive-Id!
+  ensure_archive_id($scan);
+
+  my $command;
+  #profiel bepaalt drush commando
+  if($scan->{profile_id} eq "NARA"){
+    $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
+  }else{
+     $command = sprintf(config->{mediamosa}->{drush_command}->{import_directory},$scan->{path});   
+  }
+
+  say "\t$command";
+  my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+  say "stderr:";
+  say $stderr;
+  say "stdout:";
+  say $stdout;
+
+  if(!$success){
+    say STDERR $stderr;
+  }elsif($stdout =~ /new asset id: (\w+)\n/m){
+    say "asset_id found:$1";
+    $scan->{asset_id} = $1;
+    $scan->{datetime_last_modified} = Time::HiRes::time;
+    update_scan($scan);
+  }else{
+    say STDERR "cannot find asset_id in response";
+  }
+}
 
 #stap 4: opladen naar GREP
 my @qa_control_ok = ();
@@ -552,22 +563,11 @@ my @qa_control_ok = ();
     }while($offset < $total);
 }
 for my $scan_id(@qa_control_ok){
+
     my $scan = scans->get($scan_id);
-    my $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash;
 
     #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
-    if( 
-        is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0
-    ){
-        $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
-    }else{
-        $scan->{archive_id} = "archive.ugent.be:".Data::UUID->new->create_str;
-        $baginfo->{'Archive-Id'} = [];
-        push @{$baginfo->{'Archive-Id'}},$scan->{archive_id};
-        say "new archive_id:".$scan->{archive_id};
-        write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);                
-        $scan->{metadata}->[0]->{baginfo} = $baginfo;
-    }
+    ensure_archive_id($scan);
 
     #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
     my $grep_path = config->{'archive_site'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
@@ -575,45 +575,49 @@ for my $scan_id(@qa_control_ok){
     my $command;
 
     if(!$is_bag){
-        $command = sprintf(
-            config->{mediamosa}->{drush_command}->{'bt-bag'},
-            $scan->{path},                   
-            $grep_path
-        );
+
+      $command = sprintf(
+          config->{mediamosa}->{drush_command}->{'bt-bag'},
+          $scan->{path},                   
+          $grep_path
+      );
         
     }else{
+
         $command = "cp -R $scan->{path} $grep_path && rm -f $grep_path/__MANIFEST-MD5.txt";
+
     }
+
     say "command: $command";
     my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
     say "stderr:";
     say $stderr;
     say "stdout:";
     say $stdout;
-    if($success){
-	$command = "chown -R fedora:fedora $grep_path && chmod -R 755 $grep_path";
-	($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-	say $command;
-	say "stderr:";
-	say $stderr;
-	say "stdout:";
-	say $stdout;		
-        say "scan archiving";
-        $scan->{status} = "archiving";
-        push @{ $scan->{status_history} },{
-            user_login =>"-",
-            status => "archiving",
-            datetime => Time::HiRes::time,
-            comments => ""
-        };
-        $scan->{datetime_last_modified} = Time::HiRes::time;            
-        update_scan($scan);
-        update_status($scan,-1);
-        say "scan record updated";
 
-    }else{
-        say STDERR $stderr;
-    } 
+    next if !$success;
+
+    $command = "chown -R fedora:fedora $grep_path && chmod -R 755 $grep_path";
+    ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+    say $command;
+    say "stderr:";
+    say $stderr;
+    say "stdout:";
+    say $stdout;    
+    say "scan archiving";
+    $scan->{status} = "archiving";
+    push @{ $scan->{status_history} },{
+        user_login =>"-",
+        status => "archiving",
+        datetime => Time::HiRes::time,
+        comments => ""
+    };
+    $scan->{datetime_last_modified} = Time::HiRes::time;            
+    update_scan($scan);
+    update_status($scan,-1);
+
+    say "scan record updated";
+
 }
 #release memory
 @qa_control_ok = ();
