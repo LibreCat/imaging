@@ -12,13 +12,19 @@ use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
 
 hook before => sub {
-    if(request->path =~ /^\/qa_control/o){
-        if(!authd){
-            my $service = uri_escape(uri_for(request->path));
-            return redirect(uri_for("/login")."?service=$service");
-        }
+  if(request->path =~ /^\/qa_control/o){
+    if(!authd){
+      my $service = uri_escape(uri_for(request->path));
+      return redirect(uri_for("/login")."?service=$service");
     }
+  }
 };
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+  $tokens->{mount_conf} = mount_conf();
+};
+
 any('/qa_control',sub {
 
     if(!(auth->asa('admin') || auth->asa('qa_manager'))){
@@ -100,17 +106,17 @@ any('/qa_control',sub {
         template('qa_control',{
             scans => $hits,
             page_info => $page_info,
-            auth => auth(),
+            #auth => auth(),
             facet_status => $facet_status,
             total_qa_control => $total_qa_control,
-            mount_conf => mount_conf()
+            #mount_conf => mount_conf()
         });
     }else{
         template('qa_control',{
             scans => [],
             errors => \@errors,
-            auth => auth(),
-            mount_conf => mount_conf()
+            #auth => auth(),
+            #mount_conf => mount_conf()
         });
     }
 });

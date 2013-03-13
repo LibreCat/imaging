@@ -29,7 +29,10 @@ hook before => sub {
         }
     }
 };
-
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+};
 any('/projects',sub {
     
     my $config = config;
@@ -60,7 +63,7 @@ any('/projects',sub {
     template('projects',{
         page_info => $page_info,
         projects => $result->hits,
-        auth => auth()
+        #auth => auth()
     }); 
 });
 any('/projects/add',sub{
@@ -157,7 +160,7 @@ any('/projects/add',sub{
         errors => \@errors,
         messages => \@messages,
         success => $success,
-        auth => auth()
+        #auth => auth()
     });
 });
 any('/project/:_id',sub{
@@ -244,7 +247,7 @@ any('/project/:_id',sub{
         messages => \@messages,
         success => $success,
         project => $project,
-        auth => auth()
+        #auth => auth()
     });
 });
 any('/project/:_id/delete',sub{
@@ -274,7 +277,7 @@ any('/project/:_id/delete',sub{
         errors => \@errors,
         messages => \@messages,
         project => $project,
-        auth => auth()
+        #auth => auth()
     });
 });
 

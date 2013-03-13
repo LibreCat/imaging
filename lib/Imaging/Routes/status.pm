@@ -19,6 +19,10 @@ hook before => sub {
         }
     }
 };
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+};
 any('/status',sub {
 
     my $params = params;
@@ -62,9 +66,9 @@ any('/status',sub {
         $facet_status->{$status} = $facet_counts{$status} || 0;
     }
     template('status',{
-        auth => auth(),
-        stats => $stats,
-        facet_status => $facet_status
+      #auth => auth(),
+      stats => $stats,
+      facet_status => $facet_status
     });
 });
 

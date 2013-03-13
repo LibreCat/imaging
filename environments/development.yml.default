@@ -91,7 +91,7 @@ plugins:
 cache: {}
 index:
  meercat: &meercatindex
-  url: "http://localhost:4000/solr"
+  url: "http://aleph.ugent.be:8983/solr/proxy"
   default_params:
    fq: "source:rug01"
 home:
@@ -113,6 +113,7 @@ app:
   edit:
    baginfo:
     - key: "Archive-Id"
+      edit: 1
     - key: "Bag-Size"
     - key: "Bagging-Date"
     - key: "Payload-Oxum"
@@ -142,10 +143,13 @@ mounts:
   path: "/mnt/data01"
   owner:
    processed: root
+   archive: fedora
   group:
    processed: nginx
+   archive: fedora
   rights:
    processed: "775" 
+   archive: "775"
   subdirectories:
    ready: "01_ready"
    processed: "02_processed"   
@@ -169,14 +173,14 @@ mounts:
     seconds: 5
 status:
  collection:
-  status_page: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","reprocess_scans","qa_control_ok","archived","archived_ok","published","published_ok","problematic"]
+  status_page: ["registered","reprocess_metadata","reprocess_derivatives","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","archiving","archived","archived_ok","archived_error","published","published_ok","problematic","done"]
   qa_control: ["registered","derivatives_created","archived","published"]
   publishing: ["qa_control_ok","archived","archived_ok","published"]
   archiving: ["qa_control_ok","archived","archived_ok","published","published_ok"]
   done: ["archived_ok","published_ok"]
   in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
   #opgelet: zolang reprocess_* staat het nog in processed, nadien terug in 01_ready
-  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","published","reprocess_scans","reprocess_scans_qa_manager"]
+  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager"]
  change:
   qa_manager: &statuschangeqamanager
    registered: 
@@ -185,45 +189,71 @@ status:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_scans:
-    values: ["problematic"]
+    values: []
+   reprocess_scans_qa_manager:
+    values: []
    reprocess_metadata: 
-    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_derivatives: 
-    values: ["registered","problematic"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","qa_control_ok"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    qa_control_ok: 
-    values: ["registered","problematic"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   archiving:
+    values: []
    archived:
-    values: ["archived_ok","problematic"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived_ok","archived_error","problematic"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    archived_ok:
-    values: ["archived","problematic"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_error","problematic","published"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    published:
-    values: ["published_ok","problematic"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published_ok","published_error","problematic"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    published_ok:
-    values: ["published"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published","published_error","done"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    problematic:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
   admin: *statuschangeqamanager
 human_readable:
  problematic: "problematisch"
  incoming: "aangeboden scan"
  incoming_error: "automatische check gefaald"
  incoming_ok: "automatische check successvol"
+ processing: "in verwerking"
  registered: "registratie voltooid"
  reprocess_scans: "terug naar scanner"
  reprocess_metadata: "terug naar catalografie"
  reprocess_derivatives: "afgeleiden foutief"
  reprocess_scans_qa_manager: "naar qa_manager"
  qa_control_ok: "qa controle succesvol"
+ archiving: "archivering bezig"
  archived: "gearchiveerd"
  archived_ok: "archivering ok"
+ archived_error: "archivering fout"
  published: "gepubliceerd"
  published_ok: "publicatie ok"
+ published_error: "publicatie fout"
 directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Default"]
 profile_detector:
  #opgelet: laatste in de lijst geldt als default, en wordt dus niet getest!

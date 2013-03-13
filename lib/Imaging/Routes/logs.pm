@@ -11,12 +11,16 @@ use Try::Tiny;
 use URI::Escape qw(uri_escape);
 
 hook before => sub {
-    if(request->path =~ /^\/logs/o){
-        if(!authd){
-            my $service = uri_escape(uri_for(request->path));
-            return redirect(uri_for("/login")."?service=$service");
-        }
+  if(request->path =~ /^\/logs/o){
+    if(!authd){
+      my $service = uri_escape(uri_for(request->path));
+      return redirect(uri_for("/login")."?service=$service");
     }
+  }
+};
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
 };
 any('/logs',sub {
     my $params = params;
@@ -59,13 +63,13 @@ any('/logs',sub {
         template('logs',{
             logs => $result->hits,
             page_info => $page_info,
-            auth => auth()
+            #auth => auth()
         });
     }else{
         template('logs',{
             logs => [],
             error => $error,
-            auth => auth()
+            #auth => auth()
         });
     }
 });

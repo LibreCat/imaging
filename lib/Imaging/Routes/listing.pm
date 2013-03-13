@@ -11,15 +11,21 @@ use Try::Tiny;
 use File::Find;
 
 hook before => sub {
-    if(request->path =~ /^\/ready/o){
-        my $auth = auth;
-        my $authd = authd;
-        if(!$authd){
-            my $service = uri_escape(uri_for(request->path));
-            return redirect(uri_for("/login")."?service=$service");
-        }
+  if(request->path =~ /^\/ready/o){
+    my $auth = auth;
+    my $authd = authd;
+    if(!$authd){
+      my $service = uri_escape(uri_for(request->path));
+      return redirect(uri_for("/login")."?service=$service");
     }
+  }
 };  
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+  $tokens->{mount_conf} = mount_conf();
+};
+
 any('/ready/:user_login',sub{
     my $params = params;
     my $user = dbi_handle->quick_select('users',{ login => $params->{user_login} });
@@ -50,9 +56,9 @@ any('/ready/:user_login',sub{
         closedir(DIR);
         template('ready',{
             directories => \@directories,
-            mount_conf => mount_conf(),
+            #mount_conf => mount_conf(),
             user => $user,
-            auth => auth()
+            #auth => auth()
         });
     }
 });
@@ -90,7 +96,7 @@ any('/ready/:user_login/:scan_id',sub{
         size => $size,
         user => $user,
         errors => \@errors,
-        auth => auth()
+        #auth => auth()
     });
 });
 

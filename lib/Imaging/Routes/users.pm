@@ -12,69 +12,73 @@ use Digest::MD5 qw(md5_hex);
 use Try::Tiny;
 
 hook before => sub {
-    if(request->path =~ /^\/user/o){
-        my $auth = auth;
-        my $authd = authd;
-        if(!$authd){
-            my $service = uri_escape(uri_for(request->path));
-            return redirect(uri_for("/login")."?service=$service");
-        }elsif(!$auth->can('manage_accounts','edit')){
-            request->path_info('/access_denied');
-            my $params = params;
-            $params->{text} = "U beschikt niet over de nodige rechten om gebruikersinformatie aan te passen";
-        }
+  if(request->path =~ /^\/user/o){
+    my $auth = auth;
+    my $authd = authd;
+    if(!$authd){
+      my $service = uri_escape(uri_for(request->path));
+      return redirect(uri_for("/login")."?service=$service");
+    }elsif(!$auth->can('manage_accounts','edit')){
+      request->path_info('/access_denied');
+      my $params = params;
+      $params->{text} = "U beschikt niet over de nodige rechten om gebruikersinformatie aan te passen";
     }
+  }
 };  
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+};
 any('/users',sub{
 
-    my @users = dbi_handle->quick_select('users',{},{   order_by    =>  'id'    });
-    template('users',{
-        users => \@users,
-        auth  => auth()
-    });
+  my @users = dbi_handle->quick_select('users',{},{   order_by    =>  'id'    });
+  template('users',{
+    users => \@users,
+    #auth  => auth()
+  });
 
 });
 any('/users/add',sub{
 
-    my $params = params;
-    my(@errors,@messages);
-    if($params->{submit}){
-        my($success,$errs)=check_params_new_user();
-        push @errors,@$errs;
-        if(!(
-            is_string($params->{password1}) && is_string($params->{password2}) &&
-            $params->{password1} eq  $params->{password2}
-            )
-        ){
-            push @errors,"paswoorden komen niet met elkaar overeen";
-        }
-        if(scalar(@errors)==0){
-            my $user = dbi_handle->quick_select('users',{ login => $params->{login} });
-            if($user){
-                push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";
-            }else{
-                my $roles = join('',@{$params->{roles}});
-                try{
-                    dbi_handle->quick_insert('users',{
-                        login   =>  $params->{login},
-                        name    =>  $params->{name},
-                        roles   =>  join(', ',@{$params->{roles}}),
-                        password    =>  md5_hex($params->{password1})
-                    });
-                    redirect(uri_for("/users"));
-                }catch{
-                    say STDERR $_;
-                    push @errors,"er bestaat reeds een gebruiker met als login $params->{name}";       
-                };
-            }
-        }
+  my $params = params;
+  my(@errors,@messages);
+  if($params->{submit}){
+    my($success,$errs)=check_params_new_user();
+    push @errors,@$errs;
+    if(!(
+        is_string($params->{password1}) && is_string($params->{password2}) &&
+        $params->{password1} eq  $params->{password2}
+        )
+    ){
+        push @errors,"paswoorden komen niet met elkaar overeen";
     }
-    
-    template('users/add',{
-        errors => \@errors,
-        messages => \@messages,
-        auth => auth()
-    });
+    if(scalar(@errors)==0){
+      my $user = dbi_handle->quick_select('users',{ login => $params->{login} });
+      if($user){
+          push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";
+      }else{
+        my $roles = join('',@{$params->{roles}});
+        try{
+          dbi_handle->quick_insert('users',{
+              login   =>  $params->{login},
+              name    =>  $params->{name},
+              roles   =>  join(', ',@{$params->{roles}}),
+              password  =>  md5_hex($params->{password1})
+          });
+          redirect(uri_for("/users"));
+        }catch{
+          say STDERR $_;
+          push @errors,"er bestaat reeds een gebruiker met als login $params->{name}";       
+        };
+      }
+    }
+  }
+  
+  template('users/add',{
+    errors => \@errors,
+    messages => \@messages,
+    #auth => auth()
+  });
 
 });
 any('/user/:id/edit',sub{
@@ -130,10 +134,10 @@ any('/user/:id/edit',sub{
 
     }
     template('user/edit',{  
-        user => $user,
-        errors => \@errors,
-        messages => \@messages, 
-        auth => auth()
+      user => $user,
+      errors => \@errors,
+      messages => \@messages, 
+      #auth => auth()
     });
 });
 any('/user/:id/delete',sub{
@@ -167,10 +171,10 @@ any('/user/:id/delete',sub{
     }
 
     template('user/delete',{
-        errors => \@errors,
-        messages => \@messages,
-        user => $user,
-        auth => auth()
+      errors => \@errors,
+      messages => \@messages,
+      user => $user,
+      #auth => auth()
     });
 });
 sub check_params_new_user {

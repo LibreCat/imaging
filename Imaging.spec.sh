@@ -17,6 +17,7 @@ git clone $git_repo $workdir &&
 tar czf $temptar --exclude=".git*" -C "$tempdir/$rand" $git_basedir &&
 mv $temptar $HOME/rpmbuild/SOURCES/ &&
 
+echo "tar created" && 
 version=`cat version 2> /dev/null` &&
 echo "version:$version" &&
 number=`cat number 2> /dev/null` &&

@@ -42,12 +42,17 @@ Hash::Merge::specify_behavior({
 });
 
 hook before => sub {
-    if(request->path =~ /^\/scans/o){
-        if(!authd){
-            my $service = uri_escape(uri_for(request->path));
-            return redirect(uri_for("/login")."?service=$service");
-        }
+  if(request->path =~ /^\/scans/o){
+    if(!authd){
+      my $service = uri_escape(uri_for(request->path));
+      return redirect(uri_for("/login")."?service=$service");
     }
+  }
+};
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+  $tokens->{mount_conf} = mount_conf();
 };
 any('/scans',sub {
     my $params = params;
@@ -100,167 +105,167 @@ any('/scans',sub {
             scans => $result->hits,
             facets => $facets,
             page_info => $page_info,
-            auth => auth(),
-            mount_conf => mount_conf()
+            #auth => auth(),
+            #mount_conf => mount_conf()
         });
     }else{
         template('scans',{
             scans => [],
             errors => \@errors,
-            auth => auth(),
-            mount_conf => mount_conf()
+            #auth => auth(),
+            #mount_conf => mount_conf()
         });
     }
 });
 any('/scans/:_id',sub {
-    my $params = params;
-    my @errors = ();
-    my @messages = ();
-    my $auth = auth;
-    my $scan = scans->get($params->{_id});
-    $scan or return not_found();
+  my $params = params;
+  my @errors = ();
+  my @messages = ();
+  my $auth = auth;
+  my $scan = scans->get($params->{_id});
+  $scan or return not_found();
 
-    #projecten
-    my @projects;
-    if(is_array_ref($scan->{project_id})){
-        foreach(@{ $scan->{project_id} }){
-            my $project = projects->get($_);
-            push @projects,$project if is_hash_ref($project);
-        }
-    }
+  #projecten
+  my @projects;
+  if(is_array_ref($scan->{project_id})){
+      foreach(@{ $scan->{project_id} }){
+          my $project = projects->get($_);
+          push @projects,$project if is_hash_ref($project);
+      }
+  }
 
-	my($files,$size);
+  my($files,$size);
     #lijst bestanden
     if(-d -r $scan->{path}){
-		($files,$size) = list_files($scan->{path});
-	}else{
-		($files,$size) = ([],0);
-	}
+    ($files,$size) = list_files($scan->{path});
+  }else{
+    ($files,$size) = ([],0);
+  }
     
-    #bewerk metadata
-    if(is_string($params->{action})){
-        if(!(
-            $auth->asa("admin") || $auth->can("scans","metadata")
-        )){
-            return forward('/access_denied',{
-                text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
-            });
-        }elsif($scan->{busy}){
+  #bewerk metadata
+  if(is_string($params->{action})){
+      if(!(
+          $auth->asa("admin") || $auth->can("scans","metadata")
+      )){
+          return forward('/access_denied',{
+              text => "U mist de nodige gebruikersrechten om dit record te kunnen aanpassen"
+          });
+      }elsif($scan->{busy}){
 
-            push @errors,"Systeem is bezig met een operatie op deze scan";
+          push @errors,"Systeem is bezig met een operatie op deze scan";
 
-        }elsif(-f $scan->{path}."/__FIXME.txt"){
+      }elsif(-f $scan->{path}."/__FIXME.txt"){
 
-            push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+          push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
 
-        }
-        else{
-            # => slecht één metadata-record mag gekoppeld zijn, dus ..
-            # 1. bij toevoegen, moet 0 of 1 metadata-record moet aanwezig zijn (want wat moet je anders vervangen?). Indien meerdere, verschijnt een warning dat de slechte er eerst uit moeten
-            # 2. 0 records => push, 1 record: vervang                
-        
-            if($params->{action} eq "add_metadata"){
+      }
+      else{
+          # => slecht één metadata-record mag gekoppeld zijn, dus ..
+          # 1. bij toevoegen, moet 0 of 1 metadata-record moet aanwezig zijn (want wat moet je anders vervangen?). Indien meerdere, verschijnt een warning dat de slechte er eerst uit moeten
+          # 2. 0 records => push, 1 record: vervang                
+      
+          if($params->{action} eq "add_metadata"){
 
-                if(scalar(@{ $scan->{metadata} }) > 1){
+              if(scalar(@{ $scan->{metadata} }) > 1){
 
-                    push @errors,"Deze scan bevat meer dan één metadata-record! Gelieve de foutieve eerst te verwijderen.";
+                  push @errors,"Deze scan bevat meer dan één metadata-record! Gelieve de foutieve eerst te verwijderen.";
 
-                }else{
-                
-                    my $metadata_id = $params->{metadata_id} || "";
+              }else{
+              
+                  my $metadata_id = $params->{metadata_id} || "";
 
-                    my($result,$total,$error);
-                    try {
-                        $result = meercat->search($metadata_id,{rows => 1});     
-                        $total = $result->content->{response}->{numFound};
+                  my($result,$total,$error);
+                  try {
+                      $result = meercat->search($metadata_id,{rows => 1});     
+                      $total = $result->content->{response}->{numFound};
 
-                    }catch{
-                        $error = $_;
-                    };
-                    if($error){
+                  }catch{
+                      $error = $_;
+                  };
+                  if($error){
 
-                        push @errors,"query $metadata_id is ongeldig";
+                      push @errors,"query $metadata_id is ongeldig";
 
-                    }elsif($total > 1){
+                  }elsif($total > 1){
 
-                        push @errors,"query $metadata_id leverde meer dan één resultaat op";
+                      push @errors,"query $metadata_id leverde meer dan één resultaat op";
 
-                    }elsif($total == 0){
+                  }elsif($total == 0){
 
-                        push @errors,"query $metadata_id leverde geen resultaten op";
+                      push @errors,"query $metadata_id leverde geen resultaten op";
 
-                    }else{
+                  }else{
 
-                        my $doc = $result->content->{response}->{docs}->[0];
-                        my $baginfo = {};
-                        my $path_baginfo = $scan->{path}."/bag-info.txt";
-                        if(-f $path_baginfo){
-                            $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
-                        }
-                        my $dc = marc_to_baginfo_dc(xml => $doc->{fXML});
-                        $baginfo = { %$baginfo,%$dc };
+                      my $doc = $result->content->{response}->{docs}->[0];
+                      my $baginfo = {};
+                      my $path_baginfo = $scan->{path}."/bag-info.txt";
+                      if(-f $path_baginfo){
+                          $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
+                      }
+                      my $dc = marc_to_baginfo_dc(xml => $doc->{fXML});
+                      $baginfo = { %$baginfo,%$dc };
 
-                        $scan->{metadata}->[0] = {
-                            fSYS => $doc->{fSYS},#000000001
-                            source => $doc->{source},#rug01
-                            fXML => $doc->{fXML},
-                            baginfo => $baginfo
-                        };
-                        
-                        #overschrijf oude bag-info.txt op de schijf
-                        write_to_baginfo($path_baginfo,$baginfo);
+                      $scan->{metadata}->[0] = {
+                          fSYS => $doc->{fSYS},#000000001
+                          source => $doc->{source},#rug01
+                          fXML => $doc->{fXML},
+                          baginfo => $baginfo
+                      };
+                      
+                      #overschrijf oude bag-info.txt op de schijf
+                      write_to_baginfo($path_baginfo,$baginfo);
 
-                        push @messages,"metadata $metadata_id werd aangepast";
-                    }
-                }                    
-            }
-            #verwijder element met metadata_id uit de lijst (mag resulteren in 0 elementen)
-            elsif($params->{action} eq "delete_metadata"){
+                      push @messages,"metadata $metadata_id werd aangepast";
+                  }
+              }                    
+          }
+          #verwijder element met metadata_id uit de lijst (mag resulteren in 0 elementen)
+          elsif($params->{action} eq "delete_metadata"){
 
-                my @keys = qw(metadata_id);
-                foreach my $key(@keys){
-                    if(!is_string($params->{$key})){
-                        push @errors,"$key is niet opgegeven";
-                    }
-                }
-                if(scalar(@errors)==0){
-                    my $index = first_index { $_->{source}.":".$_->{fSYS} eq $params->{metadata_id} } @{$scan->{metadata}};
-                    if($index >= 0){
-                        splice @{$scan->{metadata}},$index,1;
-                        push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
-                    }
-                    if(scalar(@{ $scan->{metadata} }) == 1){
-                        write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {})
-                    }
-                }
+              my @keys = qw(metadata_id);
+              foreach my $key(@keys){
+                  if(!is_string($params->{$key})){
+                      push @errors,"$key is niet opgegeven";
+                  }
+              }
+              if(scalar(@errors)==0){
+                  my $index = first_index { $_->{source}.":".$_->{fSYS} eq $params->{metadata_id} } @{$scan->{metadata}};
+                  if($index >= 0){
+                      splice @{$scan->{metadata}},$index,1;
+                      push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
+                  }
+                  if(scalar(@{ $scan->{metadata} }) == 1){
+                      write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {})
+                  }
+              }
 
-            }else{
+          }else{
 
-                push @errors,"actie '$params->{action}' is ongeldig";
+              push @errors,"actie '$params->{action}' is ongeldig";
 
-            }
+          }
 
-            #einde: herindexeer
-            if(scalar(@errors)==0){
-                scans->add($scan);
-                scan2index($scan);
-                index_scan->commit;
-            }
-        }
-    }
-    my $user = ($scan) ? (dbi_handle->quick_select('users',{ id => $scan->{user_id} })) : undef;
-    template('scans/view',{
-        scan => $scan,
-        files => $files,
-        size => $size,
-        user => $user,
-        auth => $auth,
-        errors => \@errors,
-        mount_conf => mount_conf(),
-        projects => \@projects,
-        status_change_conf => status_change_conf(),
-        user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
-    });
+          #einde: herindexeer
+          if(scalar(@errors)==0){
+              scans->add($scan);
+              scan2index($scan);
+              index_scan->commit;
+          }
+      }
+  }
+  my $user = ($scan) ? (dbi_handle->quick_select('users',{ id => $scan->{user_id} })) : undef;
+  template('scans/view',{
+      scan => $scan,
+      files => $files,
+      size => $size,
+      user => $user,
+      #auth => $auth,
+      errors => \@errors,
+      #mount_conf => mount_conf(),
+      projects => \@projects,
+      status_change_conf => status_change_conf(),
+      user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
+  });
 });
 get('/scans/:_id/json',sub{
     my $params = params;
@@ -708,10 +713,10 @@ any('/scans/:_id/status',sub{
 
     template('scans/status',{
         scan => $scan,
-        auth => $auth,
+        #auth => $auth,
         errors => \@errors,
         messages => \@messages,
-        mount_conf => mount_conf(),
+        #mount_conf => mount_conf(),
         status_change_conf => $status_change_conf,
         user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
     });

@@ -28,45 +28,49 @@ hook before => sub {
         }
     }
 };
-any('/directories',sub {
-    my $config = config;
-    my $params = params;
-    my(@errors)=();
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+};
+get('/directories',sub {
+  my $config = config;
+  my $params = params;
+  my(@errors)=();
 
-    my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
-    $params->{page} = $page;
-    my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
-    $params->{num} = $num;
-    my $offset = ($page - 1)*$num;
+  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
+  $params->{page} = $page;
+  my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
+  $params->{num} = $num;
+  my $offset = ($page - 1)*$num;
 
-    my @users = dbi_handle->quick_select('users',{},{ order_by => 'id' });
-    my $total = scalar(@users);
-    @users = splice(@users,$offset,$num);
+  my @users = dbi_handle->quick_select('users',{},{ order_by => 'id' });
+  my $total = scalar(@users);
+  @users = splice(@users,$offset,$num);
 
-    my $page_info = Data::Pageset->new({
-        'total_entries'       => $total,
-        'entries_per_page'    => $num,
-        'current_page'        => $page,
-        'pages_per_set'       => 8,
-        'mode'                => 'fixed'
-    });
-    #sanity check on mount
-    my($success,$errs) = sanity_check();
-    push @errors,@$errs if !$success;
+  my $page_info = Data::Pageset->new({
+      'total_entries'       => $total,
+      'entries_per_page'    => $num,
+      'current_page'        => $page,
+      'pages_per_set'       => 8,
+      'mode'                => 'fixed'
+  });
+  #sanity check on mount
+  my($success,$errs) = sanity_check();
+  push @errors,@$errs if !$success;
 
-    my $mount = mount();
-    my $subdirectories = subdirectories();
+  my $mount = mount();
+  my $subdirectories = subdirectories();
 
-    foreach my $user(@users){
-        $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
-    }
-    #template
-    template('directories',{
-        users => \@users,
-        errors => \@errors,
-        page_info => $page_info,
-        auth => auth()
-    });
+  foreach my $user(@users){
+      $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+  }
+  #template
+  template('directories',{
+      users => \@users,
+      errors => \@errors,
+      page_info => $page_info,
+      #auth => auth()
+  });
 });
 any('/directories/:id/edit',sub {
     my $config = config;
@@ -114,7 +118,7 @@ any('/directories/:id/edit',sub {
         errors => \@errors,
         messages => \@messages,
         user => $user,
-        auth => auth()
+        #auth => auth()
     });
 });
 
