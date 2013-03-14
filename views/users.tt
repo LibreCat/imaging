@@ -1,7 +1,7 @@
 <h1>Gebruikers</h1>
 
 <p>
-  <a class="btn btn-primary" href="/users/add"><i class="icon-plus icon-white"></i> nieuwe gebruiker</a>
+  <a class="btn btn-primary" href="[% request.uri_base %]/users/add"><i class="icon-plus icon-white"></i> nieuwe gebruiker</a>
 </p>
 
 [%- IF users && users.size %]
@@ -20,8 +20,8 @@
         [% user.name | html %]
         [%- IF user.id != "1" %]
         <div class="btn-group actions">
-          <a class="btn btn-small" href="/user/[% user.id %]/edit"><i class="icon-pencil"></i></a>
-          <a class="btn btn-small" href="/user/[% user.id %]/delete"><i class="icon-trash"></i></a>
+          <a class="btn btn-small" href="[% request.uri_base %]/user/[% user.id %]/edit"><i class="icon-pencil"></i></a>
+          <a class="btn btn-small" href="[% request.uri_base %]/user/[% user.id %]/delete"><i class="icon-trash"></i></a>
         </div>
         [%- END %]
       </td>

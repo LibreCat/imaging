@@ -1,6 +1,6 @@
-<link rel="stylesheet" href="[% request.base_uri %]/css/bootstrap-datepicker.css" type="text/css" media="screen"/>
-<script type="text/javascript" src="[% request.base_uri %]/js/bootstrap-datepicker.js"></script>
-<script type="text/javascript" src="[% request.base_uri %]/js/bootstrap-datepicker.nl.js"></script>
+<link rel="stylesheet" href="[% request.uri_base %]/css/bootstrap-datepicker.css" type="text/css" media="screen"/>
+<script type="text/javascript" src="[% request.uri_base %]/js/bootstrap-datepicker.js"></script>
+<script type="text/javascript" src="[% request.uri_base %]/js/bootstrap-datepicker.nl.js"></script>
 <script type="text/javascript">
 	$(document).ready(function(){
       $('.datepicker').datepicker({

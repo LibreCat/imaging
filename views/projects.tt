@@ -4,7 +4,7 @@
 
 <div class="clearfix">
   [%- IF auth.can('projects','edit') %]
-  <a class="btn btn-primary" href="/projects/add"><i class="icon-plus icon-white"></i>nieuw project</a>
+  <a class="btn btn-primary" href="[% request.uri_base %]/projects/add"><i class="icon-plus icon-white"></i>nieuw project</a>
   [%- END %]
 
   [%- IF projects.size %]
@@ -31,12 +31,12 @@
 [%- IF projects && projects.size > 0 && page_info.pages_in_set.size > 1 %]
 <ul class="pager">
   [%- IF page_info.previous_page %]
-  <li class="previous"><a href="/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">vorige</a></li>
+  <li class="previous"><a href="[% request.uri_base %]/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">vorige</a></li>
   [%- ELSE %]
   <li class="previous disabled"><a href="#">vorige</a></li>
   [%- END %]
   [%- IF page_info.next_page %]
-  <li class="next"><a href="/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">volgende</a></li>
+  <li class="next"><a href="[% request.uri_base %]/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">volgende</a></li>
   [%- ELSE %]
   <li class="next disabled"><a href="#">volgende</a></li>
   [%- END %]
@@ -60,10 +60,10 @@
   [%- FOREACH project IN projects %]
     <tr>
       <td>
-        <a href="/project/[% project.item("_id") %]">[% project.name | html %]</a>
+        <a href="[% request.uri_base %]/project/[% project.item("_id") %]">[% project.name | html %]</a>
         [%- IF auth.can('projects','edit') %]
         <div class="btn-group actions">
-          <a class="btn btn-small" href="/project/[% project.item("_id") %]/delete"><i class="icon-trash"></i></a>
+          <a class="btn btn-small" href="[% request.uri_base %]/project/[% project.item("_id") %]/delete"><i class="icon-trash"></i></a>
         </div>
         [%- END %]
       </td>
@@ -83,7 +83,7 @@
             [%- matches = project.datetime_start.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
             [%- matches.2 _ "-" _ matches.1 _ "-" _ matches.0 %]
       <td>
-        <a href="/scans?q=project_id:[% project.item("_id") %]">lijst</a>
+        <a href="[% request.uri_base %]/scans?q=project_id:[% project.item("_id") %]">lijst</a>
       </td>
     </tr>
   [%- END %]

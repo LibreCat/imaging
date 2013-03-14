@@ -3,8 +3,8 @@
     <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <link rel="stylesheet" href="[% request.base_uri %]/css/bootstrap.min.css" type="text/css" media="screen"/>
-        <link rel="stylesheet" href="[% request.base_uri %]/css/master.css" type="text/css" media="screen"/>
+        <link rel="stylesheet" href="[% request.uri_base %]/css/bootstrap.min.css" type="text/css" media="screen"/>
+        <link rel="stylesheet" href="[% request.uri_base %]/css/master.css" type="text/css" media="screen"/>
 
         <style type="text/css" media="screen">
           body {
@@ -32,8 +32,8 @@
         <!--[if lt IE 9]>
         <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
-        <script type="text/javascript" src="[% request.base_uri %]/js/jquery-1.7.1.min.js"></script>
-        <script type="text/javascript" src="[% request.base_uri %]/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="[% request.uri_base %]/js/jquery-1.7.1.min.js"></script>
+        <script type="text/javascript" src="[% request.uri_base %]/js/bootstrap.min.js"></script>
         <script type="text/javascript" charset="utf-8">
           $(document).ready(function() {
               $('.tip').tooltip();
@@ -61,30 +61,30 @@
             <div class="nav-collapse">
               <ul class="nav">
               [%- IF session.user.id %]
-                <li><a href="/projects">projecten</a></li>
-                <li><a href="/scans">zoek</a></li>
-                <li><a href="/logs">logs</a></li>
-                <li><a href="/status">status</a></li>
+                <li><a href="[% request.uri_for('/projects') %]">projecten</a></li>
+                <li><a href="[% request.uri_for('/scans') %]">zoek</a></li>
+                <li><a href="[% request.uri_for('/logs') %]">logs</a></li>
+                <li><a href="[% request.uri_for('/status') %]">status</a></li>
                 [%- IF auth.can('manage_accounts','edit') %]
-                <li><a href="/users">gebruikers</a></li>
+                <li><a href="[% request.uri_for('/users') %]">gebruikers</a></li>
                 [%- END %]
                 [%- IF auth.can('directories','edit') %]
-                <li><a href="/directories">mappen</a></li>
+                <li><a href="[% request.uri_for('/directories') %]">mappen</a></li>
                 [%- END %]
                 [%- IF session.user.has_dir %]
-                <li><a href="/ready/[% session.user.login %]">ready</a></li>
+                <li><a href="[% request.uri_for('/ready/' _ session.user.login ) %]">ready</a></li>
                 [%- END %]
                 [%- IF auth.asa('admin') ||  auth.asa('qa_manager') %]
-                <li><a href="/qa_control">qa_controle</a></li>
+                <li><a href="[% request.uri_for('/qa_control') %]">qa_controle</a></li>
                 [%- END %]
-                <li><a href="/info">info</a></li>
+                <li><a href="[% request.uri_for('/info') %]">info</a></li>
               [%- END %]
               </ul>
 
               [% IF session.user.id %]
               <ul class="nav pull-right">
-                <li><a href="/account">[% session.user.login | html %]</a></li>
-                <li><a href="/logout">logout</a></li>
+                <li><a href="[% request.uri_for('/account') %]">[% session.user.login | html %]</a></li>
+                <li><a href="[% request.uri_for('/logout') %]">logout</a></li>
               </ul>
               [% END %]           
             </div>

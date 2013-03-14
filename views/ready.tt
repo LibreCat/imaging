@@ -27,7 +27,7 @@
         [% IF already_delivered %]
             [% directory.name %]
         [% ELSE %]
-            <a href="/ready/[% user.login %]/[% directory.name %]">[% directory.name %]</a>
+            <a href="[% request.uri_base %]/ready/[% user.login %]/[% directory.name %]">[% directory.name %]</a>
         [% END %]
     </td>
     <td>[% directory.info.files.size || "-" %]</td>

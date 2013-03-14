@@ -29,13 +29,13 @@
 <div class="pagination">
   <ul>
     [%- IF page_info.first_page && page_info.first_page < page_info.current_page %]
-    <li><a href="/scans?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]&amp;fq=[% params.fq | uri %]">eerste</a></li>
+    <li><a href="[% request.uri_base %]/scans?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]&amp;fq=[% params.fq | uri %]">eerste</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">eerste</a></li>
     [%- END %]
 
     [%- IF page_info.previous_page %]
-    <li><a href="/scans?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]" >vorige</a></li>
+    <li><a href="[% request.uri_base %]/scans?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]" >vorige</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">vorige</a></li>
     [%- END %]
@@ -44,18 +44,18 @@
     [% IF page == page_info.current_page %]
     <li class="active"><a href="#">[% page %]</a></li>
     [%- ELSE %]
-    <li><a href="/scans?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]">[% page %]</a></li>
+    <li><a href="[% request.uri_base %]/scans?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]">[% page %]</a></li>
     [%- END %]
     [%- END %]
 
     [%- IF page_info.next_page %]
-    <li><a href="/scans?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]" >volgende</a></li>
+    <li><a href="[% request.uri_base %]/scans?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]" >volgende</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">volgende</a></li>
     [%- END %]
 
     [%- IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <li><a href="/scans?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]">laatste</a></li>
+    <li><a href="[% request.uri_base %]/scans?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]&amp;fq=[% params.fq | uri %]">laatste</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">laatste</a></li>
     [%- END %]
@@ -86,9 +86,9 @@
   </tr>
   [%- FOREACH scan IN scans %]
   <tr>
-    <td><a href="/scans/[% scan.item("_id") %]?fq=[% params.fq | uri %]">[% scan.item("_id") %]</a></td>
+    <td><a href="[% request.uri_base _ '/scans/' _ scan.item("_id") %]?fq=[% params.fq | uri %]">[% scan.item("_id") %]</a></td>
     <td>
-        <a href="/scans?q=[% "user_login:\"" _ scan.item("user_login") _ "\"" | uri %]">
+        <a href="[% request.uri_base %]/scans?q=[% "user_login:\"" _ scan.item("user_login") _ "\"" | uri %]">
         [% scan.item("user_login") || "-" %]
         </a>
     </td>
@@ -96,7 +96,7 @@
         [% IF scan.project_id.size > 1 %]
             (meerdere)
         [% ELSE %]
-            <a href="/scans?q=[% "project_id:\"" _ scan.project_id.0 _ "\"" | uri %]">
+            <a href="[% request.uri_base %]/scans?q=[% "project_id:\"" _ scan.project_id.0 _ "\"" | uri %]">
             [% scan.project_name.0 || "-" %]
         </a>
         [% END %]
@@ -110,7 +110,7 @@
     </td>
     <td>
 		[% status = scan.item("status") %]
-        <a href="/scans?q=[% "status:\"" _ status _ "\"" | html  %]">[% settings.human_readable.${status} || status %]</a>
+        <a href="[% request.uri_base %]/scans?q=[% "status:\"" _ status _ "\"" | html  %]">[% settings.human_readable.${status} || status %]</a>
     </td>
     <td>
       <input type="checkbox" disabled="disabled" [% IF scan.item("done") %] checked="checked"[% END %] />

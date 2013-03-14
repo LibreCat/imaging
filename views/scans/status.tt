@@ -52,7 +52,7 @@
   </div>
   <div class="form-actions">
 	  <input type="submit" value="Wijzig" name="submit" id="submit" class="btn btn-primary"/>
-	  <a href="/scans/[% scan.item('_id') %]" class="btn">Annuleer</a>
+	  <a href="[% request.uri_base %]/scans/[% scan.item('_id') %]" class="btn">Annuleer</a>
   </div>
 </form>
 [%- IF !scan.busy %]

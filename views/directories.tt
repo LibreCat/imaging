@@ -4,12 +4,12 @@
 [%- IF users && users.size > 0 && page_info.pages_in_set.size > 1 %]
 <ul class="pager">
   [%- IF page_info.previous_page %]
-  <li class="previous"><a href="/directories?page=[% page_info.previous_page %]&amp;num=[% params.num %]">vorige</a></li>
+  <li class="previous"><a href="[% request.uri_base %]/directories?page=[% page_info.previous_page %]&amp;num=[% params.num %]">vorige</a></li>
   [%- ELSE %]
   <li class="previous disabled"><a href="#">vorige</a></li>
   [%- END %]
   [%- IF page_info.next_page %]
-  <li class="next"><a href="/directories?page=[% page_info.next_page %]&amp;num=[% params.num %]">volgende</a></li>
+  <li class="next"><a href="[% request.uri_base %]/directories?page=[% page_info.next_page %]&amp;num=[% params.num %]">volgende</a></li>
   [%- ELSE %]
   <li class="next disabled"><a href="#">volgende</a></li>
   [%- END %]
@@ -30,12 +30,12 @@
       <td>
         [% user.login | html %]
         <div class="btn-group actions">
-          <a class="btn" href="/directories/[% user.id %]"><i class="icon-pencil"></i></a>
+          <a class="btn" href="[% request.uri_base %]/directories/[% user.id %]"><i class="icon-pencil"></i></a>
         </div>
       </td>
       <td>
         [%- IF user.has_dir %]
-        <a href="/ready/[% user.login %]">[% user.ready %]</a>
+        <a href="[% request.uri_base %]/ready/[% user.login %]">[% user.ready %]</a>
         [%- TRY %]
         [%- USE File(user.ready) %]
         [%- CATCH File %]

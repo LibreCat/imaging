@@ -10,7 +10,7 @@
   </dt>
   <dd>
     [%- IF stats.ready.${user_login} > 0 %]
-      <a href="/ready/[% user_login %]">[% stats.ready.${user_login} %]</a>
+      <a href="[% request.uri_base %]/ready/[% user_login %]">[% stats.ready.${user_login} %]</a>
       [% IF stats.fixme.${user_login} %]
         &nbsp;([% stats.fixme.${user_login} || 0 %] in herwerking)
       [% END %]  
@@ -26,7 +26,7 @@
   <dt>Geregistreerd</dt>
   <dd>
     [% IF facet_status.registered > 0 %]
-        <a href="/scans?q=[% "status:registered" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:registered" | url %]">
             [% facet_status.registered %]
         </a>
     [% ELSE %]
@@ -36,7 +36,7 @@
   <dt>Afgeleiden maken</dt>
   <dd>
     [% IF facet_status.reprocess_derivatives > 0 %]
-        <a href="/scans?q=[% "status:reprocess_derivatives" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:reprocess_derivatives" | url %]">
             [% facet_status.reprocess_derivatives %]
         </a>
     [% ELSE %]  
@@ -47,7 +47,7 @@
   <dt>Catalografie</dt>
   <dd>
     [% IF facet_status.reprocess_metadata > 0 %]
-        <a href="/scans?q=[% "status:reprocess_metadata" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:reprocess_metadata" | url %]">
             [% facet_status.reprocess_metadata %]
         </a>
     [% ELSE %]  
@@ -65,7 +65,7 @@
         [% num_qa_control = num_qa_control + facet_status.item(status) %]
     [% END %]
     [% IF num_qa_control > 0 %]
-        <a href="/scans?q=[%  parts.join(" OR ") | url %]">
+        <a href="[% request.uri_base %]/scans?q=[%  parts.join(" OR ") | url %]">
             [% num_qa_control %]
         </a>
     [% ELSE %]
@@ -76,7 +76,7 @@
   <dt>QA Controle OK</dt>
   <dd>
     [% IF facet_status.qa_control_ok > 0 %]
-        <a href="/scans?q=[% "status:qa_control_ok" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:qa_control_ok" | url %]">
             [% facet_status.qa_control_ok %]
         </a>
     [% ELSE %]
@@ -87,7 +87,7 @@
 	<dt>Onderweg naar grep</dt>
   <dd>
     [% IF facet_status.archiving > 0 %]
-        <a href="/scans?q=[% "status:archiving" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:archiving" | url %]">
             [% facet_status.archiving %]
         </a>
     [% ELSE %]
@@ -98,7 +98,7 @@
   <dt>Gearchiveerd</dt>
   <dd>
     [% IF facet_status.archived > 0 %]
-        <a href="/scans?q=[% "status:archived" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:archived" | url %]">
             [% facet_status.archived %]
         </a>
     [% ELSE %]
@@ -109,7 +109,7 @@
   <dt>Archivering OK</dt>
   <dd>
     [% IF facet_status.archived_ok > 0 %]
-        <a href="/scans?q=[% "status:archived_ok" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:archived_ok" | url %]">
             [% facet_status.archived_ok %]
         </a>
     [% ELSE %]
@@ -120,7 +120,7 @@
 	<dt>Archivering FOUT</dt>
   <dd>
     [% IF facet_status.archived_error > 0 %]
-        <a href="/scans?q=[% "status:archived_error" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:archived_error" | url %]">
             [% facet_status.archived_error %]
         </a>
     [% ELSE %]
@@ -131,7 +131,7 @@
   <dt>Gepubliceerd</dt>
   <dd>
     [% IF facet_status.published > 0 %]
-        <a href="/scans?q=[% "status:published" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:published" | url %]">
             [% facet_status.published %]
         </a>
     [% ELSE %]
@@ -141,7 +141,7 @@
   <dt>Publicatie OK</dt>
   <dd>
     [% IF facet_status.published_ok > 0 %]
-        <a href="/scans?q=[% "status:published_ok" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:published_ok" | url %]">
             [% facet_status.published_ok %]
         </a>
     [% ELSE %]
@@ -152,7 +152,7 @@
   <dt>Done</dt>
   <dd>
 		[% IF facet_status.done > 0 %]
-        <a href="/scans?q=[% "status:done" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:done" | url %]">
             [% facet_status.done %]
         </a>
     [% ELSE %]
@@ -166,7 +166,7 @@
   <dt>Problematisch</dt>
   <dd>
     [% IF facet_status.problematic > 0 %]
-        <a href="/scans?q=[% "status:problematic" | url %]">
+        <a href="[% request.uri_base %]/scans?q=[% "status:problematic" | url %]">
             [% facet_status.problematic %]
         </a>
     [% ELSE %]

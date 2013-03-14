@@ -1,11 +1,11 @@
 package Imaging::Routes::ids;
 use Dancer ':syntax';
-use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Imaging::Routes::Utils;
 use Catmandu::Sane;
 use Catmandu;
 use Try::Tiny;
 
-any('/ids',sub {
+get('/ids',sub {
   my $params = params;
   
   send_file(
@@ -14,13 +14,13 @@ any('/ids',sub {
     callbacks => {
       override => sub {
         my($respond,$response)=@_;
-        my $writer = $respond->(200,"text/plain; charset=utf-8");
+        my $writer = $respond->([200,["Content-Type" => "text/plain; charset=utf-8"]]);
 
         my($start,$total,$limit)=(0,0,100);
 
         try{
           do{
-            my $hits = index_scan->search(q => $params->{q},start => $start,limit => $limit);
+            my $hits = index_scan->search(query => $params->{q},start => $start,limit => $limit);
 
             for my $hit(@{ $hits->hits() }){
               $writer->write($hit->{_id}."\n");
