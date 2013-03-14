@@ -23,7 +23,7 @@ any('/ids',sub {
             my $hits = index_scan->search(q => $params->{q},start => $start,limit => $limit);
 
             for my $hit(@{ $hits->hits() }){
-                $writer->write($hit->{_id}."\n");
+              $writer->write($hit->{_id}."\n");
             }
      
             $total = $hits->total;

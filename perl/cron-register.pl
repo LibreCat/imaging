@@ -28,33 +28,34 @@ my $pidfile;
 my $pid;
 BEGIN {
    
-    #load configuration
-    my $appdir = Cwd::realpath(
-        dirname(dirname(
-            Cwd::realpath( __FILE__)
-        ))
-    );
-    Dancer::Config::setting(appdir => $appdir);
-    Dancer::Config::setting(public => "$appdir/public");
-    Dancer::Config::setting(confdir => $appdir);
-    Dancer::Config::setting(envdir => "$appdir/environments");
-    Dancer::Config::load();
-    Catmandu->load($appdir);
+  #load configuration
+  my $appdir = Cwd::realpath(
+      dirname(dirname(
+          Cwd::realpath( __FILE__)
+      ))
+  );
+  Dancer::Config::setting(appdir => $appdir);
+  Dancer::Config::setting(public => "$appdir/public");
+  Dancer::Config::setting(confdir => $appdir);
+  Dancer::Config::setting(envdir => "$appdir/environments");
+  Dancer::Config::load();
+  Catmandu->load($appdir);
 
-    #voer niet uit wanneer andere instantie van imaging-register.pl draait!
-    $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
-    $pid = File::Pid->new({
-        file => $pidfile
-    });
-    if(-f $pid->file && $pid->running){
-        die("Cannot run while registration is running\n");
-    }
+  #voer niet uit wanneer andere instantie van imaging-register.pl draait!
+  $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
+  $pid = File::Pid->new({
+      file => $pidfile
+  });
+  if(-f $pid->file && $pid->running){
+      die("Cannot run while registration is running\n");
+  }
 
-    #plaats lock
-    say "this process id: $$";
-    -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
-    $pid->pid($$);
-    $pid->write or die("could not place lock!");
+  #plaats lock
+  say "this process id: $$";
+  -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
+  $pid->pid($$);
+  $pid->write or die("could not place lock!");
+
 }
 END {
     #verwijder lock
@@ -67,38 +68,38 @@ use Dancer::Plugin::Imaging::Routes::Meercat;
 
 #variabelen
 sub mount_conf {
-    config->{mounts}->{directories} ||= {};
+  config->{mounts}->{directories} ||= {};
 }
 sub directory_translator_packages {
-    state $c = do {
-        my $config = config;
-        my $list = [];
-        if(is_array_ref($config->{directory_to_query})){
-            $list = $config->{directory_to_query};
-        }
-        $list;
-    };
+  state $c = do {
+    my $config = config;
+    my $list = [];
+    if(is_array_ref($config->{directory_to_query})){
+        $list = $config->{directory_to_query};
+    }
+    $list;
+  };
 }
 sub directory_translator {
-    state $translators = {};
-    my $package = shift;
-    $translators->{$package} ||= $package->new;
+  state $translators = {};
+  my $package = shift;
+  $translators->{$package} ||= $package->new;
 }
 sub directory_to_queries {
-    my $path = shift;
-    my $packages = directory_translator_packages();    
-    my @queries = ();
-    foreach my $p(@$packages){
-        my $trans = directory_translator($p);
-        if($trans->check($path)){
-            @queries = $trans->queries($path);
-            last;
-        }
+  my $path = shift;
+  my $packages = directory_translator_packages();    
+  my @queries = ();
+  foreach my $p(@$packages){
+    my $trans = directory_translator($p);
+    if($trans->check($path)){
+      @queries = $trans->queries($path);
+      last;
     }
-    if(scalar @queries == 0){
-        push @queries,File::Basename::basename($path);
-    }
-    @queries;
+  }
+  if(scalar @queries == 0){
+    push @queries,File::Basename::basename($path);
+  }
+  @queries;
 }
 
 sub ensure_archive_id {
@@ -136,65 +137,67 @@ say "retrieving metadata for good scans (-status:incoming AND -status:incoming_e
 my @ids_ok_for_metadata = ();
 {
 
-    my($offset,$limit,$total) = (0,1000,0);
-    do{
-        my $result = index_scan->search( 
-            query => "-status:\"incoming\" AND -status:\"incoming_error\" AND -status:\"done\"",
-            reify => scans(),
-            start => $offset,
-            limit => $limit
-        );
-        $total = $result->total;
-        for my $scan(@{ $result->hits }){
-            if(
-                !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
-                !(-f $scan->{path}."/__FIXME.txt")
-            ){
-                push @ids_ok_for_metadata,$scan->{_id};
-            }
-        }
-        $offset += $limit;
-    }while($offset < $total);
+  my($offset,$limit,$total) = (0,1000,0);
+  do{
+      my $result = index_scan->search( 
+          query => "-status:\"incoming\" AND -status:\"incoming_error\" AND -status:\"done\"",
+          reify => scans(),
+          start => $offset,
+          limit => $limit
+      );
+      $total = $result->total;
+      for my $scan(@{ $result->hits }){
+          if(
+              !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
+              !(-f $scan->{path}."/__FIXME.txt")
+          ){
+              push @ids_ok_for_metadata,$scan->{_id};
+          }
+      }
+      $offset += $limit;
+  }while($offset < $total);
+
 }
 
 foreach my $id(@ids_ok_for_metadata){
-    my $scan = scans()->get($id);
-    my $path = $scan->{path};
-    my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+  my $scan = scans()->get($id);
+  my $path = $scan->{path};
+  my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
 
-    #parse hash indien bag-info.txt bestaat, en indien niet, maak nieuwe aan
-    my $baginfo_path = $scan->{path}."/bag-info.txt";
-    my $baginfo;
-    if(-f $baginfo_path){
-        $baginfo = Imaging::Bag::Info->new(source => $baginfo_path)->hash;
+  #parse hash indien bag-info.txt bestaat, en indien niet, maak nieuwe aan
+  my $baginfo_path = $scan->{path}."/bag-info.txt";
+  my $baginfo;
+  if(-f $baginfo_path){
+      $baginfo = Imaging::Bag::Info->new(source => $baginfo_path)->hash;
+  }
+
+  #haal metadata op
+  my @queries = directory_to_queries($path);
+
+  foreach my $query(@queries){
+    my $res = meercat()->search($query,{});
+    $scan->{metadata} = [];
+    if($res->content->{response}->{numFound} > 0){
+
+      my $docs = $res->content->{response}->{docs};
+      foreach my $doc(@$docs){              
+
+        push @{ $scan->{metadata} },{
+          fSYS => $doc->{fSYS},#000000001
+          source => $doc->{source},#rug01
+          fXML => $doc->{fXML},
+          baginfo => defined($baginfo) ? $baginfo : marc_to_baginfo_dc(xml => $doc->{fXML})
+        };
+
+      }
+      last;
     }
 
-    #haal metadata op
-    my @queries = directory_to_queries($path);
+  }
+  my $num = scalar(@{$scan->{metadata}});
+  say "\tscan ".$scan->{_id}." has $num metadata-records";
 
-    foreach my $query(@queries){
-        my $res = meercat()->search($query,{});
-        $scan->{metadata} = [];
-        if($res->content->{response}->{numFound} > 0){
-
-            my $docs = $res->content->{response}->{docs};
-            foreach my $doc(@$docs){              
-
-                push @{ $scan->{metadata} },{
-                    fSYS => $doc->{fSYS},#000000001
-                    source => $doc->{source},#rug01
-                    fXML => $doc->{fXML},
-                    baginfo => defined($baginfo) ? $baginfo : marc_to_baginfo_dc(xml => $doc->{fXML})
-                };
-            }
-            last;
-        }
-
-    }
-    my $num = scalar(@{$scan->{metadata}});
-    say "\tscan ".$scan->{_id}." has $num metadata-records";
-
-    update_scan($scan);
+  update_scan($scan);
 }
 #release memory
 @ids_ok_for_metadata = ();
@@ -203,21 +206,22 @@ foreach my $id(@ids_ok_for_metadata){
 my @incoming_ok = ();
 {
 
-    my($offset,$limit,$total) = (0,1000,0);
-    do{
-        my $result = index_scan->search(
-            query => "status:\"incoming_ok\"",
-            start => $offset,
-            limit => $limit
-        );
-        $total = $result->total;
-        for my $scan(@{ $result->hits }){
-            if(!(-f $scan->{path}."/__FIXME.txt")){
-                push @incoming_ok,$scan->{_id};
-            }
-        }
-        $offset += $limit;
-    }while($offset < $total);
+  my($offset,$limit,$total) = (0,1000,0);
+  do{
+    my $result = index_scan->search(
+      query => "status:\"incoming_ok\"",
+      start => $offset,
+      limit => $limit
+    );
+    $total = $result->total;
+    for my $scan(@{ $result->hits }){
+      if(!(-f $scan->{path}."/__FIXME.txt")){
+          push @incoming_ok,$scan->{_id};
+      }
+    }
+    $offset += $limit;
+  }while($offset < $total);
+
 }
 
 say "registering incoming_ok";
@@ -544,7 +548,10 @@ foreach my $id(@mediamosa_ids){
   }
 }
 
-#stap 4: opladen naar GREP
+#stap 4: scans met status 'qa_control' hebben gewijzigde metadata! Hiervan moet de metadata dus aangepast worden in MediaMosa
+
+
+#stap 5: opladen naar GREP
 my @qa_control_ok = ();
 {
 

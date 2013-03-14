@@ -252,13 +252,16 @@
             </table>
           </div>
           <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
+          [%# USE Dumper %]
+          [%# Dumper.dump(settings.app.scans.edit.baginfo) %]
           [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
-            <form action="/scans/[% scan.item('_id')%]/baginfo/edit" method="POST" class="form-horizontal edit-baginfo">
+            <form action="/scans/[% scan.item('_id')%]/baginfo" method="POST" class="form-horizontal edit-baginfo">
               <div class="btn-group pull-right">
                 <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
+
                 <ul class="dropdown-menu">
                 [%- FOREACH element IN settings.app.scans.edit.baginfo %]
-                    [% NEXT UNLESS element.edit %]
+                    [% NEXT IF !element.edit %]
                     <li><a href="#" class="baginfo-add">[% element.key %]</a></li>
                 [%- END %]
                 </ul>
@@ -324,7 +327,7 @@
 
     <div class="tab-pane" id="tab-comments">
       [% IF auth.can('scans','comment') && !scan.busy && !TO_FIX %]
-      <form action="/scans/[% scan.item("_id") %]/comments/add" method="POST" id="add-comment">
+      <form action="/scans/[% scan.item("_id") %]/comments" method="POST" id="add-comment">
         <textarea class="span6" name="text"></textarea>
         <div><input class="btn btn-primary" type="submit" name="submit" value="Add"/></div>
       </form>
@@ -375,70 +378,104 @@
   $('.baginfo-add').click(function(evt) {
     evt.preventDefault();
     var key = $(this).text();
-    for (var i = 0;i < baginfoConfig.length;i++) {
+    for (var i = 0;i < baginfoConfig.length;i++){
+
       if (baginfoConfig[i].key == key) {
-          var data = ['<div class="control-group baginfo"><label class="control-label"><b>', key,
-            '</b></label><div class="controls">'];
-          if(baginfoConfig[i].values && baginfoConfig[i].values.length > 0) {
-              data.push('<select name="', key, '" class="baginfostyle">');
-              for (var j = 0;j < baginfoConfig[i].values.length;j++) {
-                  data.push('<option value="'+baginfoConfig[i].values[j]+'">'+baginfoConfig[i].values[j]+'</option>');
-              }
-              data.push('</select>');
-          }else if(baginfoConfig[i].tag && baginfoConfig[i].tag == "textarea"){
-              data.push('<textarea name="',key,'" class="baginfostyle" ></textarea>');
+
+        var data = ['<div class="control-group baginfo"><label class="control-label"><b>', key,
+          '</b></label><div class="controls">'];
+        if(baginfoConfig[i].values && baginfoConfig[i].values.length > 0){
+
+          data.push('<select name="', key, '" class="baginfostyle">');
+          for (var j = 0;j < baginfoConfig[i].values.length;j++) {
+              data.push('<option value="'+baginfoConfig[i].values[j]+'">'+baginfoConfig[i].values[j]+'</option>');
           }
-          else{
-              data.push('<input type="text" name="', key, '" value="" class="baginfostyle"/>');
-          }
-          data.push(' <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button></div></div>');
-          var f = $(this).closest('form');
-          f.find('.baginfo:last').after(data.join(''));
-          var btn = f.find(':button[type="submit"]');
-          btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
-          break;
+          data.push('</select>');
+
+        }else if(baginfoConfig[i].tag && baginfoConfig[i].tag == "textarea"){
+
+          data.push('<textarea name="',key,'" class="baginfostyle" ></textarea>');
+
+        }else{
+
+          data.push('<input type="text" name="', key, '" value="" class="baginfostyle"/>');
+
+        }
+        data.push(' <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button></div></div>');
+        var f = $(this).closest('form');
+        f.find('.baginfo:last').after(data.join(''));
+        var btn = f.find(':button[type="submit"]');
+        btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+        break;
+
       }
     }
   });
 
   $('.baginfo-remove').live('click', function(evt) {
+
     evt.preventDefault();
     var btn = $(this).closest('form').find(':button[type="submit"]');
     btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
     $(this).closest('.baginfo').remove();
+
   });
 
   $('.baginfo :input[name^="DC-"]').live('change', function(evt) {
+
     var btn = $(this).closest('form').find(':button[type="submit"]');
     btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+
   });
 
-    $('form.edit-baginfo').submit(function(evt) {
-        evt.preventDefault();
-        var $dialog = $("#dialog");
-        $dialog.hide();
-        var f = $(this);
-        $.post(f.attr('action'), f.serialize(), function(data) {
-            var btn = f.find(':button[type="submit"]');
-            btn.button("loading");
-            if (data.status === 'ok') {
-                btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
-            }else{
-                btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
-                var $dialog = $("#dialog");                
-                var html = ["<p>Fout:<a class=\"close\">x</a></p><ul>"];
-                for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
-                html.push("</ul>");
-                $dialog.html(html.join(''));
-                $dialog.removeClass("alert-info").addClass("alert-error");
-                $dialog.fadeIn('fast',function(){
-                    $(this).find(".close").click(function(){
-                        $dialog.hide();
-                    });
-                });
-            }
-            btn.button("reset");
-        }, 'json');
-    });
+  $('form.edit-baginfo').submit(function(evt) {
+    evt.preventDefault();
+    var $dialog = $("#dialog");
+    $dialog.hide();
+    var f = $(this);
+    $.post(f.attr('action'), f.serialize(), function(data) {
+
+      var btn = f.find(':button[type="submit"]');
+      btn.button("loading");
+      if (data.status === 'ok') {
+        btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
+      }else{
+        btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
+        var $dialog = $("#dialog");                
+        var html = ["<p>Fout:<a class=\"close\">x</a></p><ul>"];
+        for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
+        html.push("</ul>");
+        $dialog.html(html.join(''));
+        $dialog.removeClass("alert-info").addClass("alert-error");
+        $dialog.fadeIn('fast',function(){
+          $(this).find(".close").click(function(){
+              $dialog.hide();
+          });
+        });
+      }
+      btn.button("reset");
+
+    },'json');
+  });
+
+  $(document).ready(function(){
+    var $form = $("form.edit-baginfo");
+    for(var i = 0;i < baginfoConfig.length;i++){
+      var keyConfig = baginfoConfig[i];
+      if("required" in keyConfig){
+        var inputs = $form.find("input[name="+keyConfig.key+"]");
+        if(inputs.length == 0){
+          console.log("no input found for "+keyConfig.key);
+          continue;
+        }
+        for(var j = 0;j < inputs.length;j++){
+          var val = $(inputs[i]).val();
+          if(val == undefined || val == ""){
+            console.log("no value found for "+keyConfig.key);
+          }
+        }
+      }
+    }
+  });
 </script>
 [%- END %]

@@ -30,7 +30,7 @@
       <td>
         [% user.login | html %]
         <div class="btn-group actions">
-          <a class="btn" href="/directories/[% user.id %]/edit"><i class="icon-pencil"></i></a>
+          <a class="btn" href="/directories/[% user.id %]"><i class="icon-pencil"></i></a>
         </div>
       </td>
       <td>

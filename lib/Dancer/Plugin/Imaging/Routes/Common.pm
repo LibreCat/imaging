@@ -10,33 +10,33 @@ sub not_found {
 	forward('/not_found',{ requested_path => request->path });
 }
 sub mount_conf {
-    state $mount_conf = do {
-        my $config = config;
-        my $mc;
-        if(
-            is_hash_ref($config->{mounts}) && is_hash_ref($config->{mounts}->{directories}) &&
-            is_string($config->{mounts}->{directories}->{path})
-        ){
-            my $topdir = $config->{mounts}->{directories}->{path};
-            my $subdirectories = is_hash_ref($config->{mounts}->{directories}->{subdirectories}) ? $config->{mounts}->{directories}->{subdirectories} : {};
-            foreach(qw(ready processed)){
-                $subdirectories->{$_} = is_string($subdirectories->{$_}) ? $subdirectories->{$_} : $_;
-            }
-            $mc = {
-                path => $topdir,
-                subdirectories => $subdirectories
-            }
-        }else{
-            $mc = {
-                path => "/tmp",
-                subdirectories => {
-                    "ready" => "ready",
-                    "processed" => "processed"
-                }
-            };
-        }
-        $mc;
-    };
+  state $mount_conf = do {
+    my $config = config;
+    my $mc;
+    if(
+        is_hash_ref($config->{mounts}) && is_hash_ref($config->{mounts}->{directories}) &&
+        is_string($config->{mounts}->{directories}->{path})
+    ){
+      my $topdir = $config->{mounts}->{directories}->{path};
+      my $subdirectories = is_hash_ref($config->{mounts}->{directories}->{subdirectories}) ? $config->{mounts}->{directories}->{subdirectories} : {};
+      foreach(qw(ready processed)){
+          $subdirectories->{$_} = is_string($subdirectories->{$_}) ? $subdirectories->{$_} : $_;
+      }
+      $mc = {
+          path => $topdir,
+          subdirectories => $subdirectories
+      }
+    }else{
+      $mc = {
+          path => "/tmp",
+          subdirectories => {
+              "ready" => "ready",
+              "processed" => "processed"
+          }
+      };
+    }
+    $mc;
+  };
 }
 sub mount {
     state $mount = mount_conf->{path};

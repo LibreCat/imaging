@@ -66,7 +66,6 @@ any('/status',sub {
         $facet_status->{$status} = $facet_counts{$status} || 0;
     }
     template('status',{
-      #auth => auth(),
       stats => $stats,
       facet_status => $facet_status
     });

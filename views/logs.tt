@@ -65,7 +65,7 @@
 [%- IF logs && logs.size > 0 %]
 <table class="table table-striped table-condensed">
   <caption>
-    [% page_info.first %] tot [% page_info.last %]
+    [% page_info.first %] tot [% page_info.last %] van [% page_info.total_entries %]
     [%- IF params.q && params.q != "*" %]
     - lijst is gefilterd op <em>[% params.q | html %]</em>
     [%- END %]

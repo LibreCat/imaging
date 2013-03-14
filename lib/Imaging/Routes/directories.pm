@@ -15,18 +15,18 @@ use URI::Escape qw(uri_escape);
 use IO::CaptureOutput qw(capture_exec);
 
 hook before => sub {
-    if(request->path =~ /^\/directories/o){
-        my $auth = auth;
-        my $authd = authd;
-        if(!$authd){
-            my $service = uri_escape(uri_for(request->path));
-            return redirect(uri_for("/login")."?service=$service");
-        }elsif(!$auth->can('directories','edit')){
-            request->path_info('/access_denied');
-            my $params = params;
-            $params->{text} = "u mist de nodige rechten om de scandirectories aan te passen";
-        }
+  if(request->path =~ /^\/directories/o){
+    my $auth = auth;
+    my $authd = authd;
+    if(!$authd){
+      my $service = uri_escape(uri_for(request->path));
+      return redirect(uri_for("/login")."?service=$service");
+    }elsif(!$auth->can('directories','edit')){
+      request->path_info('/access_denied');
+      my $params = params;
+      $params->{text} = "u mist de nodige rechten om de scandirectories aan te passen";
     }
+  }
 };
 hook before_template_render => sub {
   my $tokens = $_[0];
@@ -48,11 +48,11 @@ get('/directories',sub {
   @users = splice(@users,$offset,$num);
 
   my $page_info = Data::Pageset->new({
-      'total_entries'       => $total,
-      'entries_per_page'    => $num,
-      'current_page'        => $page,
-      'pages_per_set'       => 8,
-      'mode'                => 'fixed'
+    'total_entries'       => $total,
+    'entries_per_page'    => $num,
+    'current_page'        => $page,
+    'pages_per_set'       => 8,
+    'mode'                => 'fixed'
   });
   #sanity check on mount
   my($success,$errs) = sanity_check();
@@ -62,64 +62,93 @@ get('/directories',sub {
   my $subdirectories = subdirectories();
 
   foreach my $user(@users){
-      $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+    $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
   }
   #template
   template('directories',{
-      users => \@users,
-      errors => \@errors,
-      page_info => $page_info,
-      #auth => auth()
+    users => \@users,
+    errors => \@errors,
+    page_info => $page_info
   });
 });
-any('/directories/:id/edit',sub {
-    my $config = config;
-    my $params = params;
-    my(@errors,@messages);
-    my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
-    $user or return not_found();    
+post '/directories/:id' => sub {
+  my $config = config;
+  my $params = params;
+  my(@errors,@messages);
+  my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
+  $user or return not_found();    
 
-    #sanity check on mount
+  #sanity check on mount
+  my($success,$errs) = sanity_check();
+  push @errors,@$errs if !$success;
+
+  my $mount = mount();
+  my $subdirectories = subdirectories();
+
+  #check directories
+  $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+
+  if(scalar(@errors)==0){
+    foreach(qw(ready)){
+      try{
+        my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
+        if(!-d $path){
+            mkpath($path);
+        }                
+        my($stdout,$stderr,$success,$exit_code) = capture_exec("chown -R $user->{login} $path && chmod -R 0755 $path");
+        die($stderr) if !$success;
+        push @messages,"directory '$_' is ok nu";
+        dbi_handle->quick_update('users',{ id => $user->{id} },{ has_dir => 1 });
+      }catch{
+        push @errors,$_;
+      };
+    }
+  }
+  
+  var errors => \@errors,
+  var messages => \@messages;
+  var sanity_checked => 1;
+
+  my $id = delete $params->{id};
+  forward "/directories/$id",$params,{ method => "GET" };
+};
+get '/directories/:id' => sub {
+  my $config = config;
+  my $params = params;
+  my(@errors,@messages);
+  my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
+  $user or return not_found();    
+
+  #sanity check on mount
+  if(! var('sanity_checked')){
     my($success,$errs) = sanity_check();
     push @errors,@$errs if !$success;
+  }
 
-    my $mount = mount();
-    my $subdirectories = subdirectories();
+  my $mount = mount();
+  my $subdirectories = subdirectories();
 
-    #check directories
-    $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
+  #check directories
+  $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
 
-    if($params->{submit} && scalar(@errors)==0){
-        foreach(qw(ready)){
-            try{
-                my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
-                if(!-d $path){
-                    mkpath($path);
-                }                
-                my($stdout,$stderr,$success,$exit_code) = capture_exec("chown -R $user->{login} $path && chmod -R 0755 $path");
-                die($stderr) if !$success;
-                push @messages,"directory '$_' is ok nu";
-                dbi_handle->quick_update('users',{ id => $user->{id} },{ has_dir => 1 });
-            }catch{
-                push @errors,$_;
-            };
-        }
-    }else{
-        foreach(qw(ready)){
-            if(!-d $user->{$_}){
-                push @errors,"directory '$_' bestaat niet ($user->{$_})";
-            }elsif(!-w $user->{$_}){
-                push @errors,"systeem kan niet schrijven naar directory '$_' ($user->{$_})";
-            }
-        }
+  foreach(qw(ready)){
+    if(!-d $user->{$_}){
+        push @errors,"directory '$_' bestaat niet ($user->{$_})";
+    }elsif(!-w $user->{$_}){
+        push @errors,"systeem kan niet schrijven naar directory '$_' ($user->{$_})";
     }
+  }
 
-    template('directories/edit',{
-        errors => \@errors,
-        messages => \@messages,
-        user => $user,
-        #auth => auth()
-    });
-});
+  my $e = var 'errors';
+  my $m = var 'messages';
+  push @errors,@$e if $e;
+  push @messages,@$m if $m;
+
+  template('directories/edit',{
+    errors => \@errors,
+    messages => \@messages,
+    user => $user
+  });
+};
 
 true;
