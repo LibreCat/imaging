@@ -58,10 +58,10 @@ post '/users/add' => sub {
       my $roles = join('',@{$params->{roles}});
       try{
         dbi_handle->quick_insert('users',{
-            login   =>  $params->{login},
-            name    =>  $params->{name},
-            roles   =>  join(', ',@{$params->{roles}}),
-            password  =>  md5_hex($params->{password1})
+          login   =>  $params->{login},
+          name    =>  $params->{name},
+          roles   =>  join(', ',@{$params->{roles}}),
+          password  =>  md5_hex($params->{password1})
         });
         redirect(uri_for("/users"));
       }catch{
@@ -158,7 +158,7 @@ get('/user/:id/edit',sub{
 
   if($user->{login} eq "admin"){
     return  forward("/access_denied",{
-        text =>  "user has not the right to edit user information"
+      text =>  "user has not the right to edit user information"
     });
   }
 

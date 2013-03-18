@@ -17,6 +17,11 @@ hook before => sub {
       my $service = uri_escape(uri_for(request->path));
       return redirect(uri_for("/login")."?service=$service");
     }
+    if(!(auth->asa('admin') || auth->asa('qa_manager'))){
+      return forward('/access_denied',{
+        text => "U mist de nodige gebruikersrechten om deze pagina te kunnen zien"
+      });
+    }
   }
 };
 hook before_template_render => sub {
@@ -25,100 +30,88 @@ hook before_template_render => sub {
   $tokens->{mount_conf} = mount_conf();
 };
 
-any('/qa_control',sub {
+get('/qa_control',sub {
 
-    if(!(auth->asa('admin') || auth->asa('qa_manager'))){
-        return forward('/access_denied',{
-            text => "U mist de nodige gebruikersrechten om deze pagina te kunnen zien"
-        });
-    }
+  my $params = params;
+  my $config = config;
+  my @errors = ();
+  my $index_scan = index_scan();
+  my $q = is_string($params->{q}) ? $params->{q} : "*";
 
-    my $params = params;
-    my $config = config;
-    my @errors = ();
-    my $index_scan = index_scan();
-    my $q = is_string($params->{q}) ? $params->{q} : "*";
+  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
+  $params->{page} = $page;
+  my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
+  $params->{num} = $num;
+  my $offset = ($page - 1)*$num;
+  my $sort = $params->{sort};
 
-    my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
-    $params->{page} = $page;
-    my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
-    $params->{num} = $num;
-    my $offset = ($page - 1)*$num;
-    my $sort = $params->{sort};
+  my $result;
+  my @states = @{ $config->{status}->{collection}->{qa_control} || [] };
+  my $fq = join(' OR ',map { "status:$_" } @states);
 
-    my $result;
-    my @states = @{ $config->{status}->{collection}->{qa_control} || [] };
-    my $fq = join(' OR ',map {
-        "status:$_"
-    } @states);
-
-    my $facet_status;
-    my $total_qa_control = 0;
-    #facets opvragen over de hele index
-    try{
-        $result = index_scan->search(
-            query => "*:*",
-            fq => $fq,
-            facet => "true",
-            "facet.field" => "status",
-            limit => 0
-        );
-        $facet_status = $result->{facets}->{facet_fields}->{status} || [];
-        $total_qa_control = $result->total;
-    }catch{
-        push @errors,"ongeldige zoekvraag";
-    };
-
-    #zoekresultaten ophalen
-    my %opts = (
-        query => $q,
-        fq => $fq,
-        start => $offset,
-        limit => $num,
+  my $facet_status;
+  my $total_qa_control = 0;
+  #facets opvragen over de hele index
+  try{
+    $result = index_scan->search(
+      query => "*:*",
+      fq => $fq,
+      facet => "true",
+      "facet.field" => "status",
+      limit => 0
     );
+    $facet_status = $result->{facets}->{facet_fields}->{status} || [];
+    $total_qa_control = $result->total;
+  }catch{
+    push @errors,"ongeldige zoekvraag";
+  };
 
-    if($sort =~ /^\w+\s(?:asc|desc)$/o){
-        $opts{sort} = $sort;
-    }else{
-        $opts{sort} = $config->{app}->{qa_control}->{default_sort} if $config->{app}->{qa_control} && $config->{app}->{qa_control}->{default_sort};
-    }
+  #zoekresultaten ophalen
+  my %opts = (
+    query => $q,
+    fq => $fq,
+    start => $offset,
+    limit => $num,
+  );
 
-    my $hits = [];
-    try {
-        $result= index_scan->search(%opts);
-        $hits = $result->hits();
-    }catch{
-        push @errors,"ongeldige zoekvraag";
-    };
+  if($sort =~ /^\w+\s(?:asc|desc)$/o){
+    $opts{sort} = $sort;
+  }else{
+    $opts{sort} = $config->{app}->{qa_control}->{default_sort} if $config->{app}->{qa_control} && $config->{app}->{qa_control}->{default_sort};
+  }
 
-    for my $hit(@$hits){
-        $hit->{files} = dir_info($hit->{path})->files();
-    }
+  my $hits = [];
+  try {
+    $result= index_scan->search(%opts);
+    $hits = $result->hits();
+  }catch{
+    push @errors,"ongeldige zoekvraag";
+  };
 
-    if(scalar(@errors)==0){
-        my $page_info = Data::Pageset->new({
-            'total_entries'       => $result->total,
-            'entries_per_page'    => $num,
-            'current_page'        => $page,
-            'pages_per_set'       => 8,
-            'mode'                => 'fixed'
-        });
-        template('qa_control',{
-            scans => $hits,
-            page_info => $page_info,
-            #auth => auth(),
-            facet_status => $facet_status,
-            total_qa_control => $total_qa_control,
-            #mount_conf => mount_conf()
-        });
-    }else{
-        template('qa_control',{
-            scans => [],
-            errors => \@errors,
-            #auth => auth(),
-            #mount_conf => mount_conf()
-        });
-    }
+  for my $hit(@$hits){
+    $hit->{files} = dir_info($hit->{path})->files();
+  }
+
+  if(scalar(@errors)==0){
+    my $page_info = Data::Pageset->new({
+      'total_entries'       => $result->total,
+      'entries_per_page'    => $num,
+      'current_page'        => $page,
+      'pages_per_set'       => 8,
+      'mode'                => 'fixed'
+    });
+    template('qa_control',{
+      scans => $hits,
+      page_info => $page_info,
+      facet_status => $facet_status,
+      total_qa_control => $total_qa_control
+    });
+  }else{
+    template('qa_control',{
+      scans => [],
+      errors => \@errors
+    });
+  }
 });
 
 true;

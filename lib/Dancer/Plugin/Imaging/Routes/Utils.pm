@@ -10,43 +10,42 @@ use DateTime::Format::Strptime;
 use Time::HiRes;
 use Clone qw(clone);
 use Digest::MD5 qw(md5_hex);
-use Dancer::Plugin::Database;
 use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 
 sub core {
-    state $core = store("core");
+  state $core = store("core");
 }
 sub projects { 
-    state $projects = core()->bag("projects");
+  state $projects = core()->bag("projects");
 }
 sub scans {
-    state $scans = core()->bag("scans");
+  state $scans = core()->bag("scans");
 }
 sub index_scan {
-    state $index_scans = store("index_scan")->bag;
+  state $index_scans = store("index_scan")->bag;
 }
 sub index_log {
-    state $index_log = store("index_log")->bag;
+  state $index_log = store("index_log")->bag;
 }
 sub index_project {
-    state $index_project = store("index_project")->bag;
+  state $index_project = store("index_project")->bag;
 }
-sub dbi_handle {
-    state $dbi_handle = database;
+sub meercat {
+  state $meercat = store("meercat")->bag;
 }
 sub formatted_date {
-    my $time = shift || Time::HiRes::time;
-    DateTime::Format::Strptime::strftime(
-        '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
-    );
+  my $time = shift || Time::HiRes::time;
+  DateTime::Format::Strptime::strftime(
+    '%FT%T.%NZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+  );
 }
 sub local_time {
-    my $time = shift || time;
-    $time = int($time);
-    DateTime::Format::Strptime::strftime(
-        '%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
-    );
+  my $time = shift || time;
+  $time = int($time);
+  DateTime::Format::Strptime::strftime(
+    '%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
+  );
 }
 sub project2index {
     my $project = shift;
@@ -78,44 +77,44 @@ sub project2index {
     index_project->add($doc);
 }
 sub status2index {
-    my($scan,$history_index) = @_;    
-    my $doc;
-    my $index_log = index_log();
-    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+  my($scan,$history_index) = @_;    
+  my $doc;
+  my $index_log = index_log();
+  my $user = users->get($scan->{user_id});
 
-    my $history_objects;
-    if(array_exists($scan->{status_history},$history_index)){
-        $history_objects = [ $scan->{status_history}->[$history_index] ];
-    }else{
-        $history_objects = $scan->{status_history};
-    }
+  my $history_objects;
+  if(array_exists($scan->{status_history},$history_index)){
+      $history_objects = [ $scan->{status_history}->[$history_index] ];
+  }else{
+      $history_objects = $scan->{status_history};
+  }
 
-    foreach my $history(@$history_objects){
-        next if $history->{status} =~ /incoming_/o;
-        $doc = clone($history);
-        $doc->{datetime} = formatted_date($doc->{datetime});
-        $doc->{scan_id} = $scan->{_id};
-        $doc->{owner} = $user->{login};
-        my $blob = join('',map { $doc->{$_} } sort keys %$doc);
-        $doc->{_id} = md5_hex($blob);
-        $index_log->add($doc);
-    }
+  foreach my $history(@$history_objects){
+    next if $history->{status} =~ /incoming_/o;
+    $doc = clone($history);
+    $doc->{datetime} = formatted_date($doc->{datetime});
+    $doc->{scan_id} = $scan->{_id};
+    $doc->{owner} = $user->{login};
+    my $blob = join('',map { $doc->{$_} } sort keys %$doc);
+    $doc->{_id} = md5_hex($blob);
+    $index_log->add($doc);
+  }
 }
 sub marcxml_flatten {
-    my $xml = shift;
-    my $ref = from_xml($xml,ForceArray => 1);
-    my @text = ();
-    foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
-        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
-            next if !is_string($marc_subfield->{content});
-            push @text,$marc_subfield->{content};
-        }
+  my $xml = shift;
+  my $ref = from_xml($xml,ForceArray => 1);
+  my @text = ();
+  foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
+    foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+      next if !is_string($marc_subfield->{content});
+      push @text,$marc_subfield->{content};
     }
-    foreach my $control_field(@{ $ref->{'marc:controlfield'} }){
-        next if !is_string($control_field->{content});
-        push @text,$control_field->{content};
-    }
-    return \@text;
+  }
+  foreach my $control_field(@{ $ref->{'marc:controlfield'} }){
+    next if !is_string($control_field->{content});
+    push @text,$control_field->{content};
+  }
+  return \@text;
 }
 sub scan2index {
     my $scan = shift;       
@@ -154,7 +153,7 @@ sub scan2index {
 
     #user info
     if($scan->{user_id}){
-        my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+        my $user = users->get($scan->{user_id});
         if($user){
             my @keys = qw(name login);
             $doc->{"user_$_"} = $user->{$_} foreach(@keys);
@@ -217,7 +216,7 @@ register local_time => \&local_time;
 register core => \&core;
 register scans => \&scans;
 register projects => \&projects;
-register dbi_handle => \&dbi_handle;
+register users => \&users;
 register index_scan => \&index_scan;
 register index_log => \&index_log;
 register index_project => \&index_project;

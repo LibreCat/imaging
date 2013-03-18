@@ -7,46 +7,44 @@ use Archive::BagIt;
 use File::Basename;
 
 has _bagit => (
-    is => 'ro',
-    lazy => 1,
-    isa => sub{ instance($_[0],'Archive::BagIt'); },
-    default => sub {
-        Archive::BagIt->new;
-    }
+  is => 'ro',
+  lazy => 1,
+  isa => sub{ instance($_[0],'Archive::BagIt'); },
+  default => sub {
+    Archive::BagIt->new;
+  }
 );
 has validate => (
-    is => 'ro',
-    lazy => 1,
-    default => sub{ 0; }
+  is => 'ro',
+  lazy => 1,
+  default => sub{ 0; }
 );
-sub is_fatal {
-    1;
-};
+sub is_fatal { 1; }
 
 sub test {
-    my $self = shift;
-    my $topdir = $self->dir_info->dir();
-    my(@errors) = ();
+  my $self = shift;
+  my $topdir = $self->dir_info->dir();
+  my(@errors) = ();
 
-    my $read_successfull = $self->_bagit->read($topdir);
-    if(!$read_successfull){
-        my $bagit_errors = $self->_bagit->_error;
-        if(is_array_ref($bagit_errors) && scalar(@$bagit_errors) > 0){
-            push @errors,@$bagit_errors;
-        }else{
-            push @errors,basename($topdir).": bag validatie faalde om niet gekende redenen";
-        }
+  my $read_successfull = $self->_bagit->read($topdir);
+  if(!$read_successfull){
+    my $bagit_errors = $self->_bagit->_error;
+    if(is_array_ref($bagit_errors) && scalar(@$bagit_errors) > 0){
+      push @errors,@$bagit_errors;
     }else{
-        if($self->validate){
-            if(!$self->_bagit->valid){
-                push @errors,@{ $self->_bagit->_error || [] };
-            }
-        }elsif(!$self->_bagit->complete){
-            push @errors,@{ $self->_bagit->_error || [] };
-        }
+      push @errors,basename($topdir).": bag validatie faalde om niet gekende redenen";
     }
+  }else{
+    if($self->validate){
+      if(!$self->_bagit->valid){
+        push @errors,@{ $self->_bagit->_error || [] };
+      }
+    }elsif(!$self->_bagit->complete){
+      push @errors,@{ $self->_bagit->_error || [] };
+    }
+  }
 
-    scalar(@errors) == 0,\@errors;
+  scalar(@errors) == 0,\@errors;
 }   
 
 with qw(Imaging::Test::Dir);

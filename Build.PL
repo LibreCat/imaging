@@ -43,7 +43,9 @@ my $requires = {
   'PDF::API2' => 0,
   'Hash::Merge' => 0,
   'File::Pid' => 0,
-  'Dancer::Middleware::Rebase' => 0
+  'Dancer::Middleware::Rebase' => 0,
+  'Catmandu::FedoraCommons' => 0,
+  'Dancer::Plugin::Auth::RBAC::Credentials:Catmandu' => 0
 };
 my $recommends = {
 	'Starman' => 0,

@@ -6,40 +6,40 @@ use Try::Tiny;
 use Moo;
 
 sub check {
-    my($self,$path) = @_;
-    defined $path && -d $path && -f "$path/bag-info.txt";
+  my($self,$path) = @_;
+  defined $path && -d $path && -f "$path/bag-info.txt";
 }
 sub queries {    
-    my($self,$path) = @_;
-    return () if !defined($path);
-    my $path_baginfo = "$path/bag-info.txt";
-    my @queries = ();
-    try{
-        #parse bag-info.txt
-        my $parser = Imaging::Bag::Info->new(source => $path_baginfo);
-        my $baginfo = $parser->hash;
-        #haal (goede) queries op
-        if(is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0){
+  my($self,$path) = @_;
+  return () if !defined($path);
+  my $path_baginfo = "$path/bag-info.txt";
+  my @queries = ();
+  try{
+    #parse bag-info.txt
+    my $parser = Imaging::Bag::Info->new(source => $path_baginfo);
+    my $baginfo = $parser->hash;
+    #haal (goede) queries op
+    if(is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0){
 
-            @queries = "\"".$baginfo->{'Archive-Id'}->[0]."\"";
+      @queries = "\"".$baginfo->{'Archive-Id'}->[0]."\"";
 
+    }else{
+
+      @queries = @{$baginfo->{'DC-Identifier'}};
+      my @filter = ();
+      foreach(@queries){
+        if(/^rug01:\d{9}$/o){
+          @filter = $_;
+          last;
         }else{
-
-            @queries = @{$baginfo->{'DC-Identifier'}};
-            my @filter = ();
-            foreach(@queries){
-                if(/^rug01:\d{9}$/o){
-                    @filter = $_;
-                    last;
-                }else{
-                    push @filter,$_;
-                }
-            }
-            @queries = @filter;
-
+          push @filter,$_;
         }
-    };
-    @queries;
+      }
+      @queries = @filter;
+
+    }
+  };
+  @queries;
 }   
 
 with qw(Imaging::Dir::Query);

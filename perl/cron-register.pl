@@ -30,9 +30,9 @@ BEGIN {
    
   #load configuration
   my $appdir = Cwd::realpath(
-      dirname(dirname(
-          Cwd::realpath( __FILE__)
-      ))
+    dirname(dirname(
+      Cwd::realpath(__FILE__)
+    ))
   );
   Dancer::Config::setting(appdir => $appdir);
   Dancer::Config::setting(public => "$appdir/public");
@@ -133,26 +133,28 @@ say "$this_file started at ".local_time;
 #
 #   1ste metadata-record wordt neergeschreven in bag-info.txt: mediamosa pikt deze metadata op
 
-say "retrieving metadata for good scans (-status:incoming AND -status:incoming_error AND -status:done";
 my @ids_ok_for_metadata = ();
 {
+  my $query = "-status:\"incoming\" AND -status:\"incoming_error\" AND -status:\"done\"";
+
+  say "retrieving metadata for good scans ($query)";
 
   my($offset,$limit,$total) = (0,1000,0);
   do{
       my $result = index_scan->search( 
-          query => "-status:\"incoming\" AND -status:\"incoming_error\" AND -status:\"done\"",
-          reify => scans(),
-          start => $offset,
-          limit => $limit
+        query => $query,
+        reify => scans(),
+        start => $offset,
+        limit => $limit
       );
       $total = $result->total;
       for my $scan(@{ $result->hits }){
-          if(
-              !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
-              !(-f $scan->{path}."/__FIXME.txt")
-          ){
-              push @ids_ok_for_metadata,$scan->{_id};
-          }
+        if(
+            !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
+            !(-f $scan->{path}."/__FIXME.txt")
+        ){
+          push @ids_ok_for_metadata,$scan->{_id};
+        }
       }
       $offset += $limit;
   }while($offset < $total);
@@ -168,25 +170,24 @@ foreach my $id(@ids_ok_for_metadata){
   my $baginfo_path = $scan->{path}."/bag-info.txt";
   my $baginfo;
   if(-f $baginfo_path){
-      $baginfo = Imaging::Bag::Info->new(source => $baginfo_path)->hash;
+    $baginfo = Imaging::Bag::Info->new(source => $baginfo_path)->hash;
   }
 
   #haal metadata op
   my @queries = directory_to_queries($path);
 
   foreach my $query(@queries){
-    my $res = meercat()->search($query,{});
+    my $res = meercat()->search(query => $query,source => 'source:rug01');
     $scan->{metadata} = [];
-    if($res->content->{response}->{numFound} > 0){
+    if($res->total > 0){
 
-      my $docs = $res->content->{response}->{docs};
-      foreach my $doc(@$docs){              
+      for my $hit(@{ $res->hits }){              
 
         push @{ $scan->{metadata} },{
-          fSYS => $doc->{fSYS},#000000001
-          source => $doc->{source},#rug01
-          fXML => $doc->{fXML},
-          baginfo => defined($baginfo) ? $baginfo : marc_to_baginfo_dc(xml => $doc->{fXML})
+          fSYS => $hit->{fSYS},#000000001
+          source => $hit->{source},#rug01
+          fXML => $hit->{fXML},
+          baginfo => defined($baginfo) ? $baginfo : marc_to_baginfo_dc(xml => $hit->{fXML})
         };
 
       }
@@ -290,7 +291,6 @@ if(!-w $dir_processed){
                 say "\t\tsuccessfull";
             }
         }
-
         
         
         #ok, tijdelijk toekennen aan root zelf, opdat niemand kan tussenkomen..
@@ -433,9 +433,9 @@ if(!-w $dir_processed){
   do{
 
     my $result = index_scan->search(
-        query => $query,
-        start => $offset,
-        limit => $limit
+      query => $query,
+      start => $offset,
+      limit => $limit
     );
     $total = $result->total;
     for my $scan(@{ $result->hits }){
@@ -498,9 +498,9 @@ my @mediamosa_ids = ();
   my($offset,$limit,$total) = (0,1000,0);
   do{
     my $result = index_scan->search(
-        query => $query,
-        start => $offset,
-        limit => $limit            
+      query => $query,
+      start => $offset,
+      limit => $limit            
     );
     $total = $result->total;
     for my $scan(@{ $result->hits }){
@@ -555,19 +555,20 @@ foreach my $id(@mediamosa_ids){
 my @qa_control_ok = ();
 {
 
-    my($offset,$limit,$total) = (0,1000,0);
-    do{
-        my $result = index_scan->search(
-            query => "status:\"qa_control_ok\"",
-            start => $offset,
-            limit => $limit
-        );
-        $total = $result->total;
-        for my $hit(@{ $result->hits }){
-            push @qa_control_ok,$hit->{_id};
-        }
-        $offset += $limit;
-    }while($offset < $total);
+  my($offset,$limit,$total) = (0,1000,0);
+  do{
+      my $result = index_scan->search(
+        query => "status:\"qa_control_ok\"",
+        start => $offset,
+        limit => $limit
+      );
+      $total = $result->total;
+      for my $hit(@{ $result->hits }){
+          push @qa_control_ok,$hit->{_id};
+      }
+      $offset += $limit;
+  }while($offset < $total);
+
 }
 for my $scan_id(@qa_control_ok){
 
@@ -581,6 +582,7 @@ for my $scan_id(@qa_control_ok){
     my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
     my $command;
 
+    #geen bag? Maak er dan een bag van
     if(!$is_bag){
 
       $command = sprintf(
@@ -614,10 +616,10 @@ for my $scan_id(@qa_control_ok){
     say "scan archiving";
     $scan->{status} = "archiving";
     push @{ $scan->{status_history} },{
-        user_login =>"-",
-        status => "archiving",
-        datetime => Time::HiRes::time,
-        comments => ""
+      user_login =>"-",
+      status => "archiving",
+      datetime => Time::HiRes::time,
+      comments => ""
     };
     $scan->{datetime_last_modified} = Time::HiRes::time;            
     update_scan($scan);
@@ -633,7 +635,7 @@ for my $scan_id(@qa_control_ok){
 say "updating list scans for projects";
 my @project_ids = ();
 projects()->each(sub{ 
-    push @project_ids,$_[0]->{_id}; 
+  push @project_ids,$_[0]->{_id}; 
 });
 
 foreach my $project_id(@project_ids){
@@ -653,33 +655,32 @@ foreach my $project_id(@project_ids){
     try{
         do{
 
-            my $res = $meercat->search($query,{start => $offset,rows => $limit});
-            $total = $res->content->{response}->{numFound};
-            my $hits = $res->content->{response}->{docs};
+            my $res = $meercat->search(query => $query,fq => 'source:rug01',start => $offset,limit => $limit);
+            $total = $res->total;
 
-            foreach my $hit(@$hits){
+            foreach my $hit(@{ $res->hits }){
                 my $ref = from_xml($hit->{fXML},ForceArray => 1);
 
                 #zoek items in Z30 3, en nummering in Z30 h
                 my @items = ();
 
                 foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
-                    if($marc_datafield->{tag} eq "Z30"){
-                        my $item = {
-                            source => $hit->{source},
-                            fSYS => $hit->{fSYS}
-                        };
-                        foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
-                            if($marc_subfield->{code} eq "3"){
-                                $item->{"location"} = $marc_subfield->{content};
-                            }
-                            if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
-                                $item->{"number"} = $1;
-                            }
-                        }
-                        say "\t".join(',',values %$item);
-                        push @items,$item;
+                  if($marc_datafield->{tag} eq "Z30"){
+                    my $item = {
+                      source => $hit->{source},
+                      fSYS => $hit->{fSYS}
+                    };
+                    foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+                      if($marc_subfield->{code} eq "3"){
+                        $item->{"location"} = $marc_subfield->{content};
+                      }
+                      if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
+                        $item->{"number"} = $1;
+                      }
                     }
+                    say "\t".join(',',values %$item);
+                    push @items,$item;
+                  }
                 }
                 push @list,@items;
             }

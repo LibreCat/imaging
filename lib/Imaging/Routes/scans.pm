@@ -156,11 +156,10 @@ post '/scans/:_id' => sub {
       
           my $metadata_id = $params->{metadata_id} || "";
 
-          my($result,$total,$error);
+          my($result,$error);
           try {
 
-            $result = meercat->search($metadata_id,{rows => 1});     
-            $total = $result->content->{response}->{numFound};
+            $result = meercat->search(query => $metadata_id,limit => 1,fq => 'source:rug01');     
 
           }catch{
             $error = $_;
@@ -169,11 +168,11 @@ post '/scans/:_id' => sub {
 
             push @errors,"query $metadata_id is ongeldig";
 
-          }elsif($total > 1){
+          }elsif($result->total > 1){
 
             push @errors,"query $metadata_id leverde meer dan één resultaat op";
 
-          }elsif($total == 0){
+          }elsif($result->total == 0){
 
             push @errors,"query $metadata_id leverde geen resultaten op";
 
@@ -183,7 +182,7 @@ post '/scans/:_id' => sub {
             my $baginfo = {};
             my $path_baginfo = $scan->{path}."/bag-info.txt";
             if(-f $path_baginfo){
-                $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
+              $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
             }
             my $dc = marc_to_baginfo_dc(xml => $doc->{fXML});
             $baginfo = { %$baginfo,%$dc };

@@ -33,23 +33,23 @@ use Dancer::Plugin::Imaging::Routes::Utils;
 say "indexing";
 my @ids = ();
 {
-    my($offset,$limit,$total) = (0,1000,0);
-    do{
-        my $result = index_scan->search(
-            query => "*",
-            start => $offset,
-            limit => $limit            
-        );
-        $total = $result->total;
-	for my $scan(@{ $result->hits }){
-		push @ids,$scan->{_id};
-	}
-	$offset += $limit;
-    }while($offset < $total);
+  my($offset,$limit,$total) = (0,1000,0);
+  do{
+    my $result = index_scan->search(
+        query => "*",
+        start => $offset,
+        limit => $limit            
+    );
+    $total = $result->total;
+    for my $scan(@{ $result->hits }){
+      push @ids,$scan->{_id};
+    }
+    $offset += $limit;
+  }while($offset < $total);
 }
 
 foreach my $id(@ids){
-	my $scan = scans->get($id);
-	say $id;
-    	update_scan($scan);
+  my $scan = scans->get($id);
+  say $id;
+  update_scan($scan);
 }

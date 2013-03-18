@@ -1,12 +1,15 @@
 #!/usr/bin/env perl
-use Catmandu qw(store);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Dancer qw(:script);
+use Catmandu qw(store);
+use Dancer::Plugin::Database;
+use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
 use File::Basename qw();
 use Cwd qw(abs_path);
 
 BEGIN {
-   
   #load configuration
   my $appdir = Cwd::realpath(
       dirname(dirname(
@@ -19,24 +22,14 @@ BEGIN {
   Dancer::Config::setting(envdir => "$appdir/environments");
   Dancer::Config::load();
   Catmandu->load($appdir);
-
 }
 
-use Dancer::Plugin::Imaging::Routes::Utils;
-
-my $query = shift;
-{
-  my($offset,$limit,$total) = (0,1000,0);
-  do{
-    my $result = index_scan->search(
-        query => $query,
-        start => $offset,
-        limit => $limit            
-    );
-    $total = $result->total;
-    for my $scan(@{ $result->hits }){
-      say $scan->{_id};
-    }
-    $offset += $limit;
-  }while($offset < $total);
+my @users = database->quick_select("users",{});
+my $bag = store("core")->bag('users2');
+use Data::Dumper;
+foreach my $user(@users){
+  $user->{_id} = $user->{login};
+  delete $user->{id};
+  $user->{roles} = [ map { $_ =~ s/^\s+|\s+$//; $_  } split /\,/, $user->{roles} ];
+  $bag->add($user);
 }

@@ -47,9 +47,9 @@ get('/ready/:user_login',sub{
 
       my $dir_info = dir_info($path);
       my $obj = {
-          name => $file,
-          info => $dir_info,
-          record => scans()->get($file)
+        name => $file,
+        info => $dir_info,
+        record => scans()->get($file)
       };
       push @directories,$obj;
 

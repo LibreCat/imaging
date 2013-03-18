@@ -12,17 +12,17 @@ post('/login',sub{
   my $params = params;
   my $auth = auth($params->{user},md5_hex($params->{password}));
   if($auth->errors){
-      forward('/login',{ errors => $auth->errors },{ method => 'GET' });
+    forward('/login',{ errors => $auth->errors },{ method => 'GET' });
   }else{
-      my $service = is_string($params->{service})? uri_unescape($params->{service}) : uri_for(config->{default_app} || "/");
-      return redirect( $service );
+    my $service = is_string($params->{service})? uri_unescape($params->{service}) : uri_for(config->{default_app} || "/");
+    return redirect( $service );
   }
 });
 get('/login',sub{
   return redirect( uri_for(config->{default_app} || "/") ) if authd;
   template('login',{ errors => params->{errors} || [], auth => auth() });
 });
-any('/logout',sub{
+get('/logout',sub{
   if(authd){
     auth->revoke();
   }
