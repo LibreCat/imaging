@@ -1,9 +1,8 @@
 package Imaging::Routes::status;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
-use Dancer::Plugin::Database;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
@@ -12,9 +11,9 @@ use Try::Tiny;
 use URI::Escape qw(uri_escape);
 
 hook before => sub {
-  if(request->path =~ /^\/status/o){
+  if(request->path_info =~ /^\/status/o){
     if(!authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }
   }
@@ -26,10 +25,9 @@ hook before_template_render => sub {
 any('/status',sub {
 
   my $params = params;
-  my @users = dbi_handle->quick_select('users',{
-    has_dir => 1
-  },{
-    order_by => 'id'
+  my @users;
+  users->each(sub{
+    push @users,$_[0] if $_[0]->{has_dir};
   });
   my $mount_conf = mount_conf;    
   my $stats = {

@@ -1,9 +1,8 @@
 package Imaging::Routes::users;
 use Dancer  ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
-use Dancer::Plugin::Database;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util  qw(:is);
@@ -12,11 +11,11 @@ use Digest::MD5 qw(md5_hex);
 use Try::Tiny;
 
 hook before => sub {
-  if(request->path =~ /^\/user/o){
+  if(request->path_info =~ /^\/user/o){
     my $auth = auth;
     my $authd = authd;
     if(!$authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }elsif(!$auth->can('manage_accounts','edit')){
       request->path_info('/access_denied');
@@ -31,9 +30,8 @@ hook before_template_render => sub {
 };
 get('/users',sub{
 
-  my @users = dbi_handle->quick_select('users',{},{   order_by    =>  'id'    });
   template('users',{
-    users => \@users
+    users => users->to_array
   });
 
 });
@@ -51,22 +49,21 @@ post '/users/add' => sub {
     push @errors,"paswoorden komen niet met elkaar overeen";
   }
   if(scalar(@errors)==0){
-    my $user = dbi_handle->quick_select('users',{ login => $params->{login} });
+    my $user = users->get( $params->{login} );
     if($user){
         push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";
     }else{
-      my $roles = join('',@{$params->{roles}});
       try{
-        dbi_handle->quick_insert('users',{
-          login   =>  $params->{login},
-          name    =>  $params->{name},
-          roles   =>  join(', ',@{$params->{roles}}),
-          password  =>  md5_hex($params->{password1})
+        users->add({
+          _id => $params->{login},
+          login =>  $params->{login},
+          name =>  $params->{name},
+          roles =>  $params->{roles},
+          password => md5_hex($params->{password1})
         });
         redirect(uri_for("/users"));
-      }catch{
-        say STDERR $_;
-        push @errors,"er bestaat reeds een gebruiker met als login $params->{name}";       
+      }catch{        
+        push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";       
       };
     }
   }
@@ -96,8 +93,8 @@ get('/users/add',sub{
 });
 post '/user/:id/edit' => sub {
   my $params = params;
-  my $user = dbi_handle()->quick_select('users',{    id  =>  $params->{id}   });
-  $user or return  not_found();
+  my $user = users->get($params->{id});
+  $user or return not_found();
 
   if($user->{login} eq "admin"){
     return forward("/access_denied",{
@@ -110,13 +107,11 @@ post '/user/:id/edit' => sub {
   my($success,$errs)=check_params_new_user();
   push @errors,@$errs;     
   if(scalar(@errors)==0){
-    my $roles = join(', ',@{$params->{roles}});
-    my $new = {
-      roles   =>  $roles,
-      #wijzig login niet!
-      #login   =>  $params->{login},
-      name    =>  $params->{name}
-    };
+    #wijzig 'login' en '_id' niet!
+
+    $user->{roles} = $params->{roles};
+    $user->{name} = $params->{name};
+
     #nieuw  wachtwoord  opgegeven?  ->  check!
     if($params->{edit_passwords}){
       if(!(
@@ -125,20 +120,14 @@ post '/user/:id/edit' => sub {
           $params->{password1}    eq  $params->{password2}
           )
       ){
-          push  @errors,"paswoorden komen niet met elkaar overeen";
+        push  @errors,"paswoorden komen niet met elkaar overeen";
       }else{
-          $new->{password} = md5_hex($params->{password1});
+        $user->{password} = md5_hex($params->{password1});
       }
     }
-    if(scalar(@errors)==0){
-      $user = { %$user,%$new };
-      try{
-          dbi_handle->quick_update('users',{id => $params->{id}},$user);
-          redirect(uri_for("/users"));
-      }catch{
-          say STDERR $_;
-          push @errors,"Uw verzoek kon niet worden uitgevoerd. Mogelijks bestaat de naam of login reeds al";        
-      }
+    if(scalar(@errors)==0){            
+      users->add($user);
+      redirect(uri_for("/users"));
     }
   }
 
@@ -153,7 +142,7 @@ post '/user/:id/edit' => sub {
 get('/user/:id/edit',sub{
 
   my $params = params;
-  my $user = dbi_handle()->quick_select('users',{    id  =>  $params->{id}   });
+  my $user = users->get($params->{id});
   $user or return  not_found();
 
   if($user->{login} eq "admin"){
@@ -178,7 +167,7 @@ get('/user/:id/edit',sub{
 });
 post '/user/:id/delete' => sub {
   my $params = params;
-  my $user = dbi_handle->quick_select('users',{id => $params->{id}});
+  my $user = users->get($params->{id});
   $user or return not_found();
 
   if($user->{login} eq "admin"){
@@ -194,15 +183,8 @@ post '/user/:id/delete' => sub {
     push @errors,"Een of meerdere actieve scans zijn nog gekoppeld aan deze gebruiker. Verwijder de scans eerst.";
 
   }else{
-    try{
-      dbi_handle->quick_delete('users',{
-          id  =>  $params->{id}
-      });
-      redirect(uri_for("/users"));
-    }catch{
-      say STDERR $_;
-      push @errors,"Record kon niet worden verwijderd door een systeemfout. Contacteer de administrator voor meer gegevens.";
-    }
+    users->delete($params->{id});
+    redirect(uri_for("/users"));
   }
 
   var errors => \@errors;
@@ -215,12 +197,12 @@ post '/user/:id/delete' => sub {
 get('/user/:id/delete',sub{
 
   my $params = params;
-  my $user = dbi_handle->quick_select('users',{id => $params->{id}});
+  my $user = users->get($params->{id});
   $user or return not_found();
 
   if($user->{login} eq "admin"){
     return forward("/access_denied",{
-        text =>  "gebruiker beschikt niet over de nodige rechten om gebruikersgegevens aan te passen"
+      text =>  "gebruiker beschikt niet over de nodige rechten om gebruikersgegevens aan te passen"
     });
   }
 
@@ -249,25 +231,25 @@ sub check_params_new_user {
   @keys = qw(roles);
   foreach my $key(@keys){
     if(is_string($params->{$key})){
-        $params->{$key} =   [$params->{$key}];
+      $params->{$key} =   [$params->{$key}];
     }elsif(!is_array_ref($params->{$key})){
-        $params->{$key} =   [];
+      $params->{$key} =   [];
     }
     if(!(scalar(@{$params->{$key}}) > 0)){
-        push @errors,"$key is niet opgegeven"
+      push @errors,"$key is niet opgegeven"
     }
   }
   @keys = qw(login);
   foreach my $key(@keys){
     if($params->{$key} !~ /^\w+$/o){
-        push @errors,"$key moet alfanumeriek zijn";
+      push @errors,"$key moet alfanumeriek zijn";
     }
   }
   my($name,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire) = getpwnam($params->{login});
   if(!defined($uid)){
-      push @errors,"user '$params->{login}' bestaat niet in het systeem";
+    push @errors,"user '$params->{login}' bestaat niet in het systeem";
   }elsif($uid == 0){
-      push @errors,"root wordt niet toegelaten als gebruiker";
+    push @errors,"root wordt niet toegelaten als gebruiker";
   }   
   return scalar(@errors)==0,\@errors;
 }

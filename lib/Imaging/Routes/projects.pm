@@ -1,7 +1,7 @@
 package Imaging::Routes::projects;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -14,12 +14,12 @@ use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 
 hook before => sub {
-  if(request->path =~ /^\/project(.*)$/o){
+  if(request->path_info =~ /^\/project(.*)$/o){
     my $auth = auth;
     my $authd = authd;
     my $subpath = $1;
     if(!$authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }elsif($subpath =~ /(?:add|delete)/o && !$auth->can('projects','edit')){
       request->path_info('/access_denied');
@@ -111,7 +111,6 @@ post('/projects/add',sub{
       try{
         DateTime::Format::Strptime::strptime("%d-%m-%Y",$value);
       }catch{
-        say $_;
         $success = 0;
         $error = "invalid start date (day-month-year)";
       };  
@@ -182,7 +181,7 @@ get('/project/:_id',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path
+      requested_path => request->path_info
     });
   }
   
@@ -207,7 +206,7 @@ post('/project/:_id',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path
+      requested_path => request->path_info
     });
   }
 
@@ -294,7 +293,7 @@ get('/project/:_id/delete',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path
+      requested_path => request->path_info
     });
   }
 
@@ -316,7 +315,7 @@ post('/project/:_id/delete',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path
+      requested_path => request->path_info
     });
   }
 

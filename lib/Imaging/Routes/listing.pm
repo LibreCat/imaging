@@ -1,7 +1,7 @@
 package Imaging::Routes::listing;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -11,11 +11,11 @@ use Try::Tiny;
 use File::Find;
 
 hook before => sub {
-  if(request->path =~ /^\/ready/o){
+  if(request->path_info =~ /^\/ready/o){
     my $auth = auth;
     my $authd = authd;
     if(!$authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }
   }
@@ -28,7 +28,7 @@ hook before_template_render => sub {
 
 get('/ready/:user_login',sub{
   my $params = params;
-  my $user = dbi_handle->quick_select('users',{ login => $params->{user_login} });
+  my $user = users->get( $params->{user_login} );
   $user or return not_found();
   
   my $mount = mount();
@@ -66,7 +66,7 @@ get('/ready/:user_login/:scan_id',sub{
   my $mount_conf = mount_conf();
 
   #user bestaat
-  my $user = dbi_handle->quick_select('users',{ login => $params->{user_login} });
+  my $user = users->get( $params->{user_login} );
   $user or return not_found();
 
   #directory bestaat
@@ -82,7 +82,7 @@ get('/ready/:user_login/:scan_id',sub{
   my($files,$size) = list_files($path);
   if($scan && $scan->{path} ne $path){
     $has_conflict = 1;
-    my $other_user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
+    my $other_user = users->get( $scan->{user_id} );
     push @errors,"$scan->{_id} werd eerst bij gebruiker $other_user->{login} aangetroffen.Deze map zal daarom niet verwerkt worden.";
   }
 

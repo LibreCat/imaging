@@ -25,9 +25,9 @@ BEGIN {
 
   #load configuration
   my $appdir = Cwd::realpath(
-      dirname(dirname(
-          Cwd::realpath( __FILE__)
-      ))
+    dirname(dirname(
+      Cwd::realpath( __FILE__)
+    ))
   );
   Dancer::Config::setting(appdir => $appdir);
   Dancer::Config::setting(public => "$appdir/public");
@@ -38,10 +38,10 @@ BEGIN {
 
   $pidfile = "/var/run/imaging-status.pid";
   $pid = File::Pid->new({
-      file => $pidfile
+    file => $pidfile
   });
   if(-f $pid->file && $pid->running){
-      die("Cannot run while other instance is running\n");
+    die("Cannot run while other instance is running\n");
   }
 
   #plaats lock
@@ -57,7 +57,7 @@ END {
 }
 
 use MediaMosa;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(:all);
 
 $| = 1;
 
@@ -133,7 +133,7 @@ sub move_scan {
   if($scan->{new_user}){
     $login = $scan->{new_user};
   }else{
-    my $user = dbi_handle->quick_select("users",{ id => $scan->{user_id} });
+    my $user = users->get( $scan->{user_id} );
     $login = $user->{login};
   }
 
@@ -219,7 +219,7 @@ sub move_scan {
 
   }
   
-  #gedaan ermee => TODO: asset_id eerst uit mediamosa verwijderen!!
+  #gedaan ermee
   delete $scan->{$_} for(qw(busy new_path new_user asset_id));
 
   update_scan($scan);

@@ -1,9 +1,8 @@
 package Imaging::Routes::directories;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
-use Dancer::Plugin::Database;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
@@ -15,11 +14,11 @@ use URI::Escape qw(uri_escape);
 use IO::CaptureOutput qw(capture_exec);
 
 hook before => sub {
-  if(request->path =~ /^\/directories/o){
+  if(request->path_info =~ /^\/directories/o){
     my $auth = auth;
     my $authd = authd;
     if(!$authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }elsif(!$auth->can('directories','edit')){
       request->path_info('/access_denied');
@@ -43,9 +42,9 @@ get('/directories',sub {
   $params->{num} = $num;
   my $offset = ($page - 1)*$num;
 
-  my @users = dbi_handle->quick_select('users',{},{ order_by => 'id' });
-  my $total = scalar(@users);
-  @users = splice(@users,$offset,$num);
+  my $users = users->to_array;
+  my $total = scalar(@$users);
+  @$users = splice(@$users,$offset,$num);
 
   my $page_info = Data::Pageset->new({
     'total_entries'       => $total,
@@ -61,12 +60,12 @@ get('/directories',sub {
   my $mount = mount();
   my $subdirectories = subdirectories();
 
-  foreach my $user(@users){
+  foreach my $user(@$users){
     $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
   }
   #template
   template('directories',{
-    users => \@users,
+    users => $users,
     errors => \@errors,
     page_info => $page_info
   });
@@ -75,7 +74,7 @@ post '/directories/:id' => sub {
   my $config = config;
   my $params = params;
   my(@errors,@messages);
-  my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
+  my $user = users->get($params->{id});
   $user or return not_found();    
 
   #sanity check on mount
@@ -92,13 +91,12 @@ post '/directories/:id' => sub {
     foreach(qw(ready)){
       try{
         my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
-        if(!-d $path){
-            mkpath($path);
-        }                
+        mkpath($path) if(!-d $path);
         my($stdout,$stderr,$success,$exit_code) = capture_exec("chown -R $user->{login} $path && chmod -R 0755 $path");
         die($stderr) if !$success;
         push @messages,"directory '$_' is ok nu";
-        dbi_handle->quick_update('users',{ id => $user->{id} },{ has_dir => 1 });
+        $user->{has_dir} = 1;
+        users->add($user);
       }catch{
         push @errors,$_;
       };
@@ -116,7 +114,7 @@ get '/directories/:id' => sub {
   my $config = config;
   my $params = params;
   my(@errors,@messages);
-  my $user = dbi_handle->quick_select('users',{ id => $params->{id} });
+  my $user = users->get($params->{id});
   $user or return not_found();    
 
   #sanity check on mount
@@ -133,9 +131,9 @@ get '/directories/:id' => sub {
 
   foreach(qw(ready)){
     if(!-d $user->{$_}){
-        push @errors,"directory '$_' bestaat niet ($user->{$_})";
+      push @errors,"directory '$_' bestaat niet ($user->{$_})";
     }elsif(!-w $user->{$_}){
-        push @errors,"systeem kan niet schrijven naar directory '$_' ($user->{$_})";
+      push @errors,"systeem kan niet schrijven naar directory '$_' ($user->{$_})";
     }
   }
 

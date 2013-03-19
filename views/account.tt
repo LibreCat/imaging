@@ -7,7 +7,7 @@
   <dt>name:</dt>
   <dd>[% user.name | html %]</dd>
   <dt>roles:</dt>
-  <dd>[% user.roles | html %]</dd>
+  <dd>[% user.roles.join(',') | html %]</dd>
   <dt>password:</dt>
   <dd>*****</dd>
 </dl>

@@ -1,8 +1,9 @@
 package Imaging::Routes::scans;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Meercat;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging::Meercat qw(:all);
+use Catmandu::FedoraCommons;
+use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Email;
 use Catmandu::Sane;
@@ -42,9 +43,9 @@ Hash::Merge::specify_behavior({
 });
 
 hook before => sub {
-  if(request->path =~ /^\/scans/o){
+  if(request->path_info =~ /^\/scans/o){
     if(!authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }
   }
@@ -273,16 +274,37 @@ get('/scans/:_id',sub {
     ($files,$size) = ([],0);
   }
     
-  my $user = ($scan) ? (dbi_handle->quick_select('users',{ id => $scan->{user_id} })) : undef;
   template('scans/view',{
     scan => $scan,
     files => $files,
     size => $size,
-    user => $user,
+    user => users->get($scan->{user_id}),
     errors => \@errors,
-    projects => \@projects,
-    user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
+    projects => \@projects
   });
+
+});
+get '/scans/:_id/archived' => sub {
+
+  my $params = params;
+  my(@errors,@messages);
+  content_type 'json';  
+  my $response = {errors => \@errors,messages => \@messages};  
+
+  my $scan = scans->get($params->{_id});
+  my @ids;
+  if(!$scan){
+    push @errors, "scandirectory $params->{_id} niet gevonden";
+  }elsif(! @{$scan->{metadata}}){
+    push @errors,"scandirectory $params->{_id} heeft geen metadata";
+  }else{
+    for my $metadata(@{ $scan->{metadata} }){
+      my $dc_identifier = grep { $_ =~ /^rug01:\d+$/ } @{ $metadata->{DC-Identifier} // [] };
+    }
+  }
+
+  $response->{status} = scalar(@errors) == 0 ? "ok":"error";
+  return to_json($response);
 
 });
 get('/scans/:_id/json',sub{
@@ -572,7 +594,7 @@ post '/scans/:_id/:status' => sub {
           ensure_path($scan->{path});
 
           $scan->{busy} = 1;
-          my $user = dbi_handle->quick_select('users',{ id => $scan->{user_id} });
+          my $user = users->get($scan->{user_id});
           $scan->{new_path} = mount()."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login}."/".$scan->{_id};
 
         }
@@ -595,7 +617,7 @@ post '/scans/:_id/:status' => sub {
         ($success,$error) = index_log->commit;
 
         #redirect
-        return redirect("/scans/$scan->{_id}");
+        return redirect(uri_for("/scans/$scan->{_id}"));
       }else{
 
         push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
@@ -635,7 +657,7 @@ get('/scans/:_id/status',sub{
     scan => $scan,
     errors => \@errors,
     messages => \@messages,
-    user => dbi_handle->quick_select('users',{ id => $scan->{user_id} })
+    user => users->get($scan->{user_id})
   });
 
 });
@@ -744,6 +766,9 @@ sub ensure_path {
     open my $fh,">:utf8","$path/__MANIFEST-MD5.txt" or die($!);
     close $fh;
   }
+}
+sub fedora {
+  state $fedora = Catmandu::FedoraCommons->new(@{ config->{fedora}->{args} // [] });
 }
 
 true;

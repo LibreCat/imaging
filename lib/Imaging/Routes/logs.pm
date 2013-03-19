@@ -1,7 +1,7 @@
 package Imaging::Routes::logs;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(index_log);
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -11,9 +11,9 @@ use Try::Tiny;
 use URI::Escape qw(uri_escape);
 
 hook before => sub {
-  if(request->path =~ /^\/logs/o){
+  if(request->path_info =~ /^\/logs/o){
     if(!authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }
   }

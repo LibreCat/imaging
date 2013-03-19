@@ -1,4 +1,6 @@
 [%- USE date -%]
+[% USE POSIX %]
+[%- USE SizePretty -%]
 
 <h1>QA controle</h1>
 
@@ -83,43 +85,59 @@
     - lijst is gefilterd op <em>[% params.q | html %]</em>
     [%- END %]
   </caption>
-	<tr>
-		<th>naam</th>
-		<th>aantal bestanden</th>
-		<th>aangeboden</th>
-		<th>laatste wijziging</th>
-		<th>eigenaar</th>
-		<th>status</th>
-		<th>log</th>    
-        <th>melding</th>
-	</tr>
+  <tr>
+    <th>naam</th>
+    <th>bestanden</th>
+    <th>aangeboden</th>
+    <!--
+    <th>laatste wijziging</th>
+    <th>eigenaar</th>
+    -->
+    <th>status</th>
+    <!--<th>log</th>-->
+    <th>melding</th>
+    <th>commentaar</th>
+  </tr>
   [%- FOREACH scan IN scans %]
-	<tr>
-		<td><a href="[% request.uri_base %]/scans/[% scan.item("_id") %]">[% scan.item("_id") %]</a></td>
-		<td>[% scan.files.size || 0 %]</td>
-		<td>
-			[%- parts = scan.item("status_history").0.split('\$\$') -%]
-			[%- matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
-      [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
-		</td>
-		<td>
+  <tr>
+    <td><a href="[% request.uri_base %]/scans/[% scan.item("_id") %]">[% scan.item("_id") %]</a></td>
+    <td>[% scan.dir_info.files.size || 0 %] bestanden ([% scan.dir_info.size.size_pretty || "0MB" %])</td>
+    <td>
+      [% date.format(POSIX.floor(scan.datetime_started),'%d-%m-%Y') %]
+    </td>
+    <!--
+    <td>
+      [%- parts = scan.item("status_history").0.split('\$\$') -%]
+      [%- matches = parts.2.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
+      [%# matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
+      [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 %]
+    </td>
+    <td>
       [%- matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]
       [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
-        </td>
-		<td>[% scan.item("user_login") || "-" %]</td>
-		<td>
-			[%- status = scan.item("status") -%]
-			[% settings.human_readable.${status} || status %]
-		</td>
-        <td>
-			[%- SET q = "scan_id:\"" _ scan.item("_id") _ "\"" -%]
-			<a href="[% request.uri_base %]/logs?q=[% q | url %]">view</a>
-		</td>
-        <td>
-            [% IF !( scan.metadata_id && scan.metadata_id.size == 1 ) %]
-                <span class="label label-warning" title="scan bevat [% scan.metadata_id.size || 0 %] metadata records">metadata!</span>
-            [% END %]
-        </td>
-	</tr>
+    </td>
+    <td>[% scan.item("user_login") || "-" %]</td>
+    -->
+    <td>
+      [%- status = scan.item("status") -%]
+      [% settings.human_readable.${status} || status %]
+    </td>
+    <!--
+    <td>
+      [%- SET q = "scan_id:\"" _ scan.item("_id") _ "\"" -%]
+      <a href="[% request.uri_base %]/logs?q=[% q | url %]">view</a>
+    </td>
+    -->
+    <td>
+      [% IF !( scan.metadata && scan.metadata.size == 1 ) %]
+          <span class="label label-warning" title="scan bevat [% scan.metadata_id.size || 0 %] metadata records">metadata!</span>
+      [% ELSE %]
+      -
+      [% END %]
+    </td>
+    <td style="max-width:20px;overflow:hidden;clear:left;text-align:right;text-overflow:ellipsis;white-space:nowrap">
+    [% scan.comments.last.text || "-" %]
+    </td>
+  </tr>
   [%- END %]
 </table>

@@ -1,11 +1,13 @@
-package Dancer::Plugin::Imaging::Routes::Meercat;
-use Dancer qw(:syntax);
-use Dancer::Plugin;
+package Imaging::Meercat;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use Try::Tiny;
 use POSIX qw(floor strftime);
 use XML::XPath;
+use Exporter qw(import);
+our @EXPORT_OK=qw(size_pretty write_to_baginfo marc_to_baginfo_dc marcxml2marc);
+our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
+
 
 our $marc_type_map = {
   'article'        => 'Text' ,
@@ -238,9 +240,4 @@ sub marcxml2marc {
  }
 }
 
-register marc_to_baginfo_dc => \&marc_to_baginfo_dc;
-register baginfo_bagit_fields => \&baginfo_bagit_fields;
-register write_to_baginfo => \&write_to_baginfo;
-register_plugin;
-
-__PACKAGE__;
+1;

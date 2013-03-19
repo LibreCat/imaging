@@ -66,7 +66,7 @@
   <dt>gebruiker</dt>
   <dd>
     [%- IF user %]
-    [%- q = "user_id:\"" _ user.id _ "\"" -%]
+    [%- q = "user_id:\"" _ user.login _ "\"" -%]
     <a href="[% request.uri_base %]/scans?q=[% q | uri %]">[% user.login %]</a>
     [%- ELSE %]
     -
@@ -74,7 +74,7 @@
   </dd>
   <dt>archivering</dt>
   [% state = [ scan.status ] %]
-  [% IF scan.archive_id && state.grep("^(?:archived|archived_ok|published|published_ok)$") %]
+  [% IF scan.archive_id %]
     <dd>
       <a href="[% settings.item("archive_site").base_url _ "/app/search?func=view&amp;_id=" _ scan.archive_id %]">grep</a>
     </dd>
@@ -154,11 +154,24 @@
 
       [% END %]
 
-      [% IF do_open %]
-      <p>
-        <a class="btn btn-mini" href="[% scan_system_directory %]">open map</a>
-      </p>
+      [% FOREACH file IN files %]        
+        [% SET statistics.${ file.content_type } = ( statistics.item(file.content_type) || 0) + 1 %]
       [% END %]
+
+      <div style="position:relative;margin-bottom:15px;">
+      [% IF do_open %]
+        <a class="btn btn-mini" href="[% scan_system_directory %]">open map</a>
+      [% END %]
+      [% IF statistics.keys.size %]
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <div style="float:right;">
+        [% FOREACH key IN statistics.keys %]
+          [% "<b>" _ key _ "</b>:" _ statistics.item(key) %]&nbsp;
+        [% END %]
+        </div>
+      [% END %]
+      </div>
+
       <table class="table table-striped">
         <tr>
           <th>naam</th>
@@ -426,6 +439,14 @@
     var btn = $(this).closest('form').find(':button[type="submit"]');
     btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
 
+  });
+
+  //submit-on-enter
+  $('input').keydown(function(e){
+    if(e.which == 13){
+      e.preventDefault();
+      $(this).closest("form").submit();
+    }
   });
 
   $('form.edit-baginfo').submit(function(evt) {

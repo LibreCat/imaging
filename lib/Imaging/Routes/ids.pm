@@ -1,6 +1,6 @@
 package Imaging::Routes::ids;
 use Dancer ':syntax';
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(index_scan);
 use Catmandu::Sane;
 use Catmandu;
 use Try::Tiny;

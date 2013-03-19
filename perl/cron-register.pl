@@ -23,6 +23,7 @@ use File::Pid;
 use IO::CaptureOutput qw(capture_exec);
 use Data::UUID;
 use MediaMosa;
+use Imaging::Meercat qw(:all);
 
 my $pidfile;
 my $pid;
@@ -44,10 +45,10 @@ BEGIN {
   #voer niet uit wanneer andere instantie van imaging-register.pl draait!
   $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
   $pid = File::Pid->new({
-      file => $pidfile
+    file => $pidfile
   });
   if(-f $pid->file && $pid->running){
-      die("Cannot run while registration is running\n");
+    die("Cannot run while registration is running\n");
   }
 
   #plaats lock
@@ -62,8 +63,7 @@ END {
     $pid->remove if $pid;
 }
 
-use Dancer::Plugin::Imaging::Routes::Utils;
-use Dancer::Plugin::Imaging::Routes::Meercat;
+use Imaging qw(:all);
 
 
 #variabelen

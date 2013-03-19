@@ -15,7 +15,7 @@
 		</tr>
 		<tr>
 			<th>roles:</th>
-			<td>[% user.roles %]</td>
+			<td>[% user.roles.join(',') %]</td>
 		</tr>
 	</table>
 [% END %]

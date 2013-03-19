@@ -11,6 +11,9 @@ use Digest::MD5 qw(md5_hex);
 use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
+use Exporter qw(import);
+our @EXPORT_OK=qw(core projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status dir_info list_files);
+our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
 sub core {
   state $core = store("core");
@@ -20,6 +23,9 @@ sub projects {
 }
 sub scans {
   state $scans = core()->bag("scans");
+}
+sub users {
+  state $users = core()->bag("users");
 }
 sub index_scan {
   state $index_scans = store("index_scan")->bag;
@@ -152,12 +158,11 @@ sub scan2index {
 
     #user info
     if($scan->{user_id}){
-        my $user = users->get($scan->{user_id});
-        if($user){
-            my @keys = qw(name login);
-            $doc->{"user_$_"} = $user->{$_} foreach(@keys);
-            $doc->{user_roles} = [split(',',$user->{roles})];
-        }
+      my $user = users->get($scan->{user_id});
+      if($user){
+        my @keys = qw(name login roles);
+        $doc->{"user_$_"} = $user->{$_} foreach(@keys);
+      }
     }
     
     #convert datetime to iso

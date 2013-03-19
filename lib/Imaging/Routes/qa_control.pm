@@ -1,7 +1,7 @@
 package Imaging::Routes::qa_control;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
@@ -12,9 +12,9 @@ use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
 
 hook before => sub {
-  if(request->path =~ /^\/qa_control/o){
+  if(request->path_info =~ /^\/qa_control/o){
     if(!authd){
-      my $service = uri_escape(uri_for(request->path));
+      my $service = uri_escape(uri_for(request->path_info));
       return redirect(uri_for("/login")."?service=$service");
     }
     if(!(auth->asa('admin') || auth->asa('qa_manager'))){
@@ -72,6 +72,7 @@ get('/qa_control',sub {
     fq => $fq,
     start => $offset,
     limit => $num,
+    reify => scans()
   );
 
   if($sort =~ /^\w+\s(?:asc|desc)$/o){
@@ -89,7 +90,9 @@ get('/qa_control',sub {
   };
 
   for my $hit(@$hits){
-    $hit->{files} = dir_info($hit->{path})->files();
+    try{
+      $hit->{dir_info} = dir_info($hit->{path});
+    }catch{};
   }
 
   if(scalar(@errors)==0){

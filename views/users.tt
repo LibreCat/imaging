@@ -18,15 +18,15 @@
     <tr>
       <td>
         [% user.name | html %]
-        [%- IF user.id != "1" %]
+        [%- IF user.item("_id") != "admin" %]
         <div class="btn-group actions">
-          <a class="btn btn-small" href="[% request.uri_base %]/user/[% user.id %]/edit"><i class="icon-pencil"></i></a>
-          <a class="btn btn-small" href="[% request.uri_base %]/user/[% user.id %]/delete"><i class="icon-trash"></i></a>
+          <a class="btn btn-small" href="[% request.uri_base %]/user/[% user.item('_id') %]/edit"><i class="icon-pencil"></i></a>
+          <a class="btn btn-small" href="[% request.uri_base %]/user/[% user.item('_id') %]/delete"><i class="icon-trash"></i></a>
         </div>
         [%- END %]
       </td>
       <td>[% user.login | html %]</td>
-      <td>[% user.roles | html %]</td>
+      <td>[% user.roles.join(',') | html %]</td>
     </tr>
     [%- END %]
   </tbody>
