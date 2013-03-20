@@ -10,7 +10,7 @@ has source => (
   required => 0,
   lazy => 1,
   trigger => sub {
-    $_[0]->_source( io( $_[0]->source(),'binmode' => 'utf-8' ) );
+    $_[0]->_source( io( $_[0]->source(),'binmode' => 'utf8' ) );
   }
 );
 has _source => (
