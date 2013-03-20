@@ -281,10 +281,13 @@ users->each(sub{
 
 #stap 2: zijn er scans die opnieuw in het systeem geplaatst moeten worden?
 #regel: indien $scan->{path} niet meer bestaat, dan wordt dit toegepast!
+for my $scan_id(@scan_ids_ready){
 
-foreach my $scan_id(@scan_ids_ready){
   my $scan = $scans->get($scan_id);
-  next if -d $scan->{path};
+
+  #opgelet: reeds gecontroleerde scans met status ~ incoming vallen niet onder deze regeling!
+  next if ( (-d $scan->{path}) || ($scan->{status} =~ /incoming/o) );
+
   $scan->{status} = "incoming";
   push @{ $scan->{status_history} },{
     user_login => "-",
@@ -295,8 +298,8 @@ foreach my $scan_id(@scan_ids_ready){
   $scan->{datetime_last_modified} = Time::HiRes::time;
   update_scan($scan);
   update_status($scan,-1);
-}
 
+}
 
 #stap 3: zijn er scandirectories die hier al te lang staan?
 my @delete = ();
