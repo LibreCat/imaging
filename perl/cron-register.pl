@@ -541,6 +541,7 @@ foreach my $id(@mediamosa_ids){
     say STDERR $stderr;
   }elsif($stdout =~ /new asset id: (\w+)\n/m){
     say "asset_id found:$1";
+    $scan->{busy} = 1;
     $scan->{asset_id} = $1;
     $scan->{datetime_last_modified} = Time::HiRes::time;
     update_scan($scan);

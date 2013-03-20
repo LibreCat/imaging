@@ -20,7 +20,11 @@
     <a class="btn btn-small" href="[% request.uri_base %]/scans/[% scan.item('_id') %]/status">Wijzig status</a>
 [% END %]
 
-[%- IF scan.busy %]
+[% IF scan.status == "registered" && scan.busy %]
+    <div class="alert">
+        <strong>opgelet!</strong>Mediamosa maakt momenteel afgeleiden. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
+    </div>
+[%- ELSIF scan.busy %]
     <div class="alert">
         <strong>opgelet!</strong> Dit record is nog niet geregistreerd door het systeem. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
     </div>

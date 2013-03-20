@@ -83,6 +83,39 @@ sub construct_query {
   }
   join("&",@parts);
 }
+sub mm_total_finished {
+  my $asset_id = shift;
+
+  my($total,$total_finished) = (0,0);
+  my($offset,$limit,$item_count_total)=(0,200,0);
+
+  do{
+    my $vpcore = mediamosa->asset_job_list({
+      user_id => "Nara",
+      asset_id => $asset_id,    
+      limit => $limit,
+      offset => $offset
+    });
+    if($vpcore->header->request_result() ne "success"){
+      say "failed";
+      confess $vpcore->header->request_result_description();
+    }
+    $item_count_total = $vpcore->header->item_count_total;
+    $vpcore->items->each(sub{
+      my $jobs = $_[0];
+      for my $id(keys %$jobs){
+        say "\tjobid $id, status: ".$jobs->{$id}->{status}.", job_type:".$jobs->{$id}->{job_type};
+        $total_finished++ if $jobs->{$id}->{status} eq "FINISHED";
+        $total++;
+      }
+    });
+
+    $offset += $limit;
+  }while($offset < $item_count_total);
+
+  return $total,$total_finished;
+
+}
 sub move_scan {
   my $scan = shift;
   my $new_path = $scan->{new_path};
@@ -275,7 +308,39 @@ my $index_scan = index_scan();
     move_scan(scans->get($id));
   }
 }
-#status update 2: zitten objecten in archivering reeds in archief?
+
+#status update 2: zijn jobs van mediamosa al klaar?
+{
+
+  my $query = "status:\"registered\" AND asset_id:*";
+  my($start,$limit,$total)=(0,1000,0);
+  my @ids = ();
+  do{
+    my $result = $index_scan->search(
+      query => $query,
+      start => $start,
+      limit => $limit
+    );
+    $total = $result->total;
+    foreach my $hit(@{ $result->hits || [] }){
+      push @ids,$hit->{_id};
+    }
+    $start += $limit;
+
+  }while($start < $total);
+
+  for my $id(@ids){
+
+    my $scan = $scans->get($id);
+
+    my($total,$total_finished) = mm_total_finished($scan->{asset_id});
+    say "$id => $scan->{asset_id} => total:$total, total_finished:$total_finished, so done: ".($total == $total_finished ?  "yes":"no");
+
+  }
+
+}
+
+#status update 3: zitten objecten in archivering reeds in archief?
 {
 
   #collect identifiers
