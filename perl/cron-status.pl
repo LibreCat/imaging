@@ -332,8 +332,13 @@ my $index_scan = index_scan();
   for my $id(@ids){
 
     my $scan = $scans->get($id);
+    next if !$scan->{busy};
 
     my($total,$total_finished) = mm_total_finished($scan->{asset_id});
+    if($total == $total_finished){
+      delete $scan->{busy};
+      update_scan($scan);
+    }
     say "$id => $scan->{asset_id} => total:$total, total_finished:$total_finished, so done: ".($total == $total_finished ?  "yes":"no");
 
   }
