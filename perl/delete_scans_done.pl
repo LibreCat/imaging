@@ -1,31 +1,11 @@
 #!/usr/bin/env perl
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Catmandu;
-use Dancer qw(:script);
+use Catmandu qw(:load);
 use Catmandu::Sane;
 use File::Path qw(rmtree);
-use Cwd;
-
-BEGIN {
-   
-  #load configuration
-  my $appdir = Cwd::realpath(
-      dirname(dirname(
-          Cwd::realpath( __FILE__)
-      ))
-  );
-  Dancer::Config::setting(appdir => $appdir);
-  Dancer::Config::setting(public => "$appdir/public");
-  Dancer::Config::setting(confdir => $appdir);
-  Dancer::Config::setting(envdir => "$appdir/environments");
-  Dancer::Config::load();
-  Catmandu->load($appdir);
-
-}
-
-use Dancer::Plugin::Imaging::Routes::Utils;
-
+use File::Basename;
+use Imaging qw(:all);
 
 my($offset,$limit,$total) = (0,1000,0);
 do{

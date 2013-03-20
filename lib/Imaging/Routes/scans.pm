@@ -178,7 +178,7 @@ post '/scans/:_id' => sub {
 
           }else{
 
-            my $doc = $result->content->{response}->{docs}->[0];
+            my $doc = $result->first;
             my $baginfo = {};
             my $path_baginfo = $scan->{path}."/bag-info.txt";
             if(-f $path_baginfo){

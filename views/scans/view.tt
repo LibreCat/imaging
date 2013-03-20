@@ -212,7 +212,7 @@
         [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]        
         <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
 
-        <span class="label metadata_archive" data-id="[% metadata_id %]" style="margin-left:20px">gearchiveerd: -</span>
+        <span class="label metadata_archive" data-id="[% metadata_id %]" style="margin-left:20px">controleren in archief..</span>
 
         [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
 
