@@ -105,7 +105,8 @@ sub directory_to_queries {
 sub ensure_archive_id {
   my $scan = $_[0];
 
-  my $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash;
+  my $baginfo = {};
+  $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash if -f $scan->{path}."/bag-info.txt";
 
   if(
     is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0

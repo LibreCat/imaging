@@ -4,7 +4,7 @@ use Try::Tiny;
 use Data::Util qw(:check :validate);
 use File::Basename;
 use File::Spec;
-use Catmandu qw(store);
+use Catmandu;
 
 has store => ( is => 'ro' );
 has bag => ( is => 'ro' );
@@ -13,7 +13,7 @@ has _bag => (
   lazy => 1,
   default => sub {
     my $self = $_[0];
-    store($self->store)->bag($self->bag);
+    Catmandu->store($self->store)->bag($self->bag);
   }
 );
 

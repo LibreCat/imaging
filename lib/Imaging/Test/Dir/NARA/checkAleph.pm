@@ -1,6 +1,6 @@
 package Imaging::Test::Dir::NARA::checkAleph;
 use Moo;
-use Catmandu qw(store);
+use Catmandu;
 use Data::Util qw(:validate);
 use File::Basename;
 use Try::Tiny;
@@ -12,7 +12,7 @@ has _bag => (
   lazy => 1,
   default => sub {
     my $self = $_[0];
-    store($self->store)->bag($self->bag);
+    Catmandu->store($self->store)->bag($self->bag);
   }
 );
 sub is_fatal { 0; }
