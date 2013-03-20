@@ -160,7 +160,7 @@ post('/projects/add',sub{
       });
       project2index($project);
       index_project->commit;
-      redirect(uri_for("/projects"));
+      return redirect(uri_for("/projects"));
 
     }
   }
@@ -271,7 +271,7 @@ post('/project/:_id',sub{
       projects->add($project);
       project2index($project);
       index_project->commit;
-      redirect(uri_for("/projects"));
+      return redirect(uri_for("/projects"));
     }
   }
 

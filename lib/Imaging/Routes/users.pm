@@ -52,7 +52,7 @@ post '/users/add' => sub {
     my $user = users->get( $params->{login} );
     if($user){
         push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";
-    }else{
+    }else{      
       try{
         users->add({
           _id => $params->{login},
@@ -61,10 +61,11 @@ post '/users/add' => sub {
           roles =>  $params->{roles},
           password => md5_hex($params->{password1})
         });
-        redirect(uri_for("/users"));
       }catch{        
         push @errors,"er bestaat reeds een gebruiker met als login $params->{login}";       
       };
+      return redirect(uri_for("/users")) unless @errors;
+
     }
   }
   
@@ -127,7 +128,7 @@ post '/user/:id/edit' => sub {
     }
     if(scalar(@errors)==0){            
       users->add($user);
-      redirect(uri_for("/users"));
+      return redirect(uri_for("/users"));
     }
   }
 
@@ -184,7 +185,7 @@ post '/user/:id/delete' => sub {
 
   }else{
     users->delete($params->{id});
-    redirect(uri_for("/users"));
+    return redirect(uri_for("/users"));
   }
 
   var errors => \@errors;
