@@ -212,6 +212,8 @@
         [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]        
         <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
 
+        <span class="label metadata_archive" data-id="[% metadata_id %]" style="margin-left:20px">gearchiveerd: -</span>
+
         [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
 
         <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]#tab-metadata" style="display:inline">
@@ -358,16 +360,18 @@
   </div>
 </div>
 <script type="text/javascript" charset="utf-8">
-    /* goto tab */
-    // Javascript to enable link to tab
-    if (window.location.hash && window.location.hash != "") {
-        $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
-    } 
+  var baseUrl = "[% request.uri_base %]";
 
-    // Change hash for page-reload
-    $('.nav-tabs a').on('shown', function (e) {
-        window.location.hash = e.target.hash;
-    });
+  /* goto tab */
+  // Javascript to enable link to tab
+  if (window.location.hash && window.location.hash != "") {
+      $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
+  } 
+
+  // Change hash for page-reload
+  $('.nav-tabs a').on('shown', function (e) {
+      window.location.hash = e.target.hash;
+  });
 
   $('#add-comment').submit(function(evt) {
     evt.preventDefault();
@@ -497,6 +501,18 @@
         }
       }
     }
+    $('.metadata_archive').each(function(){
+      var $t = $(this);
+      $.ajax({
+        dataType: "json",
+        url: baseUrl+"/archive?query=identifier~"+$t.attr("data-id"),
+        success: function(data){
+          var addClass = data.hits.length == 1 ? "label-success":"label-important";
+          $t.removeClass(addClass).addClass(addClass);
+          $t.html("in archief: "+data.hits.length);
+        }
+      });     
+    });
   });
 </script>
 [%- END %]

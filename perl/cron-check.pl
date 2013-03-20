@@ -183,17 +183,23 @@ say "$this_file started at ".local_time;
 #   3.1. staat __FIXME.txt in de map? Doe dan niets
 #   3.2. check hoe oud de nieuwste file in de map is. Indien nog niet zo lang geleden, wacht dan
 
+say "looking for scans in ".$mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."\n";
+
 my @scan_ids_ready = ();
 
 users->each(sub{
 
     my $user = $_[0];
 
+    say $user->{_id};
+
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
+
     if(! -d $ready ){
+      say "directory $ready does not exist";
       return;
     }elsif(!getpwnam($user->{login})){
-      say STDERR "$user->{login} does not exist";
+      say "user $user->{login} does not exist";
       return;
     }
     try{
@@ -267,12 +273,32 @@ users->each(sub{
       }
       close CMD;   
     }catch{
-        chomp($_);
-        say STDERR $_;
+      chomp($_);
+      say STDERR $_;
     };
 
 });
-#stap 2: zijn er scandirectories die hier al te lang staan?
+
+#stap 2: zijn er scans die opnieuw in het systeem geplaatst moeten worden?
+#regel: indien $scan->{path} niet meer bestaat, dan wordt dit toegepast!
+
+foreach my $scan_id(@scan_ids_ready){
+  my $scan = $scans->get($scan_id);
+  next if -d $scan->{path};
+  $scan->{status} = "incoming";
+  push @{ $scan->{status_history} },{
+    user_login => "-",
+    status => $scan->{status},
+    datetime => Time::HiRes::time,
+    comments => "Scan directory opnieuw in systeem"
+  };
+  $scan->{datetime_last_modified} = Time::HiRes::time;
+  update_scan($scan);
+  update_status($scan,-1);
+}
+
+
+#stap 3: zijn er scandirectories die hier al te lang staan?
 my @delete = ();
 my @warn = ();
 #foreach my $scan_id(@scan_ids_ready){
@@ -305,7 +331,7 @@ my @warn = ();
 #    $scans->add($scan);
 #}
 
-#stap 3: doe check -> filter lijst van scan_ids_ready op mappen die gecontroleerd moeten worden:
+#stap 4: doe check -> filter lijst van scan_ids_ready op mappen die gecontroleerd moeten worden:
 # 1. mappen die nog geen controle zijn gepasseerd, worden gecontroleerd
 # 2. mappen die wel eens gecontroleerd zijn, maar ongewijzigd sindsdien, worden niet gecontroleerd
 sub get_package {

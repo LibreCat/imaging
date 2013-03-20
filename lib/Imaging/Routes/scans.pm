@@ -2,7 +2,6 @@ package Imaging::Routes::scans;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging::Meercat qw(:all);
-use Catmandu::FedoraCommons;
 use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Dancer::Plugin::Email;
@@ -282,29 +281,6 @@ get('/scans/:_id',sub {
     errors => \@errors,
     projects => \@projects
   });
-
-});
-get '/scans/:_id/archived' => sub {
-
-  my $params = params;
-  my(@errors,@messages);
-  content_type 'json';  
-  my $response = {errors => \@errors,messages => \@messages};  
-
-  my $scan = scans->get($params->{_id});
-  my @ids;
-  if(!$scan){
-    push @errors, "scandirectory $params->{_id} niet gevonden";
-  }elsif(! @{$scan->{metadata}}){
-    push @errors,"scandirectory $params->{_id} heeft geen metadata";
-  }else{
-    for my $metadata(@{ $scan->{metadata} }){
-      my $dc_identifier = grep { $_ =~ /^rug01:\d+$/ } @{ $metadata->{DC-Identifier} // [] };
-    }
-  }
-
-  $response->{status} = scalar(@errors) == 0 ? "ok":"error";
-  return to_json($response);
 
 });
 get('/scans/:_id/json',sub{
