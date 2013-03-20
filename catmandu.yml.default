@@ -1,4 +1,8 @@
 store:
+ meercat:
+  package: "Catmandu::Store::Solr"
+  options:
+   url: "http://localhost:4000/solr/proxy"   
  core:
   package: "Catmandu::Store::DBI"
   options:
@@ -9,6 +13,8 @@ store:
     projects: &sformat
      serialization_format: "messagepack"
     scans: *sformat
+    users: *sformat
+    users2: *sformat
  index_scan:
   package: "Catmandu::Store::Solr"
   options:
@@ -23,3 +29,4 @@ store:
    url: "http://localhost:8983/solr/core2"
 fix_files:
  marc2dublincore: "fix/marc2dublincore"
+#base_url: "http://localhost/path/to/dancer"

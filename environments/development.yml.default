@@ -47,7 +47,10 @@ plugins:
    - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
  Auth::RBAC:
   credentials:
-   class: MySQL
+   class: Catmandu
+   options:
+    store: core
+    bag: users
   permissions:
    class: Config
    options:
@@ -89,12 +92,6 @@ plugins:
      archivaris: {}
      catalograaf: {}
 cache: {}
-index:
- meercat: &meercatindex
-  #url: "http://aleph.ugent.be:8983/solr/proxy"
-  url: "http://localhost:4000/solr/proxy"
-  default_params:
-   fq: "source:rug01"
 home:
  roles: 
   # sprintf( config->{home}->{roles}->{$first_role} , $user->{login} )
@@ -105,7 +102,7 @@ home:
  default: "/scans"
 app:
  qa_control:
-  default_sort: "datetime_last_modified desc"
+  default_sort: "datetime_last_modified asc"
  logs:
   default_sort: "datetime desc"
  scans:
@@ -125,14 +122,12 @@ app:
       edit: 1
     - key: "DC-Identifier"
       edit: 1
-      required: 1
     - key: "DC-Description"
       edit: 1
       tag: "textarea"
     - key: "DC-Type"
       edit: 1
       tag: "select"
-      required: 1
       values: ["Text","Audio","Sound","Image","Dataset","MovingImage"]
     - key: "DC-Creator"
       edit: 1
@@ -141,7 +136,6 @@ app:
       tag: "select"
       values: ["open","closed","ugent","media ugent","media closed"]
     - key: "DC-Subject"
-      required: 1
       edit: 1
 default_app: "/"
 refresh_rate: 5
@@ -306,7 +300,7 @@ profiles:
      on_error: "continue"
    - class: "Imaging::Test::Dir::NARA::checkAleph"
      args:
-      solr_args: *meercatindex
+      store: meercat
      on_error: "continue"
  BAG:
   description: "inc/profiles/description/BAG.tt"
@@ -339,7 +333,7 @@ profiles:
      on_error: "continue"
    - class: "Imaging::Test::Dir::TAR::checkAleph"
      args: 
-      solr_args: *meercatindex
+      store: meercat
      on_error: "continue"
 cron:
  register:
@@ -360,3 +354,5 @@ archive_site:
   path: "/app/api"
 publication_site:
  base_url: "http://adore.ugent.be"
+fedora:
+ args: ["http://localhost:4000/fedora","",""]
