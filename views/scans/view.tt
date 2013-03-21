@@ -21,9 +21,13 @@
 [% END %]
 
 [% IF scan.status == "registered" && scan.busy %]
-    <div class="alert">
-        <strong>opgelet!</strong>Mediamosa maakt momenteel afgeleiden. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
-    </div>
+  <div class="alert">
+      <strong>opgelet!</strong>Mediamosa maakt momenteel afgeleiden. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
+  </div>
+  <div class="progress progress-info" id="job_progress" data-id="[% scan.asset_id %]">
+    <div class="bar" style="width:0%"></div>
+  </div>
+  
 [%- ELSIF scan.busy %]
     <div class="alert">
         <strong>opgelet!</strong> Dit record is nog niet geregistreerd door het systeem. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
@@ -517,6 +521,33 @@
         }
       });     
     });
+    
+    var job_progress = $("#job_progress");
+    if(job_progress.size() > 0){
+      setInterval(function(){
+      
+        var asset_id = job_progress.attr("data-id");
+        $.ajax({
+          dataType: "json",
+          url: baseUrl+"/jobs/"+asset_id,
+          success: function(data){
+            console.log(data);
+            var done = 0;
+            for(var i = 0;i < data["hits"].length;i++){
+              var job = data["hits"][i];
+              if(job["status"] == "FINISHED"){
+                done++;
+              }
+            }
+            var progress = Math.floor((done / data["hits"].length) * 100) + "%";
+            console.log("progress",progress);
+            job_progress.find(".bar").css("width",progress);
+          }
+        });
+  
+      },1000*10);
+    }
   });
+  
 </script>
 [%- END %]
