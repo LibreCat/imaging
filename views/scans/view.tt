@@ -525,7 +525,8 @@
     var mm_check_jobs_timeout = 1000*30;
     var job_progress = $("#job_progress");
     if(job_progress.size() > 0){
-      setInterval(function(){
+      var x;
+      x = setInterval(function(){
       
         var asset_id = job_progress.attr("data-id");
         $.ajax({
@@ -539,8 +540,14 @@
                 done++;
               }
             }
-            var progress = Math.floor((done / data["hits"].length) * 100) + "%";            
-            job_progress.find(".bar").css("width",progress);
+            var progress = Math.floor((done / data["hits"].length) * 100);            
+            job_progress.find(".bar").css("width",progress+"%");
+
+            if(progress >= 100){
+              //niet zomaar pagina opnieuw laden, want cron-status.pl heeft mogelijks "busy" nog niet verwijderd
+              //op die manier vermijdt je dat de pagina zich voortdurend herlaadt..
+              clearInterval(x);
+            }
           }
         });
   
