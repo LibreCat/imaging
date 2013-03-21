@@ -12,11 +12,14 @@
     [%- IF stats.ready.${user_login} > 0 %]
       <a href="[% request.uri_base %]/ready/[% user_login %]">[% stats.ready.${user_login} %]</a>
       [% IF stats.fixme.${user_login} %]
-        &nbsp;([% stats.fixme.${user_login} || 0 %] in herwerking)
+        <span class="label label-info">[% stats.fixme.${user_login} || 0 %] in herwerking</span>
       [% END %]  
     [%- ELSE %]
       [% stats.ready.${user_login} %]
     [%- END %]
+    [% IF missing.${user_login} > 0 %]
+      <span class="label label-important">verdwenen scans: [% missing.${user_login} %]</span>
+    [% END %]
   </dd>
   [%- END %]
 

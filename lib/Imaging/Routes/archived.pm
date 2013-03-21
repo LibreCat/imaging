@@ -1,20 +1,9 @@
 package Imaging::Routes::archived;
 use Dancer ':syntax';
 use Catmandu::FedoraCommons;
-use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is :array);
 use Try::Tiny;
-use URI::Escape qw(uri_escape);
-
-hook before => sub {
-  if(request->path_info =~ /^\/archived/o){
-    if(!authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }
-  }
-};
 
 get '/archive' => sub {
 

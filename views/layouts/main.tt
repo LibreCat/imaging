@@ -71,7 +71,14 @@
                 [%- IF auth.can('directories','edit') %]
                 <li><a href="[% request.uri_for('/directories') %]">mappen</a></li>
                 [%- END %]
-                [%- IF session.user.has_dir %]
+                [% path_ready =  mount _ "/" _ mount_conf.subdirectories.ready _ "/" _ session.user.login %]
+                [% has_dir = 1 %]                
+                [% TRY %]
+                  [% USE File(path_ready) %]
+                [% CATCH %]
+                  [% has_dir = 0 %]
+                [% END %]
+                [%- IF has_dir %]
                 <li><a href="[% request.uri_for('/ready/' _ session.user.login ) %]">ready</a></li>
                 [%- END %]
                 [%- IF auth.asa('admin') ||  auth.asa('qa_manager') %]

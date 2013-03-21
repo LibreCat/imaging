@@ -10,7 +10,6 @@ use Catmandu;
 use Catmandu::Util qw(:is :array);
 use Data::Pageset;
 use Try::Tiny;
-use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
 use Clone qw(clone);
 use Time::HiRes;
@@ -41,14 +40,6 @@ Hash::Merge::specify_behavior({
   }
 });
 
-hook before => sub {
-  if(request->path_info =~ /^\/scans/o){
-    if(!authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }
-  }
-};
 hook before_template_render => sub {
   my $tokens = $_[0];
   $tokens->{status_change_conf} = status_change_conf();
@@ -740,9 +731,6 @@ sub ensure_path {
     open my $fh,">:utf8","$path/__MANIFEST-MD5.txt" or die($!);
     close $fh;
   }
-}
-sub fedora {
-  state $fedora = Catmandu::FedoraCommons->new(@{ config->{fedora}->{args} // [] });
 }
 
 true;

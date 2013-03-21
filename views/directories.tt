@@ -33,17 +33,13 @@
           <a class="btn" href="[% request.uri_base %]/directories/[% user.login %]"><i class="icon-pencil"></i></a>
         </div>
       </td>
-      <td>
-        [%- IF user.has_dir %]
+      <td>        
         <a href="[% request.uri_base %]/ready/[% user.login %]">[% user.ready %]</a>
         [%- TRY %]
-        [%- USE File(user.ready) %]
+          [%- USE File(user.ready) %]
         [%- CATCH File %]
-        <span class="label label-important">error</span>
+          <span class="label label-important">error</span>
         [%- END %]					
-        [%- ELSE %]
-        -
-        [%- END %]
       </td>
     </tr>
     [%- END %]

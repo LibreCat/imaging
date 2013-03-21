@@ -14,19 +14,14 @@ use URI::Escape qw(uri_escape);
 use IO::CaptureOutput qw(capture_exec);
 
 hook before => sub {
-  if(request->path_info =~ /^\/directories/o){
-    my $auth = auth;
-    my $authd = authd;
-    if(!$authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }elsif(!$auth->can('directories','edit')){
-      request->path_info('/access_denied');
-      my $params = params;
-      $params->{text} = "u mist de nodige rechten om de scandirectories aan te passen";
-    }
+  if(request->path_info =~ /^\/directories/o && !auth->can('directories','edit')){
+
+    request->path_info('/access_denied');
+    params->{text} = "u mist de nodige rechten om de scandirectories aan te passen";
+
   }
 };
+
 get('/directories',sub {
   my $config = config;
   my $params = params;
@@ -91,7 +86,6 @@ post '/directories/:id' => sub {
         my($stdout,$stderr,$success,$exit_code) = capture_exec("chown -R $user->{login} $path && chmod -R 0755 $path");
         die($stderr) if !$success;
         push @messages,"directory '$_' is ok nu";
-        $user->{has_dir} = 1;
         users->add($user);
       }catch{
         push @errors,$_;

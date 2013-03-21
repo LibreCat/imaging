@@ -8,24 +8,18 @@ use Catmandu qw(store);
 use Catmandu::Util qw(:is);
 use Data::Pageset;
 use Try::Tiny;
-use URI::Escape qw(uri_escape);
 
-hook before => sub {
-  if(request->path_info =~ /^\/status/o){
-    if(!authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }
-  }
-};
 any('/status',sub {
 
   my $params = params;
   my @users;
-  users->each(sub{
-    push @users,$_[0] if $_[0]->{has_dir};
-  });
   my $mount_conf = mount_conf;    
+
+  users->each(sub{
+    my $user = $_[0];
+    my $ready = mount()."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
+    push @users,$_[0] if -d $ready;
+  });
   my $stats = {
     fixme => {},
     ready => {},
@@ -59,7 +53,27 @@ any('/status',sub {
   foreach my $status(@states){
     $facet_status->{$status} = $facet_counts{$status} || 0;
   }
+
+  #ontbrekende scans
+  my $missing = {};
+  {
+      my $query = "status:incoming*";
+      my($start,$limit,$total) = (0,100,0);
+      do{
+        my $result = index_scan->search(query => $query,start => $start,limit => $limit);
+        for my $hit(@{ $result->hits }){
+          if( !(-d $hit->{path}) ){
+            $missing->{ $hit->{user_login} }++;
+          }
+        }  
+        $start += $limit;
+      }while($start < $total);
+      
+  };
+
+
   template('status',{
+    missing => $missing,
     stats => $stats,
     facet_status => $facet_status
   });

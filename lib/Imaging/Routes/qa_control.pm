@@ -8,22 +8,20 @@ use Catmandu qw(store);
 use Catmandu::Util qw(:is);
 use Data::Pageset;
 use Try::Tiny;
-use URI::Escape qw(uri_escape);
 use List::MoreUtils qw(first_index);
 
 hook before => sub {
+
   if(request->path_info =~ /^\/qa_control/o){
-    if(!authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }
     if(!(auth->asa('admin') || auth->asa('qa_manager'))){
-      return forward('/access_denied',{
-        text => "U mist de nodige gebruikersrechten om deze pagina te kunnen zien"
-      });
+
+      request->path_info('/access_denied');
+      params->{text} = "U mist de nodige gebruikersrechten om deze pagina te kunnen zien";
+      
     }
   }
 };
+
 get('/qa_control',sub {
 
   my $params = params;

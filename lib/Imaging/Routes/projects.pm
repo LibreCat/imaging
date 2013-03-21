@@ -7,27 +7,27 @@ use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
 use Data::Pageset;
-use URI::Escape qw(uri_escape);
 use DateTime::Format::Strptime;
 use Time::HiRes;
 use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 
 hook before => sub {
+
   if(request->path_info =~ /^\/project(.*)$/o){
     my $auth = auth;
     my $authd = authd;
     my $subpath = $1;
-    if(!$authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }elsif($subpath =~ /(?:add|delete)/o && !$auth->can('projects','edit')){
+
+    if(($subpath =~ /(?:add|delete)/o || request->is_post())&& !$auth->can('projects','edit')){
+
       request->path_info('/access_denied');
-      my $params = params;
-      $params->{text} = "U beschikt niet over de nodige rechten om projectinformatie aan te passen"
+      params->{text} = "U beschikt niet over de nodige rechten om projectinformatie aan te passen";
+      
     }
   }
 };
+
 get('/projects',sub {
   
   my $config = config;

@@ -2,24 +2,11 @@ package Imaging::Routes::listing;
 use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging qw(:all);
-use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
-use URI::Escape qw(uri_escape);
 use Try::Tiny;
 use File::Find;
-
-hook before => sub {
-  if(request->path_info =~ /^\/ready/o){
-    my $auth = auth;
-    my $authd = authd;
-    if(!$authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }
-  }
-};  
 
 get('/ready/:user_login',sub{
   my $params = params;
@@ -58,7 +45,7 @@ get('/ready/:user_login',sub{
   #stap 2: welke mappen zijn 'incoming*', maar staan blijkbaar niet meer op hun plaats?
   my @missing_scans;
   {
-      my $query = "status:incoming*";
+      my $query = "status:incoming* AND user_login:".$params->{user_login};
       my($start,$limit,$total) = (0,100,0);
       do{
         my $result = index_scan->search(query => $query,start => $start,limit => $limit);

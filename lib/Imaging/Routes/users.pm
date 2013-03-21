@@ -6,24 +6,19 @@ use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util  qw(:is);
-use URI::Escape qw(uri_escape);
 use Digest::MD5 qw(md5_hex);
 use Try::Tiny;
 
 hook before => sub {
-  if(request->path_info =~ /^\/user/o){
-    my $auth = auth;
-    my $authd = authd;
-    if(!$authd){
-      my $service = uri_escape(uri_for(request->path_info));
-      return redirect(uri_for("/login")."?service=$service");
-    }elsif(!$auth->can('manage_accounts','edit')){
-      request->path_info('/access_denied');
-      my $params = params;
-      $params->{text} = "U beschikt niet over de nodige rechten om gebruikersinformatie aan te passen";
-    }
+
+  if(request->path_info =~ /^\/user/o && !auth->can('manage_accounts','edit')){
+
+    request->path_info('/access_denied');
+    params->{text} = "U beschikt niet over de nodige rechten om gebruikersinformatie aan te passen";
+    
   }
 };  
+
 get('/users',sub{
 
   template('users',{
