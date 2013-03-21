@@ -522,6 +522,7 @@
       });     
     });
     
+    var mm_check_jobs_timeout = 1000*30;
     var job_progress = $("#job_progress");
     if(job_progress.size() > 0){
       setInterval(function(){
@@ -530,8 +531,7 @@
         $.ajax({
           dataType: "json",
           url: baseUrl+"/jobs/"+asset_id,
-          success: function(data){
-            console.log(data);
+          success: function(data){            
             var done = 0;
             for(var i = 0;i < data["hits"].length;i++){
               var job = data["hits"][i];
@@ -539,13 +539,12 @@
                 done++;
               }
             }
-            var progress = Math.floor((done / data["hits"].length) * 100) + "%";
-            console.log("progress",progress);
+            var progress = Math.floor((done / data["hits"].length) * 100) + "%";            
             job_progress.find(".bar").css("width",progress);
           }
         });
   
-      },1000*10);
+      },mm_check_jobs_timeout);
     }
   });
   
