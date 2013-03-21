@@ -3,36 +3,15 @@ use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging qw(index_log);
 use Catmandu::Sane;
-use Catmandu qw(store);
-use Catmandu::Util qw(:is);
-use Data::Pageset;
 use Try::Tiny;
 
 get('/logs',sub {
 
-  my $params = params;
   my $config = config;
   my $index_log = index_log();
-  my $q = is_string($params->{q}) ? $params->{q} : "*";
 
-  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
-  $params->{page} = $page;
-  my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
-  $params->{num} = $num;
-  my $offset = ($page - 1)*$num;
-  my $sort = $params->{sort};
-
-  my %opts = (
-    query => $q,
-    start => $offset,
-    limit => $num
-  );
-
-  if($sort =~ /^\w+\s(?:asc|desc)$/o){
-    $opts{sort} = $sort;
-  }else{
-    $opts{sort} = $config->{app}->{logs}->{default_sort} if $config->{app}->{logs} && $config->{app}->{logs}->{default_sort};
-  }
+  my %opts = simple_search_params();
+  $opts{sort} = $config->{app}->{logs}->{default_sort} if !defined($opts{sort}) && $config->{app}->{logs} && $config->{app}->{logs}->{default_sort};
 
   my($result,$error);
   try {
@@ -40,24 +19,11 @@ get('/logs',sub {
   }catch{
     $error = $_;
   };
-  if(!$error){
-    my $page_info = Data::Pageset->new({
-      'total_entries'       => $result->total,
-      'entries_per_page'    => $num,
-      'current_page'        => $page,
-      'pages_per_set'       => 8,
-      'mode'                => 'fixed'
-    });
-    template('logs',{
-      logs => $result->hits,
-      page_info => $page_info          
-    });
-  }else{
-    template('logs',{
-      logs => [],
-      error => $error          
-    });
-  }
+
+  template('logs',{
+    result => $result,
+    error => $error          
+  });
 
 });
 

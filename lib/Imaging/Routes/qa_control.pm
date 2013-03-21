@@ -6,7 +6,6 @@ use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
-use Data::Pageset;
 use Try::Tiny;
 use List::MoreUtils qw(first_index);
 
@@ -28,22 +27,14 @@ get('/qa_control',sub {
   my $config = config;
   my @errors = ();
   my $index_scan = index_scan();
-  my $q = is_string($params->{q}) ? $params->{q} : "*";
-
-  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
-  $params->{page} = $page;
-  my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
-  $params->{num} = $num;
-  my $offset = ($page - 1)*$num;
-  my $sort = $params->{sort};
 
   my $result;
+
+  #facets opvragen over de hele index
   my @states = @{ $config->{status}->{collection}->{qa_control} || [] };
   my $fq = join(' OR ',map { "status:$_" } @states);
-
   my $facet_status;
   my $total_qa_control = 0;
-  #facets opvragen over de hele index
   try{
     $result = index_scan->search(
       query => "*:*",
@@ -59,54 +50,27 @@ get('/qa_control',sub {
   };
 
   #zoekresultaten ophalen
-  my %opts = (
-    query => $q,
-    fq => $fq,
-    start => $offset,
-    limit => $num,
-    reify => scans()
-  );
-
-  if($sort =~ /^\w+\s(?:asc|desc)$/o){
-    $opts{sort} = $sort;
-  }else{
-    $opts{sort} = $config->{app}->{qa_control}->{default_sort} if $config->{app}->{qa_control} && $config->{app}->{qa_control}->{default_sort};
-  }
-
-  my $hits = [];
+  my %opts = (simple_search_params(),fq => $fq,reify => scans);
+  $opts{sort} = $config->{app}->{qa_control}->{default_sort} if !defined($opts{sort}) && $config->{app}->{qa_control} && $config->{app}->{qa_control}->{default_sort};
+  
   try {
-    $result= index_scan->search(%opts);
-    $hits = $result->hits();
+    $result= index_scan->search(%opts);    
   }catch{
     push @errors,"ongeldige zoekvraag";
   };
 
-  for my $hit(@$hits){
+  for my $hit(@{ $result->hits // [] }){
     try{
       $hit->{dir_info} = dir_info($hit->{path});
     }catch{};
   }
 
-  if(scalar(@errors)==0){
-    my $page_info = Data::Pageset->new({
-      'total_entries'       => $result->total,
-      'entries_per_page'    => $num,
-      'current_page'        => $page,
-      'pages_per_set'       => 8,
-      'mode'                => 'fixed'
-    });
-    template('qa_control',{
-      scans => $hits,
-      page_info => $page_info,
-      facet_status => $facet_status,
-      total_qa_control => $total_qa_control
-    });
-  }else{
-    template('qa_control',{
-      scans => [],
-      errors => \@errors
-    });
-  }
+  template('qa_control',{
+    result => $result,
+    facet_status => $facet_status,
+    total_qa_control => $total_qa_control
+  });
+
 });
 
 true;

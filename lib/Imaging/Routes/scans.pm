@@ -8,7 +8,6 @@ use Dancer::Plugin::Email;
 use Catmandu::Sane;
 use Catmandu;
 use Catmandu::Util qw(:is :array);
-use Data::Pageset;
 use Try::Tiny;
 use List::MoreUtils qw(first_index);
 use Clone qw(clone);
@@ -48,60 +47,29 @@ get('/scans',sub {
   my $params = params;
   my $config = config;
   my $index_scan = index_scan();
-  my $q = is_string($params->{q}) ? $params->{q} : "*";
 
-  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
-  $params->{page} = $page;
-  my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
-  $params->{num} = $num;
-  my $offset = ($page - 1)*$num;
-  my $sort = $params->{sort};
+  my %opts = simple_search_params();
+  $opts{sort} = $config->{app}->{scans}->{default_sort} if !defined($opts{sort}) && $config->{app}->{scans} && $config->{app}->{scans}->{default_sort};  
 
-  my %opts = (
-    query => $q,
-    start => $offset,
-    limit => $num
-  );
-
-  if($sort =~ /^\w+\s(?:asc|desc)$/o){
-    $opts{sort} = $sort;
-  }else{
-    $opts{sort} = $config->{app}->{scans}->{default_sort} if $config->{app}->{scans} && $config->{app}->{scans}->{default_sort};
-  }
-
-  my @errors = ();
-  my($result);
-  my $facets = [];
+  my($result,@errors);
+  
   try {
+
     my $facet_fields = config->{app}->{scans}->{facet_fields};
     if(is_array_ref($facet_fields) && scalar(@$facet_fields) > 0){
       $opts{facet} = "true";
       $opts{"facet.field"} = $facet_fields;
     }
     $result= $index_scan->search(%opts);
-    $facets = $result->{facets};
+    
   }catch{
     push @errors,"ongeldige zoekvraag";
   };
-  if(scalar(@errors)==0){
-    my $page_info = Data::Pageset->new({
-      'total_entries'       => $result->total,
-      'entries_per_page'    => $num,
-      'current_page'        => $page,
-      'pages_per_set'       => 8,
-      'mode'                => 'fixed'
-    });
-    return template('scans',{
-      scans => $result->hits,
-      facets => $facets,
-      page_info => $page_info
-    });
-  }else{
-    return template('scans',{
-      scans => [],
-      errors => \@errors
-    });
-  }
+
+  template('scans',{
+    result => $result,
+    errors => \@errors
+  });
 });
 
 post '/scans/:_id' => sub {

@@ -6,7 +6,6 @@ use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
-use Data::Pageset;
 use DateTime::Format::Strptime;
 use Time::HiRes;
 use Try::Tiny;
@@ -30,33 +29,8 @@ hook before => sub {
 
 get('/projects',sub {
   
-  my $config = config;
-  my $params = params;
- 
-  my $q = $params->{q} || "*";
-  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
-  $params->{page} = $page;
-  my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
-  $params->{num} = $num;
-  my $offset = ($page - 1)*$num;
-  
-  my %opts = (query => $q,offset => $offset,limit => $num); 
-  if(is_string($params->{'sort'}) && $params->{'sort'} =~ /^(\w+)\s(asc|desc)$/o){
-    $opts{sort} = $params->{sort};
-  }
-
-  my $result = index_project->search(%opts);
-
-  my $page_info = Data::Pageset->new({
-    'total_entries'       => $result->total,
-    'entries_per_page'    => $num,
-    'current_page'        => $page,
-    'pages_per_set'       => 8,
-    'mode'                => 'fixed'
-  });
   template('projects',{
-    page_info => $page_info,
-    projects => $result->hits
+    result => index_project->search(simple_search_params())
   }); 
 
 });

@@ -6,7 +6,6 @@ use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
-use Data::Pageset;
 use Try::Tiny;
 
 any('/status',sub {

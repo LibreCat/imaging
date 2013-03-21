@@ -24,37 +24,39 @@
     </div>
 </form>
 
-[%- IF page_info.last_page > 1 %]
+[%- IF result.last_page > 1 %]
 <div class="pagination">
   <ul>
-    [%- IF page_info.first_page && page_info.first_page < page_info.current_page %]
-    <li><a href="[% request.uri_base %]/logs?page=[% page_info.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a></li>
+    [%- IF result.first_page && result.first_page < result.page %]
+    <li><a href="[% request.uri_base %]/logs?page=[% result.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">eerste</a></li>
     [%- END %]
 
-    [%- IF page_info.previous_page %]
-    <li><a href="[% request.uri_base %]/logs?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >vorige</a></li>
+    [%- IF result.previous_page %]
+    <li><a href="[% request.uri_base %]/logs?page=[% result.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >vorige</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">vorige</a></li>
     [%- END %]
 
-    [%- FOREACH page IN page_info.pages_in_set %]
-    [% IF page == page_info.current_page %]
-    <li class="active"><a href="#">[% page %]</a></li>
-    [%- ELSE %]
-    <li><a href="[% request.uri_base %]/logs?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">[% page %]</a></li>
-    [%- END %]
+    [%- FOREACH page IN result.pages_in_spread %]
+      [% IF page == result.page %]
+        <li class="active"><a href="#">[% page %]</a></li>
+      [%- ELSIF page.defined %]
+      <li><a href="[% request.uri_base %]/logs?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">[% page %]</a></li>
+      [% ELSE %]
+      <li class="disabled"><a href="#">..</a></li>
+      [%- END %]
     [%- END %]
 
-    [%- IF page_info.next_page %]
-    <li><a href="[% request.uri_base %]/logs?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >volgende</a></li>
+    [%- IF result.next_page %]
+    <li><a href="[% request.uri_base %]/logs?page=[% result.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >volgende</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">volgende</a></li>
     [%- END %]
 
-    [%- IF page_info.last_page && ( page_info.last_page > page_info.current_page ) %]
-    <li><a href="[% request.uri_base %]/logs?page=[% page_info.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">laatste</a></li>
+    [%- IF result.last_page && ( result.last_page > result.page ) %]
+    <li><a href="[% request.uri_base %]/logs?page=[% result.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">laatste</a></li>
     [%- ELSE %]
     <li class="disabled"><a href="#">laatste</a></li>
     [%- END %]
@@ -62,10 +64,10 @@
 </div>
 [%- END %]
 
-[%- IF logs && logs.size > 0 %]
+[%- IF result.hits && result.hits.size > 0 %]
 <table class="table table-striped table-condensed">
   <caption>
-    [% page_info.first %] tot [% page_info.last %] van [% page_info.total_entries %]
+    [% result.first_on_page %] tot [% result.last_on_page %] van [% result.total %]
     [%- IF params.q && params.q != "*" %]
     - lijst is gefilterd op <em>[% params.q | html %]</em>
     [%- END %]
@@ -78,7 +80,7 @@
     <th>status</th>
     <th>commentaar</th>
   </tr>
-  [%- FOREACH log IN logs %]
+  [%- FOREACH log IN result.hits %]
   <tr>
     <td>
       [%- matches = log.datetime.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]

@@ -6,6 +6,19 @@ use File::Path qw(mkpath);
 use Catmandu::Util qw(:is);
 use Try::Tiny;
 
+sub simple_search_params {
+  my $params = params();
+  my $query = is_string($params->{q}) ? $params->{q} : "*";
+
+  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
+  $params->{page} = $page;
+  my $limit = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
+  $params->{num} = $limit;
+  my $start = ($page - 1)*$limit;
+  my $sort = (is_string($params->{'sort'}) && $params->{'sort'} =~ /^(\w+)\s(asc|desc)$/o) ? $params->{sort} : undef;
+
+  return (query => $query,start => $start,limit => $limit,sort => $sort);
+}
 sub not_found {
 	forward('/not_found',{ requested_path => request->path });
 }
@@ -69,6 +82,8 @@ register mount => \&mount;
 register subdirectories => \&subdirectories;
 register sanity_check => \&sanity_check;
 register not_found => \&not_found;
+register simple_search_params => \&simple_search_params;
+
 register_plugin;
 
 true;

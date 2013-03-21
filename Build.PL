@@ -25,7 +25,6 @@ my $requires = {
 	'Data::Util' => 0,
 	'Dancer::Plugin::Auth::RBAC' => 0,
   'Dancer::Plugin::Email' => 0,
-	'Data::Pageset' => 0,
 	'Hash::Merge::Simple' => 0,
 	'Digest::MD5' => 0,
 	'Cache::FastMmap' => 0,
@@ -46,7 +45,6 @@ my $requires = {
   'Dancer::Middleware::Rebase' => 0,
   'Catmandu::FedoraCommons' => 0,
   'Template::Plugin::File' => 0
-  #'Dancer::Plugin::Auth::RBAC::Credentials:Catmandu' => 0
 };
 my $recommends = {
 	'Starman' => 0,

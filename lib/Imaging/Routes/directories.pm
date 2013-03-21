@@ -6,11 +6,8 @@ use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu qw(store);
 use Catmandu::Util qw(:is);
-use Data::Pageset;
 use File::Path qw(mkpath rmtree);
 use Try::Tiny;
-use Data::Pageset;
-use URI::Escape qw(uri_escape);
 use IO::CaptureOutput qw(capture_exec);
 
 hook before => sub {
@@ -27,23 +24,8 @@ get('/directories',sub {
   my $params = params;
   my(@errors)=();
 
-  my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
-  $params->{page} = $page;
-  my $num = is_natural($params->{num}) && int($params->{num}) > 0 ? int($params->{num}) : 20;
-  $params->{num} = $num;
-  my $offset = ($page - 1)*$num;
-
   my $users = users->to_array;
-  my $total = scalar(@$users);
-  @$users = splice(@$users,$offset,$num);
 
-  my $page_info = Data::Pageset->new({
-    'total_entries'       => $total,
-    'entries_per_page'    => $num,
-    'current_page'        => $page,
-    'pages_per_set'       => 8,
-    'mode'                => 'fixed'
-  });
   #sanity check on mount
   my($success,$errs) = sanity_check();
   push @errors,@$errs if !$success;
@@ -54,11 +36,11 @@ get('/directories',sub {
   foreach my $user(@$users){
     $user->{ready} = "$mount/".$subdirectories->{ready}."/".$user->{login};
   }
+
   #template
   template('directories',{
     users => $users,
-    errors => \@errors,
-    page_info => $page_info
+    errors => \@errors
   });
 });
 post '/directories/:id' => sub {

@@ -7,7 +7,7 @@
   <a class="btn btn-primary" href="[% request.uri_base %]/projects/add"><i class="icon-plus icon-white"></i>nieuw project</a>
   [%- END %]
 
-  [%- IF projects.size %]
+  [%- IF result.hits.size %]
   <form method="GET" class="form-inline autosubmit pull-right">
       <label for="sort">sorteer</label>
       <select name="sort" id="sort">
@@ -28,22 +28,22 @@
   [%- END %]
 </div>
 
-[%- IF projects && projects.size > 0 && page_info.pages_in_set.size > 1 %]
+[%- IF result.hits && result.hits.size > 0 && result.pages_in_spread.size > 1 %]
 <ul class="pager">
-  [%- IF page_info.previous_page %]
-  <li class="previous"><a href="[% request.uri_base %]/projects?page=[% page_info.previous_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">vorige</a></li>
+  [%- IF result.previous_page %]
+  <li class="previous"><a href="[% request.uri_base %]/projects?page=[% result.previous_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">vorige</a></li>
   [%- ELSE %]
   <li class="previous disabled"><a href="#">vorige</a></li>
   [%- END %]
-  [%- IF page_info.next_page %]
-  <li class="next"><a href="[% request.uri_base %]/projects?page=[% page_info.next_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">volgende</a></li>
+  [%- IF result.next_page %]
+  <li class="next"><a href="[% request.uri_base %]/projects?page=[% result.next_page %]&amp;num=[% params.num %]&amp;sort=[% params.sort | uri %]">volgende</a></li>
   [%- ELSE %]
   <li class="next disabled"><a href="#">volgende</a></li>
   [%- END %]
 </ul>
 [%- END %]
 
-[%- IF projects.size %]
+[%- IF result.hits.size %]
 <table class="table table-bordered table-striped">
   <thead>
   <tr>
@@ -57,7 +57,7 @@
   </tr>
   </thead>
   <tbody>
-  [%- FOREACH project IN projects %]
+  [%- FOREACH project IN result.hits %]
     <tr>
       <td>
         <a href="[% request.uri_base %]/project/[% project.item("_id") %]">[% project.name | html %]</a>
