@@ -10,3 +10,7 @@ textarea.baginfostyle {
 th, td {
     overflow:hidden;
 }
+
+.table tbody tr.error > td {
+background-color: #f2dede;
+}

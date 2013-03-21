@@ -28,10 +28,6 @@ hook before => sub {
     }
   }
 };
-hook before_template_render => sub {
-  my $tokens = $_[0];
-  $tokens->{auth} = auth();
-};
 get('/projects',sub {
   
   my $config = config;

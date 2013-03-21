@@ -18,10 +18,6 @@ hook before => sub {
     }
   }
 };
-hook before_template_render => sub {
-  my $tokens = $_[0];
-  $tokens->{auth} = auth();
-};
 any('/status',sub {
 
   my $params = params;

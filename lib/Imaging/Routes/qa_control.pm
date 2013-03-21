@@ -24,12 +24,6 @@ hook before => sub {
     }
   }
 };
-hook before_template_render => sub {
-  my $tokens = $_[0];
-  $tokens->{auth} = auth();
-  $tokens->{mount_conf} = mount_conf();
-};
-
 get('/qa_control',sub {
 
   my $params = params;

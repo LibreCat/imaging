@@ -20,11 +20,6 @@ hook before => sub {
     }
   }
 };  
-hook before_template_render => sub {
-  my $tokens = $_[0];
-  $tokens->{auth} = auth();
-  $tokens->{mount_conf} = mount_conf();
-};
 
 get('/ready/:user_login',sub{
   my $params = params;
@@ -34,9 +29,11 @@ get('/ready/:user_login',sub{
   my $mount = mount();
   my $subdirectories = subdirectories();
   my $dir = "$mount/".$subdirectories->{ready}."/".$user->{login};
-  
-  my @directories = ();
+ 
+  #stap 1: voor welke mappen bestaat een record? 
+  my @directories;
   if(-d $dir){
+
     local(*DIR);
     opendir DIR,$dir;
     while(my $file = readdir(DIR)){
@@ -54,12 +51,31 @@ get('/ready/:user_login',sub{
       push @directories,$obj;
 
     }
-    closedir(DIR);
-    template('ready',{
-      directories => \@directories,
-      user => $user
-    });
+    closedir(DIR);    
+    
   }
+
+  #stap 2: welke mappen zijn 'incoming*', maar staan blijkbaar niet meer op hun plaats?
+  my @missing_scans;
+  {
+      my $query = "status:incoming*";
+      my($start,$limit,$total) = (0,100,0);
+      do{
+        my $result = index_scan->search(query => $query,start => $start,limit => $limit);
+        for my $hit(@{ $result->hits }){
+          push @missing_scans,$hit if !(-d $hit->{path});
+        }  
+        $start += $limit;
+      }while($start < $total);
+      
+  };
+
+  template('ready',{
+    directories => \@directories,
+    user => $user,
+    missing_scans => \@missing_scans
+  });
+
 });
 get('/ready/:user_login/:scan_id',sub{
   my $params = params;

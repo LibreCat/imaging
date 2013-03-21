@@ -85,7 +85,15 @@
     <th>melding</th>
   </tr>
   [%- FOREACH scan IN scans %]
-  <tr>
+  
+    [% IF scan.status != "done" %]
+      [% TRY %]
+        [% USE File(scan.path) %]
+      [% CATCH %]
+        [% file_error = error.info %]
+      [% END %]
+    [% END %]
+  <tr [% IF file_error %]class="error"[% END %]>
     <td><a href="[% request.uri_base _ '/scans/' _ scan.item("_id") %]?fq=[% params.fq | uri %]">[% scan.item("_id") %]</a></td>
     <td>
         <a href="[% request.uri_base %]/scans?q=[% "user_login:\"" _ scan.item("user_login") _ "\"" | uri %]">
@@ -113,7 +121,7 @@
         <a href="[% request.uri_base %]/scans?q=[% "status:\"" _ status _ "\"" | html  %]">[% settings.human_readable.${status} || status %]</a>
     </td>
     <td>
-      <input type="checkbox" disabled="disabled" [% IF scan.item("done") %] checked="checked"[% END %] />
+      <input type="checkbox" disabled="disabled" [% IF scan.status == "done" %] checked="checked"[% END %] />
     </td>
     <td>
       [%- matches = scan.datetime_last_modified.match('(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z') -%]

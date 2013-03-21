@@ -2,8 +2,17 @@ package Imaging::Route;
 use Dancer ':syntax';
 use Catmandu::Sane;
 use Imaging qw(users);
+use Dancer::Plugin::Imaging::Routes::Common;
+use Dancer::Plugin::Auth::RBAC;
 
 prefix undef;
+
+hook before_template_render => sub {
+  my $tokens = $_[0];
+  $tokens->{auth} = auth();
+  $tokens->{authd} = authd();
+  $tokens->{mount_conf} = mount_conf();
+};
 
 any('/not_found',sub{
   status 'not_found';

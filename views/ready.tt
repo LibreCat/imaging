@@ -8,8 +8,28 @@
 <a class="btn btn-mini" href="[% settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login %]">open map</a>
 </p>
 
+[% IF missing_scans && missing_scans.size > 0 %]
+<table class="table table-striped table-condensed">
+  <caption><h4>Deze scans werden in het verleden aangeboden, maar zijn niet meer op hun aangewezen locatie te vinden</h4></caption>
+  <tr>
+    <th>naam</th>
+    <th>status</th>
+  </tr>
+  [% FOREACH scan IN missing_scans %]
+  <tr class="error">
+    <td>
+      <a href="[% request.uri_base _ '/scans/' _ scan.item('_id')  %]">[% scan.item("_id") %]</a>
+    </td>
+    <td>[% scan.status %]</td>
+  </tr>
+  [% END %]
+</table>
+[% END %]
+
+
 [%- IF directories && directories.size > 0 %]
 <table class="table table-striped table-condensed">
+  <caption><h4>Gevonden mappen</h4></caption>
   <tr>
     <th>naam</th>
     <th>aantal bestanden</th>

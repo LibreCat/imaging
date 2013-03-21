@@ -51,8 +51,6 @@ hook before => sub {
 };
 hook before_template_render => sub {
   my $tokens = $_[0];
-  $tokens->{auth} = auth();
-  $tokens->{mount_conf} = mount_conf();
   $tokens->{status_change_conf} = status_change_conf();
 };
 get('/scans',sub {
