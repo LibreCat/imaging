@@ -478,14 +478,19 @@ post '/scans/:_id/:status' => sub {
       if(status_change_allowed($status_from,$status_to)){
 
         #wijzig status
-        $scan->{status} = $status_to;
-        #voeg toe aan status history    
-        push @{ $scan->{status_history} ||= [] },{
-          user_login => session('user')->{login},
+        set_status($scan,
           status => $status_to,
-          datetime => Time::HiRes::time,
+          user_login => session('user')->{login},
           comments => $comments
-        };
+        );
+        #$scan->{status} = $status_to;
+        #voeg toe aan status history    
+        #push @{ $scan->{status_history} ||= [] },{
+        #  user_login => session('user')->{login},
+        #  status => $status_to,
+        #  datetime => Time::HiRes::time,
+        #  comments => $comments
+        #};
         #neem op in comments
         my $text = "wijzing status $status_from naar $status_to";
         $text .= ":$comments" if $comments;

@@ -288,14 +288,15 @@ for my $scan_id(@scan_ids_ready){
   #opgelet: reeds gecontroleerde scans met status ~ incoming vallen niet onder deze regeling!
   next if ( (-d $scan->{path}) || ($scan->{status} =~ /incoming/o) );
 
-  $scan->{status} = "incoming";
-  push @{ $scan->{status_history} },{
-    user_login => "-",
-    status => $scan->{status},
-    datetime => Time::HiRes::time,
-    comments => "Scan directory opnieuw in systeem"
-  };
-  $scan->{datetime_last_modified} = Time::HiRes::time;
+#  $scan->{status} = "incoming";
+#  push @{ $scan->{status_history} },{
+#    user_login => "-",
+#    status => $scan->{status},
+#    datetime => Time::HiRes::time,
+#    comments => "Scan directory opnieuw in systeem"
+#  };
+#  $scan->{datetime_last_modified} = Time::HiRes::time;
+  set_status($scan,status => "incoming");
   update_scan($scan);
   update_status($scan,-1);
 
@@ -432,14 +433,16 @@ foreach my $scan_id(@scan_ids_test){
       }
     }
 
-    $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
-    my $status_history_object = {
-      user_login => "-",
-      status => $scan->{status},
-      datetime => Time::HiRes::time,
-      comments => ""
-    };
-    push @{ $scan->{status_history} },$status_history_object;
+#    $scan->{status} = $num_fatal > 0 ? "incoming_error":"incoming_ok";
+#    my $status_history_object = {
+#      user_login => "-",
+#      status => $scan->{status},
+#      datetime => Time::HiRes::time,
+#      comments => ""
+#    };
+#    push @{ $scan->{status_history} },$status_history_object;
+
+    set_status($scan,status => ($num_fatal > 0 ? "incoming_error":"incoming_ok"));
 
   }
 

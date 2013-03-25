@@ -220,7 +220,7 @@ sub set_status {
   $scan->{status} = $opts{status};
   $scan->{status_history} //= [];
   push @{ $scan->{status_history} },{
-    user_login => $opts{user_login},
+    user_login => ($opts{user_login} // "-"),
     status => $opts{status},
     datetime => Time::HiRes::time,
     comments => ($opts{comments}  // "")

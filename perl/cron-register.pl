@@ -272,14 +272,15 @@ if(!-w $dir_processed){
             }
             if(scalar(@errors) > 0){
                 say "\t\tfailed";
-                $scan->{status} = "incoming_error";
-                my $status_history_object = {
-                    user_login => "-",
-                    status => $scan->{status},
-                    datetime => Time::HiRes::time,
-                    comments => ""
-                };
-                push @{ $scan->{status_history} },$status_history_object;
+#                $scan->{status} = "incoming_error";
+#                my $status_history_object = {
+#                    user_login => "-",
+#                    status => $scan->{status},
+#                    datetime => Time::HiRes::time,
+#                    comments => ""
+#                };
+#                push @{ $scan->{status_history} },$status_history_object;
+                set_status($scan,status => "incoming_error");
                 $scan->{check_log} = \@errors;
 
                 update_scan($scan);
@@ -404,15 +405,16 @@ if(!-w $dir_processed){
         }
 
         #status 'registered'
-        $scan->{status} = "registered";
         delete $scan->{$_} for(qw(busy));
-        push @{ $scan->{status_history} },{
-            user_login =>"-",
-            status => "registered",
-            datetime => Time::HiRes::time,
-            comments => ""
-        };
-        $scan->{datetime_last_modified} = Time::HiRes::time;
+        set_status($scan,status => "registered");
+#        $scan->{status} = "registered";
+#        push @{ $scan->{status_history} },{
+#            user_login =>"-",
+#            status => "registered",
+#            datetime => Time::HiRes::time,
+#            comments => ""
+#        };
+#        $scan->{datetime_last_modified} = Time::HiRes::time;
         
 
         update_scan($scan);
@@ -476,14 +478,15 @@ if(!-w $dir_processed){
     delete $scan->{asset_id};
 
     #status terug 'registered'
-    $scan->{status} = "registered";
-    push @{ $scan->{status_history} },{
-      user_login =>"-",
-      status => "registered",
-      datetime => Time::HiRes::time,
-      comments => ""
-    };
-    $scan->{datetime_last_modified} = Time::HiRes::time;
+    set_status($scan,status => "registered");
+#    $scan->{status} = "registered";
+#    push @{ $scan->{status_history} },{
+#      user_login =>"-",
+#      status => "registered",
+#      datetime => Time::HiRes::time,
+#      comments => ""
+#    };
+#    $scan->{datetime_last_modified} = Time::HiRes::time;
     update_scan($scan);
     update_status($scan,-1);
   } 
@@ -616,14 +619,17 @@ for my $scan_id(@qa_control_ok){
     say "stdout:";
     say $stdout;    
     say "scan archiving";
-    $scan->{status} = "archiving";
-    push @{ $scan->{status_history} },{
-      user_login =>"-",
-      status => "archiving",
-      datetime => Time::HiRes::time,
-      comments => ""
-    };
-    $scan->{datetime_last_modified} = Time::HiRes::time;            
+
+    set_status($scan,status => "archiving");
+#    $scan->{status} = "archiving";
+#    push @{ $scan->{status_history} },{
+#      user_login =>"-",
+#      status => "archiving",
+#      datetime => Time::HiRes::time,
+#      comments => ""
+#    };
+#    $scan->{datetime_last_modified} = Time::HiRes::time;            
+
     update_scan($scan);
     update_status($scan,-1);
 
