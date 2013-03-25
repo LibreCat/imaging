@@ -390,6 +390,11 @@ my $index_scan = index_scan();
       $object_profile = $result->parse_content;
     }
 
+    unless(keys %$object_profile){
+      say "\terror: object profile is empty";
+      next;
+    }
+
     my $d1 = $datetime_formatter->parse_datetime($scan->{datetime_last_modified});
     my $d2 = $datetime_formatter->parse_datetime($object_profile->{objLastModDate});
 
