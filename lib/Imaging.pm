@@ -12,7 +12,7 @@ use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
 use Exporter qw(import);
-our @EXPORT_OK=qw(core projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status dir_info list_files);
+our @EXPORT_OK=qw(core projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status set_status dir_info list_files);
 our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
 sub core {
@@ -214,6 +214,18 @@ sub update_status {
   status2index($scan,$index);
   my($success,$error) = index_log->commit;
   die(join('',@$error)) if !$success;
+}
+sub set_status {
+  my($scan,%opts)=@_;
+  $scan->{status} = $opts{status};
+  $scan->{status_history} //= [];
+  push @{ $scan->{status_history} },{
+    user_login => $opts{user_login},
+    status => $opts{status},
+    datetime => Time::HiRes::time,
+    comments => ($opts{comments}  // "")
+  };
+  $scan->{datetime_last_modified} = Time::HiRes::time;
 }
 
 1;

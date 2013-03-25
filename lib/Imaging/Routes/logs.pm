@@ -8,7 +8,6 @@ use Try::Tiny;
 get('/logs',sub {
 
   my $config = config;
-  my $index_log = index_log();
 
   my %opts = simple_search_params();
   $opts{sort} = $config->{app}->{logs}->{default_sort} if !defined($opts{sort}) && $config->{app}->{logs} && $config->{app}->{logs}->{default_sort};

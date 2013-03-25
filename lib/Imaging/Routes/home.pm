@@ -1,4 +1,4 @@
-package Imaging::Routes::info;
+package Imaging::Routes::home;
 use Dancer ':syntax';
 use Imaging qw(users);
 use Catmandu::Sane;

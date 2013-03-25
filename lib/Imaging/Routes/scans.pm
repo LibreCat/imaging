@@ -21,23 +21,24 @@ use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use Imaging::Bag::Info;
 
-Hash::Merge::specify_behavior({
-  "SCALAR" => {
-    "SCALAR" => sub { $_[1] },
-    "ARRAY"  => sub { [ $_[0], @{$_[1]} ] },
-    "HASH"   => sub { $_[1] },
-  },
-  "ARRAY" => {
-    "SCALAR" => sub { $_[1] },
-    "ARRAY"  => sub { [ @{$_[0]}, @{$_[1]} ] },
-    "HASH"   => sub { $_[1] },
-  },
-  "HASH" => {
-    'SCALAR' => sub { $_[1] },
-    'ARRAY'  => sub { [ values %{$_[0]}, @{$_[1]} ] },
-    'HASH'   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
-  }
-});
+#Hash::Merge::specify_behavior({
+#  "SCALAR" => {
+#    "SCALAR" => sub { $_[1] },
+#    "ARRAY"  => sub { [ $_[0], @{$_[1]} ] },
+#    "HASH"   => sub { $_[1] },
+#  },
+#  "ARRAY" => {
+#    "SCALAR" => sub { $_[1] },
+#    "ARRAY"  => sub { [ @{$_[0]}, @{$_[1]} ] },
+#    "HASH"   => sub { $_[1] },
+#  },
+#  "HASH" => {
+#    'SCALAR' => sub { $_[1] },
+#    'ARRAY'  => sub { [ values %{$_[0]}, @{$_[1]} ] },
+#    'HASH'   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
+#  }
+#});
+Hash::Merge::set_behavior('RIGHT_PRECEDENT');
 
 hook before_template_render => sub {
   my $tokens = $_[0];

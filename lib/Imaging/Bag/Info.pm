@@ -67,7 +67,7 @@ sub keys {
 }
 sub values {
   my($self,$key) = @_;
-  my @values = @{ $self->_hash()->{$key} };    
+  exists($self->_hash()->{$key}) && is_array_ref($self->_hash()->{$key}) ? @{ $self->_hash()->{$key} } : ();    
 }
 
 __PACKAGE__;

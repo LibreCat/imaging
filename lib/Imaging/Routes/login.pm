@@ -1,6 +1,5 @@
 package Imaging::Routes::login;
 use Dancer ':syntax';
-use Dancer::Plugin::Imaging::Routes::Common;
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
