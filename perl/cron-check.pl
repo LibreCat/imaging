@@ -35,7 +35,7 @@ BEGIN {
     Catmandu->load($appdir);
 
 	#voer niet uit wanneer andere instantie draait!
-	$pidfile = "/var/run/imaging-check.pid";
+	$pidfile = "/tmp/imaging-check.pid";
 	$pid = File::Pid->new({
 		file => $pidfile
 	});
@@ -162,7 +162,7 @@ sub file_is_busy {
 
 #voer niet uit wanneer imaging-register.pl draait!
 
-my $pidfile_register = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
+my $pidfile_register = "/tmp/imaging-register.pid";
 my $pid_register = File::Pid->new({
   file => $pidfile_register
 });

@@ -43,7 +43,7 @@ BEGIN {
   Catmandu->load($appdir);
 
   #voer niet uit wanneer andere instantie van imaging-register.pl draait!
-  $pidfile = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
+  $pidfile = "/tmp/imaging-register.pid";
   $pid = File::Pid->new({
     file => $pidfile
   });

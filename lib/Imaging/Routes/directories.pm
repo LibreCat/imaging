@@ -9,6 +9,7 @@ use Catmandu::Util qw(:is);
 use File::Path qw(mkpath rmtree);
 use Try::Tiny;
 use IO::CaptureOutput qw(capture_exec);
+use English '-no_match_vars';
 
 hook before => sub {
   if(request->path_info =~ /^\/directories/o && !auth->can('directories','edit')){
@@ -65,7 +66,9 @@ post '/directories/:id' => sub {
       try{
         my $path = "$mount/".$subdirectories->{$_}."/".$user->{login};
         mkpath($path) if(!-d $path);
-        my($stdout,$stderr,$success,$exit_code) = capture_exec("chown -R $user->{login} $path && chmod -R 0755 $path");
+
+        my $this_gid = getgrgid($EGID);
+        my($stdout,$stderr,$success,$exit_code) = capture_exec("chown -R $user->{login}:$this_gid $path && chmod -R 0775 $path");
         die($stderr) if !$success;
         push @messages,"directory '$_' is ok nu";
         users->add($user);

@@ -19,6 +19,7 @@ use URI::Escape qw(uri_escape);
 use LWP::UserAgent;
 use Catmandu::FedoraCommons;
 use Array::Diff;
+use English '-no_match_vars';
 
 my($pid,$pidfile);
 BEGIN {
@@ -36,7 +37,7 @@ BEGIN {
   Dancer::Config::load();
   Catmandu->load($appdir);
 
-  $pidfile = "/var/run/imaging-status.pid";
+  $pidfile = "/tmp/imaging-status.pid";
   $pid = File::Pid->new({
     file => $pidfile
   });
@@ -170,16 +171,18 @@ sub move_scan {
     $login = $user->{login};
   }
 
-  my($user_name,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire)=getpwnam($login);
-  if(!is_string($uid)){
-    say STDERR "$login is not a valid system user!";
-    return;
-  }elsif($uid == 0){
-    say STDERR "root is not allowed as user";
-    return;
-  }
-  my $group_name = getgrgid($gid);
-
+#  my($user_name,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire)=getpwnam($login);
+#  if(!is_string($uid)){
+#    say STDERR "$login is not a valid system user!";
+#    return;
+#  }elsif($uid == 0){
+#    say STDERR "root is not allowed as user";
+#    return;
+#  }
+#  my $group_name = getgrgid($gid);
+  my $user_name = $login;
+  my $this_gid = getgrgid($EGID);
+  my $group_name = $this_gid;
 
   my $old_path = $scan->{path};    
   my $manifest = "$old_path/__MANIFEST-MD5.txt";
@@ -247,7 +250,7 @@ sub move_scan {
 
 #voer niet uit wanneer imaging-register.pl draait!
 
-my $pidfile_register = data_at(config,"cron.register.pidfile") ||  "/var/run/imaging-register.pid";
+my $pidfile_register = "/tmp/imaging-register.pid";
 my $pid_register = File::Pid->new({
   file => $pidfile_register
 });
