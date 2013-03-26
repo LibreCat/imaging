@@ -235,8 +235,9 @@ sub move_scan {
   update_status($scan,-1);
 
   #done? rechten aanpassen aan dat van 01_ready submap
+  #775 zodat imaging achteraf de map terug in processed kan verplaatsen!
   try{
-    `chown -R $user_name:$group_name $scan->{path} && chmod -R 755 $scan->{path}`;
+    `chown -R $user_name:$group_name $scan->{path} && chmod -R 775 $scan->{path}`;
   }catch{
     say STDERR $_;
   };
