@@ -227,32 +227,7 @@ sub move_scan {
 
   #update databank en index
   set_status($scan,status => "incoming");
-#  $scan->{status} = "incoming";
-#  push @{ $scan->{status_history} },{
-#    user_login =>"-",
-#    status => "incoming",
-#    datetime => Time::HiRes::time,
-#    comments => ""
-#  };
-#  $scan->{datetime_last_modified} = Time::HiRes::time;
 
-  #verwijder uit mediamosa
-  if(is_string($scan->{asset_id})){
-
-    say "removing asset_id $scan->{asset_id}";
-    try{
-      my $vpcore = mediamosa->asset_delete({
-        user_id => "Nara",
-        asset_id => $scan->{asset_id},
-        'delete' => 'cascade'
-      });
-      say "asset $scan->{asset_id} removed";
-    }catch{
-      say STDERR $_;
-    }
-
-  }
-  
   #gedaan ermee
   delete $scan->{$_} for(qw(busy new_path new_user asset_id));
 
@@ -335,12 +310,13 @@ my $index_scan = index_scan();
     my $scan = $scans->get($id);
     next if !$scan->{busy};
 
-    my($total,$total_finished) = mm_total_finished($scan->{asset_id});
+    my $asset_id = $scan->{asset_id};
+    my($total,$total_finished) = mm_total_finished($asset_id);
     if($total == $total_finished){
-      delete $scan->{busy};
+      delete $scan->{$_} for(qw(busy asset_id));
       update_scan($scan);
     }
-    say "$id => $scan->{asset_id} => total:$total, total_finished:$total_finished, so done: ".($total == $total_finished ?  "yes":"no");
+    say "$id => $asset_id => total:$total, total_finished:$total_finished, so done: ".($total == $total_finished ?  "yes":"no");
 
   }
 
@@ -448,14 +424,6 @@ my $index_scan = index_scan();
     }        
 
     set_status($scan,status => "archived");
-#    $scan->{status} = "archived";
-#    push @{ $scan->{status_history} },{
-#      user_login =>"-",
-#      status => "archived",
-#      datetime => Time::HiRes::time,
-#      comments => ""
-#    };
-#    $scan->{datetime_last_modified} = Time::HiRes::time;
 
     update_scan($scan);
     update_status($scan,-1);
