@@ -16,28 +16,10 @@ use File::Basename qw();
 use File::Path qw(mkpath);
 use Data::UUID;
 use Hash::Merge qw(merge);
-
 use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use Imaging::Bag::Info;
 
-#Hash::Merge::specify_behavior({
-#  "SCALAR" => {
-#    "SCALAR" => sub { $_[1] },
-#    "ARRAY"  => sub { [ $_[0], @{$_[1]} ] },
-#    "HASH"   => sub { $_[1] },
-#  },
-#  "ARRAY" => {
-#    "SCALAR" => sub { $_[1] },
-#    "ARRAY"  => sub { [ @{$_[0]}, @{$_[1]} ] },
-#    "HASH"   => sub { $_[1] },
-#  },
-#  "HASH" => {
-#    'SCALAR' => sub { $_[1] },
-#    'ARRAY'  => sub { [ values %{$_[0]}, @{$_[1]} ] },
-#    'HASH'   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
-#  }
-#});
 Hash::Merge::set_behavior('RIGHT_PRECEDENT');
 
 hook before_template_render => sub {
@@ -83,6 +65,7 @@ post '/scans/:_id' => sub {
 
   #bewerk metadata
   if(is_string($params->{action})){
+
     if(!(
         $auth->asa("admin") || $auth->can("scans","metadata")
     )){
@@ -98,6 +81,10 @@ post '/scans/:_id' => sub {
     }elsif(-f $scan->{path}."/__FIXME.txt"){
 
       push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
+
+    }elsif(!can_edit_metadata($scan->{status})){
+
+      push @errors,"Metadata kan in deze status niet worden aangepast";
 
     }else{
       # => slecht één metadata-record mag gekoppeld zijn, dus ..
@@ -379,6 +366,10 @@ post('/scans/:_id/baginfo',sub{
 
     push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
 
+  }elsif(!can_edit_metadata($scan->{status})){
+
+    push @errors,"Metadata kan in deze status niet worden aangepast";
+
   }elsif(!is_string($params->{metadata_id})){
 
     push @errors,"Parameter metadata_id is niet opgegeven";
@@ -483,14 +474,6 @@ post '/scans/:_id/:status' => sub {
           user_login => session('user')->{login},
           comments => $comments
         );
-        #$scan->{status} = $status_to;
-        #voeg toe aan status history    
-        #push @{ $scan->{status_history} ||= [] },{
-        #  user_login => session('user')->{login},
-        #  status => $status_to,
-        #  datetime => Time::HiRes::time,
-        #  comments => $comments
-        #};
         #neem op in comments
         my $text = "wijzing status $status_from naar $status_to";
         $text .= ":$comments" if $comments;
@@ -705,6 +688,10 @@ sub ensure_path {
     open my $fh,">:utf8","$path/__MANIFEST-MD5.txt" or die($!);
     close $fh;
   }
+}
+sub can_edit_metadata {
+  state $edit_when = config->{app}->{scans}->{edit}->{'when'} // [];
+  array_includes($edit_when,$_[0]);
 }
 
 true;

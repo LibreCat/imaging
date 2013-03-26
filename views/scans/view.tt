@@ -275,9 +275,8 @@
             </table>
           </div>
           <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
-          [%# USE Dumper %]
-          [%# Dumper.dump(settings.app.scans.edit.baginfo) %]
-          [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
+                    
+          [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX && settings.app.scans.edit.when.grep(scan.status).size > 0 %]
             <form action="[% request.uri_base %]/scans/[% scan.item('_id')%]/baginfo" method="POST" class="form-horizontal edit-baginfo">
               <div class="btn-group pull-right">
                 <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
@@ -525,8 +524,7 @@
     var mm_check_jobs_timeout = 1000*30;
     var job_progress = $("#job_progress");
     if(job_progress.size() > 0){
-      var x;
-      x = setInterval(function(){
+      var func = function(){
       
         var asset_id = job_progress.attr("data-id");
         $.ajax({
@@ -551,7 +549,11 @@
           }
         });
   
-      },mm_check_jobs_timeout);
+      };
+      //start func now, and then at regular intervals
+      func();
+      var x;
+      x = setInterval(func,mm_check_jobs_timeout);
     }
   });
   

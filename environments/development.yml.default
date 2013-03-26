@@ -109,6 +109,7 @@ app:
   default_sort: "datetime_last_modified desc"
   facet_fields: ["project_name","status"]
   edit:
+   when: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives"]
    baginfo:
     - key: "Archive-Id"
       edit: 1
