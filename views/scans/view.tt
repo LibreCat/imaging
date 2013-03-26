@@ -531,6 +531,17 @@
           dataType: "json",
           url: baseUrl+"/jobs/"+asset_id,
           success: function(data){            
+
+            if(data.errors.length > 0){
+              var str = "The asset with ID '"+asset_id+"' was not found in the database";
+              var re = new RegExp(str);
+              for(var i = 0;i < data.errors.length;i++){
+                if(re.test(data.errors[i])){
+                
+                }
+              }
+            }else{
+
             var done = 0;
             for(var i = 0;i < data["hits"].length;i++){
               var job = data["hits"][i];
@@ -545,6 +556,7 @@
               //niet zomaar pagina opnieuw laden, want cron-status.pl heeft mogelijks "busy" nog niet verwijderd
               //op die manier vermijdt je dat de pagina zich voortdurend herlaadt..
               clearInterval(x);
+              //TODO: job_progress vervangen door link die pagina herlaadt?
             }
           }
         });

@@ -98,7 +98,6 @@ sub mm_total_finished {
       offset => $offset
     });
     if($vpcore->header->request_result() ne "success"){
-      say "failed";
       confess $vpcore->header->request_result_description();
     }
     $item_count_total = $vpcore->header->item_count_total;
@@ -315,12 +314,22 @@ my $index_scan = index_scan();
     next if !$scan->{busy};
 
     my $asset_id = $scan->{asset_id};
-    my($total,$total_finished) = mm_total_finished($asset_id);
-    if($total == $total_finished){
-      delete $scan->{$_} for(qw(busy asset_id));
-      update_scan($scan);
-    }
-    say "$id => $asset_id => total:$total, total_finished:$total_finished, so done: ".($total == $total_finished ?  "yes":"no");
+
+    try{
+      my($total,$total_finished) = mm_total_finished($asset_id);
+      if($total == $total_finished){
+        delete $scan->{$_} for(qw(busy asset_id));
+        update_scan($scan);
+      }
+      say "$id => $asset_id => total:$total, total_finished:$total_finished, so done: ".($total == $total_finished ?  "yes":"no");
+    }catch{
+      #job deleted by Mediamosa
+      if(/The asset with ID '$asset_id' was not found in the database/){
+        say "asset $asset_id was removed from Mediamosa";
+        delete $scan->{$_} for(qw(busy asset_id));
+        update_scan($scan);
+      }
+    };
 
   }
 
