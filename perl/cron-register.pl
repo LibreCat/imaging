@@ -308,7 +308,7 @@ if(!-w $dir_processed){
         say "\t\tchanging ownership of '$scan->{path}' to $this_uid:$this_gid";
 
         {
-            my $command = "chown -R $this_uid:$this_gid $scan->{path} && chmod -R 770 $scan->{path}";
+            my $command = "sudo chown -R $this_uid:$this_gid $scan->{path} && chmod -R 770 $scan->{path}";
             my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
             if(!$success){
                 say "\t\tcannot change ownership: $stderr";
@@ -384,7 +384,7 @@ if(!-w $dir_processed){
 
         #chmod(0775,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
         {
-            my $command = "chown -R $uid:$gid $new_path && chmod -R $rights $new_path";
+            my $command = "sudo chown -R $uid:$gid $new_path && chmod -R $rights $new_path";
             my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
 
             if(!$success){
@@ -488,7 +488,7 @@ for my $scan_id(@qa_control_ok){
     my $gid = data_at(config,"mounts.directories.group.archive") || "fedora";
     my $rights = data_at(config,"mounts.directories.rights.archive") || "0775";
 
-    $command = "chown -R $uid:$gid $grep_path && chmod -R $rights $grep_path";
+    $command = "sudo chown -R $uid:$gid $grep_path && chmod -R $rights $grep_path";
     ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
     say $command;
     say "stderr:";
