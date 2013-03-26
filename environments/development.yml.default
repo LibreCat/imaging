@@ -29,8 +29,8 @@ plugins:
   from: "libservice@ugent.be"
   type: "html"
   subject: "Dashboard Scanning workflow"
-  to: "nicolas.franck@ugent.be"
-  cc: "Ariane.VandeVyver@UGent.be, arjen.klop@inuits.eu"
+  to: "Fran.Vlaeminck@UGent.be"
+  cc: "Ariane.VandeVyver@UGent.be"
  Database:
   driver: mysql
   database: imaging
@@ -120,8 +120,10 @@ app:
       edit: 0
     - key: "DC-Title"
       edit: 1
+      required: 1
     - key: "DC-Identifier"
       edit: 1
+      required: 1
     - key: "DC-Description"
       edit: 1
       tag: "textarea"
@@ -129,12 +131,15 @@ app:
       edit: 1
       tag: "select"
       values: ["Text","Audio","Sound","Image","Dataset","MovingImage"]
+      required: 1
     - key: "DC-Creator"
       edit: 1
+      required: 1
     - key: "DC-AccessRights"
       edit: 1
       tag: "select"
       values: ["open","closed","ugent","media ugent","media closed"]
+      required: 1
     - key: "DC-Subject"
       edit: 1
 default_app: "/"
@@ -144,10 +149,10 @@ mounts:
  directories:
   path: "/mnt/data01"
   owner:
-   processed: root
+   processed: imaging
    archive: fedora
   group:
-   processed: nginx
+   processed: imaging
    archive: fedora
   rights:
    processed: "775" 
@@ -344,9 +349,9 @@ mediamosa:
   import_directory: "drush -r /usr/share/mediamosa mm-import-directory %s"
   'bt-bag': "drush -r /usr/share/mediamosa bt-bag %s %s"
  rest_api:
-  user: "BT boekentoren"
-  password: "PJMCBUSKLZSlSjTnHRKbBbw1"
-  base_url: "http://localhost:81"
+  user: "bt"
+  password: "bt"
+  base_url: "http://localhost/mediamosa"
 archive_site:
  mount_incoming_bag: "/mnt/data01/03_grep/process-in/BAG"
  base_url: "https://grep.ugent.be"
