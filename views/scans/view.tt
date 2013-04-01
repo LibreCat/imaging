@@ -497,15 +497,17 @@
       if("required" in keyConfig){
         var inputs = $form.find("input[name="+keyConfig.key+"]");
         if(inputs.length == 0){
-          console.log("no input found for "+keyConfig.key);
+          //console.log("no input found for "+keyConfig.key);
           continue;
         }
+        /*
         for(var j = 0;j < inputs.length;j++){
           var val = $(inputs[i]).val();
           if(val == undefined || val == ""){
             console.log("no value found for "+keyConfig.key);
           }
         }
+        */
       }
     }
     $('.metadata_archive').each(function(){
