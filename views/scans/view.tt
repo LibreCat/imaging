@@ -537,26 +537,28 @@
               var re = new RegExp(str);
               for(var i = 0;i < data.errors.length;i++){
                 if(re.test(data.errors[i])){
-                
+                  break;
                 }
               }
             }else{
 
-            var done = 0;
-            for(var i = 0;i < data["hits"].length;i++){
-              var job = data["hits"][i];
-              if(job["status"] == "FINISHED"){
-                done++;
+              var done = 0;
+              for(var i = 0;i < data["hits"].length;i++){
+                var job = data["hits"][i];
+                if(job["status"] == "FINISHED"){
+                  done++;
+                }
               }
-            }
-            var progress = Math.floor((done / data["hits"].length) * 100);            
-            job_progress.find(".bar").css("width",progress+"%");
+              var progress = Math.floor((done / data["hits"].length) * 100);            
+              job_progress.find(".bar").css("width",progress+"%");
 
-            if(progress >= 100){
-              //niet zomaar pagina opnieuw laden, want cron-status.pl heeft mogelijks "busy" nog niet verwijderd
-              //op die manier vermijdt je dat de pagina zich voortdurend herlaadt..
-              clearInterval(x);
-              //TODO: job_progress vervangen door link die pagina herlaadt?
+              if(progress >= 100){
+                //niet zomaar pagina opnieuw laden, want cron-status.pl heeft mogelijks "busy" nog niet verwijderd
+                //op die manier vermijdt je dat de pagina zich voortdurend herlaadt..
+                clearInterval(x);
+                //TODO: job_progress vervangen door link die pagina herlaadt?
+              }
+
             }
           }
         });
