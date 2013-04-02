@@ -3,4 +3,4 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/opt/Catmandu/bin
 MAILTO=imaging
 HOME=/
 PERL5LIB=/opt/Catmandu/lib:/opt/Catmandu-MARC/lib:/opt/Imaging/lib
-*/2 02-21 * * * imaging /opt/Imaging/perl/cron-check.pl 1>> /var/log/Imaging/cron-check.log 2>> /var/log/Imaging/cron-check.error
+*/2 02-21 * * * imaging /opt/Imaging/bin/cron-check.pl 1>> /var/log/Imaging/cron-check.log 2>> /var/log/Imaging/cron-check.error

@@ -1,20 +1,7 @@
 #!/usr/bin/env perl
-use Catmandu qw(store);
+use Catmandu qw(:load);
 use Dancer qw(:script);
 use Catmandu::Sane;
-
-BEGIN {
-   
-    #load configuration
-    my $appdir = "/opt/Imaging";
-    Dancer::Config::setting(appdir => $appdir);
-    Dancer::Config::setting(public => "$appdir/public");
-    Dancer::Config::setting(confdir => $appdir);
-    Dancer::Config::setting(envdir => "$appdir/environments");
-    Dancer::Config::load();
-    Catmandu->load($appdir);
-}
-
 use Dancer::Plugin::Imaging::Routes::Utils;
 
 my $file = shift || "";

@@ -2,30 +2,13 @@
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Dancer qw(:script);
-use Catmandu qw(store);
+use Catmandu qw(store :load);
 use Dancer::Plugin::Database;
 use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
-use File::Basename qw();
-use Cwd qw(abs_path);
 use Data::Dumper;
 use Imaging qw(:all);
 use Clone qw(clone);
-
-BEGIN {
-  #load configuration
-  my $appdir = Cwd::realpath(
-      dirname(dirname(
-          Cwd::realpath( __FILE__)
-      ))
-  );
-  Dancer::Config::setting(appdir => $appdir);
-  Dancer::Config::setting(public => "$appdir/public");
-  Dancer::Config::setting(confdir => $appdir);
-  Dancer::Config::setting(envdir => "$appdir/environments");
-  Dancer::Config::load();
-  Catmandu->load($appdir);
-}
 
 sub to_index {
   my $scan = shift;       

@@ -3,4 +3,4 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/opt/Catmandu/bin
 MAILTO=imaging
 HOME=/
 PERL5LIB=/opt/Catmandu/lib:/opt/Catmandu-MARC/lib:/opt/Imaging/lib
-30 22 * * * imaging /opt/Imaging/perl/delete_scans_done.pl && /opt/Imaging/perl/cron-register.pl 1>> /var/log/Imaging/cron-register.log 2>> /var/log/Imaging/cron-register.error
+30 22 * * * imaging /opt/Imaging/bin/delete_scans_done.pl && /opt/Imaging/bin/cron-register.pl 1>> /var/log/Imaging/cron-register.log 2>> /var/log/Imaging/cron-register.error
