@@ -210,17 +210,17 @@ users->each(sub{
         
         if(!(-d -r $dir)){
           say "directory $dir is not readable, so ignoring..";
-          return;
+          next;
         }
         #wacht tot __FIXME.txt verwijderd is
         elsif(-f "$dir/__FIXME.txt"){
           say "directory '$dir' has to be fixed, so ignoring..";
-          return;
+          next;
         }
         #wacht totdat er lange tijd niets met de map is gebeurt!!
         elsif(file_is_busy($dir)){
           say "directory '$dir' probably busy";
-          return;
+          next;
         }
 
         my $basename = File::Basename::basename($dir);
