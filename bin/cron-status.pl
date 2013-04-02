@@ -1,15 +1,13 @@
 #!/usr/bin/env perl
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Catmandu;
+use Catmandu qw(:load);
 use Dancer qw(:script);
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use File::Basename qw();
 use File::Copy qw(copy move);
 use File::Path qw(mkpath rmtree);
-use Cwd qw(abs_path);
-use File::Spec;
 use Try::Tiny;
 use IO::CaptureOutput qw(capture_exec);
 use Imaging::Util qw(:files :data);
@@ -23,19 +21,6 @@ use English '-no_match_vars';
 
 my($pid,$pidfile);
 BEGIN {
-
-  #load configuration
-  my $appdir = Cwd::realpath(
-    dirname(dirname(
-      Cwd::realpath( __FILE__)
-    ))
-  );
-  Dancer::Config::setting(appdir => $appdir);
-  Dancer::Config::setting(public => "$appdir/public");
-  Dancer::Config::setting(confdir => $appdir);
-  Dancer::Config::setting(envdir => "$appdir/environments");
-  Dancer::Config::load();
-  Catmandu->load($appdir);
 
   $pidfile = "/tmp/imaging-status.pid";
   $pid = File::Pid->new({

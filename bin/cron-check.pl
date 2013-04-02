@@ -2,7 +2,7 @@
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Dancer qw(:script);
-use Catmandu;
+use Catmandu qw(:load);
 use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
 use Imaging::Util qw(:data :files);
@@ -21,19 +21,6 @@ our($a,$b);
 
 my($pid,$pidfile);
 BEGIN {
-    #load configuration
-    my $appdir = Cwd::realpath(
-        dirname(dirname(
-            Cwd::realpath( __FILE__)
-        ))
-    );
-    Dancer::Config::setting(appdir => $appdir);
-    Dancer::Config::setting(public => "$appdir/public");
-    Dancer::Config::setting(confdir => $appdir);
-    Dancer::Config::setting(envdir => "$appdir/environments");
-    Dancer::Config::load();
-    Catmandu->load($appdir);
-
 	#voer niet uit wanneer andere instantie draait!
 	$pidfile = "/tmp/imaging-check.pid";
 	$pid = File::Pid->new({
@@ -44,8 +31,8 @@ BEGIN {
 	}
 	#plaats lock
 	say "this process id: $$";
-    -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
-    $pid->pid($$);
+  -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
+  $pid->pid($$);
 	$pid->write or die("unable to place lock!");
 }
 END {

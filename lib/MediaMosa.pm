@@ -7,6 +7,7 @@ use Data::Util qw(:check :validate);
 use Digest::SHA1 qw(sha1_hex);
 use MediaMosa::Response;
 use URI::Escape;
+use Carp qw(confess);
 
 #zie http://www.mediamosa.org/sites/default/files/Webservices-MediaMosa-1.5.3.pdf
 

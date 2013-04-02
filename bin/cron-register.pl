@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Catmandu qw(store);
+use Catmandu qw(:load);
 use Dancer qw(:script);
 use Imaging::Util qw(:files :data);
 use Imaging::Dir::Info;
@@ -29,19 +29,6 @@ my $pidfile;
 my $pid;
 BEGIN {
    
-  #load configuration
-  my $appdir = Cwd::realpath(
-    dirname(dirname(
-      Cwd::realpath(__FILE__)
-    ))
-  );
-  Dancer::Config::setting(appdir => $appdir);
-  Dancer::Config::setting(public => "$appdir/public");
-  Dancer::Config::setting(confdir => $appdir);
-  Dancer::Config::setting(envdir => "$appdir/environments");
-  Dancer::Config::load();
-  Catmandu->load($appdir);
-
   #voer niet uit wanneer andere instantie van imaging-register.pl draait!
   $pidfile = "/tmp/imaging-register.pid";
   $pid = File::Pid->new({
