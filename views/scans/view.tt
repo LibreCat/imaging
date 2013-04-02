@@ -491,26 +491,10 @@
   });
 
   $(document).ready(function(){
-    var $form = $("form.edit-baginfo");
-    for(var i = 0;i < baginfoConfig.length;i++){
-      var keyConfig = baginfoConfig[i];
-      if("required" in keyConfig){
-        var inputs = $form.find("input[name="+keyConfig.key+"]");
-        if(inputs.length == 0){
-          //console.log("no input found for "+keyConfig.key);
-          continue;
-        }
-        /*
-        for(var j = 0;j < inputs.length;j++){
-          var val = $(inputs[i]).val();
-          if(val == undefined || val == ""){
-            console.log("no value found for "+keyConfig.key);
-          }
-        }
-        */
-      }
-    }
+ 
+    //controleer aanwezigheid in grep   
     $('.metadata_archive').each(function(){
+
       var $t = $(this);
       $.ajax({
         dataType: "json",
@@ -521,8 +505,10 @@
           $t.html("in archief: "+data.hits.length);
         }
       });     
+
     });
     
+    //controleer of er nog jobs bezig zijn
     var mm_check_jobs_timeout = 1000*30;
     var job_progress = $("#job_progress");
     if(job_progress.size() > 0){
@@ -535,6 +521,7 @@
           success: function(data){            
 
             if(data.errors.length > 0){
+              //asset is reeds verwijderd door MediaMosa (waarschijnlijk)
               var str = "The asset with ID '"+asset_id+"' was not found in the database";
               var re = new RegExp(str);
               for(var i = 0;i < data.errors.length;i++){
@@ -543,7 +530,7 @@
                 }
               }
             }else{
-
+              //geef aan hoeveel jobs nog bezig zijn
               var done = 0;
               for(var i = 0;i < data["hits"].length;i++){
                 var job = data["hits"][i];
