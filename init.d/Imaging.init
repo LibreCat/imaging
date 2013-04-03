@@ -39,52 +39,53 @@ get_pid () {
 
 case "$1" in
   start)
-	echo "starting imaging"
+    echo "starting imaging"
     RET=$(pid_exists)
     if [ "$RET" -eq "0" ];then
 	    echo "imaging already running"
-		exit 0;
-	fi
-    
-    sudo -u imaging /usr/local/bin/plackup $plackup_opts 1> /dev/null 2> $imaging_error &
-    RET=$?
-	PID=$!
-    if [ "$RET" -eq "0" ];then
-	echo $PID > $pidfile
-    echo "imaging started"
+		  RET=1;
     else
-        echo "imaging could not be started"
+      sudo -u imaging /usr/local/bin/plackup $plackup_opts 1> /dev/null 2> $imaging_error &
+      RET=$?
+      PID=$!
+      if [ "$RET" -eq "0" ];then
+        echo $PID > $pidfile
+        echo "imaging started"
+      else
+          echo "imaging could not be started"
+      fi
     fi
   ;;
   stop)
-	echo "shutting down imaging"
-	RET=$(pid_exists)
+    echo "shutting down imaging"
+    RET=$(pid_exists)
     if [ ! "$RET" -eq "0" ];then
-		echo "imaging already stopped"
-		exit 0
-	fi
-    RET=$?
-	p=$(get_pid)	
-	kill -15 $p
-	rm -f $pidfile
+      echo "imaging already stopped"
+      RET=1
+    else
+      RET=$?
+      p=$(get_pid)	
+      kill -15 $p
+      rm -f $pidfile
+    fi
   ;;
   status)
-	RET=$(pid_exists)
-	if [ "$RET" -eq "0" ];then
-		echo "imaging is running"
-	else
-		echo "imaging is not running"
-	fi
+    RET=$(pid_exists)
+    if [ "$RET" -eq "0" ];then
+      echo "imaging is running"
+    else
+      echo "imaging is not running"
+    fi
   ;;
   restart)
-	$0 stop
-	echo "waiting for master to finish off the workers.."
-	sleep 2
-	$0 start
+  	$0 stop
+	  echo "waiting for master to finish off the workers.."
+	  sleep 2
+	  $0 start
   ;;
   *)
     echo "Usage: $N {start|stop|status|restart}" >&2
-    exit 1
+    RET=1
   ;;
 esac
 
