@@ -4,7 +4,6 @@ use Catmandu::Util qw(:is);
 use Try::Tiny;
 use Catmandu::FedoraCommons;
 use Getopt::Long;
-use Data::Dumper;
 
 my($username,$password,$file);
 my $url = "http://localhost:4000/fedora";

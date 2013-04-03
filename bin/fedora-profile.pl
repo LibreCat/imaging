@@ -4,7 +4,6 @@ use Catmandu::Util qw(:is);
 use Try::Tiny;
 use Catmandu::FedoraCommons;
 use Getopt::Long;
-use Data::Dumper;
 use DateTime::Format::Strptime;
 
 my($username,$password,$file);

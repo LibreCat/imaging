@@ -283,7 +283,7 @@ if(!-w $dir_processed){
 
         my $uid = data_at(config,"mounts.directories.owner.processed") || $this_uid;
         my $gid = data_at(config,"mounts.directories.group.processed") || $this_gid;
-        my $rights = data_at(config,"mounts.directories.rights.processed") || "0775";
+        my $rights = data_at(config,"mounts.directories.rights.processed") || "775";
 
         
         my($uname) = getpwnam($uid);
@@ -369,7 +369,7 @@ if(!-w $dir_processed){
         # door nieuwe bag-info.txt hier neer te schrijven, staat ie niet in __MANIFEST-MD5.txt!
         ensure_archive_id($scan);
 
-        #chmod(0775,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
+        #chmod(775,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
         {
             my $command = "sudo chown -R $uid:$gid $new_path && sudo chmod -R $rights $new_path";
             my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
@@ -473,7 +473,7 @@ for my $scan_id(@qa_control_ok){
 
     my $uid = data_at(config,"mounts.directories.owner.archive") || "fedora";
     my $gid = data_at(config,"mounts.directories.group.archive") || "fedora";
-    my $rights = data_at(config,"mounts.directories.rights.archive") || "0775";
+    my $rights = data_at(config,"mounts.directories.rights.archive") || "775";
 
     $command = "sudo chown -R $uid:$gid $grep_path && sudo chmod -R $rights $grep_path";
     ($stdout,$stderr,$success,$exit_code) = capture_exec($command);

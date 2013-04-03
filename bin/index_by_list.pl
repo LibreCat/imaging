@@ -1,8 +1,7 @@
 #!/usr/bin/env perl
 use Catmandu qw(:load);
-use Dancer qw(:script);
 use Catmandu::Sane;
-use Dancer::Plugin::Imaging::Routes::Utils;
+use Imaging qw(scans);
 
 my $file = shift || "";
 (-r -f $file) or die("$file does not exist!\n");
