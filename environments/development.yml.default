@@ -341,9 +341,9 @@ profiles:
      args: 
       store: meercat
      on_error: "continue"
-cron:
- register:
-  pidfile: "/tmp/imaging-register.pid"
+#cron:
+# register:
+#  pidfile: "/tmp/imaging-register.pid"
 mediamosa:
  drush_command:
   mmnara: "drush -r /usr/share/mediamosa mmnara %s"
