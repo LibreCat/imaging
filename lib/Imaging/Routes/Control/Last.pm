@@ -26,7 +26,7 @@ any qr{.*} => sub {
   status 'not_found';
   header( "refresh" => config->{refresh_rate}."; URL=".uri_for(config->{default_app}) );
   template('not_found',{
-    requested_path => uri_for(request->path_info)
+    requested_path => uri_for(request->path)
   });
 };
 

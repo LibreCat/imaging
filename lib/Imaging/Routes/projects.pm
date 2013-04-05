@@ -13,14 +13,14 @@ use Digest::MD5 qw(md5_hex);
 
 hook before => sub {
 
-  if(request->path_info =~ /^\/project(.*)$/o){
+  if(request->path =~ /^\/project(.*)$/o){
     my $auth = auth;
     my $authd = authd;
     my $subpath = $1;
 
     if(($subpath =~ /(?:add|delete)/o || request->is_post())&& !$auth->can('projects','edit')){
 
-      request->path_info('/access_denied');
+      request->path('/access_denied');
       params->{text} = "U beschikt niet over de nodige rechten om projectinformatie aan te passen";
       
     }
@@ -151,7 +151,7 @@ get('/project/:_id',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path_info
+      requested_path => request->path
     });
   }
   
@@ -176,7 +176,7 @@ post('/project/:_id',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path_info
+      requested_path => request->path
     });
   }
 
@@ -263,7 +263,7 @@ get('/project/:_id/delete',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path_info
+      requested_path => request->path
     });
   }
 
@@ -285,7 +285,7 @@ post('/project/:_id/delete',sub{
   my $project = projects->get($params->{_id});
   if(!$project){
     return forward('/not_found',{
-      requested_path => request->path_info
+      requested_path => request->path
     });
   }
 

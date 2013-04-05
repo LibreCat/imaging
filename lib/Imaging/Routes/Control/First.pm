@@ -6,9 +6,9 @@ use URI::Escape qw(uri_escape);
 
 hook before => sub {
 
-  if(request->path_info !~ /^\/(login|logout)/o && !authd){
+  if(request->path !~ /^\/(login|logout)/o && !authd){
 
-    my $service = uri_escape(uri_for(request->path_info));
+    my $service = uri_escape(uri_for(request->path));
     return redirect(uri_for("/login")."?service=$service");
     
   }

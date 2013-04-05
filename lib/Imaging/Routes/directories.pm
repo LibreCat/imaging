@@ -12,9 +12,9 @@ use IO::CaptureOutput qw(capture_exec);
 use English '-no_match_vars';
 
 hook before => sub {
-  if(request->path_info =~ /^\/directories/o && !auth->can('directories','edit')){
+  if(request->path =~ /^\/directories/o && !auth->can('directories','edit')){
 
-    request->path_info('/access_denied');
+    request->path('/access_denied');
     params->{text} = "u mist de nodige rechten om de scandirectories aan te passen";
 
   }

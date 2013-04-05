@@ -11,10 +11,10 @@ use List::MoreUtils qw(first_index);
 
 hook before => sub {
 
-  if(request->path_info =~ /^\/qa_control/o){
+  if(request->path =~ /^\/qa_control/o){
     if(!(auth->asa('admin') || auth->asa('qa_manager'))){
 
-      request->path_info('/access_denied');
+      request->path('/access_denied');
       params->{text} = "U mist de nodige gebruikersrechten om deze pagina te kunnen zien";
       
     }

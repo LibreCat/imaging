@@ -11,9 +11,9 @@ use Try::Tiny;
 
 hook before => sub {
 
-  if(request->path_info =~ /^\/user/o && !auth->can('manage_accounts','edit')){
+  if(request->path =~ /^\/user/o && !auth->can('manage_accounts','edit')){
 
-    request->path_info('/access_denied');
+    request->path('/access_denied');
     params->{text} = "U beschikt niet over de nodige rechten om gebruikersinformatie aan te passen";
     
   }
