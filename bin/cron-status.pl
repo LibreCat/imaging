@@ -18,6 +18,8 @@ use LWP::UserAgent;
 use Catmandu::FedoraCommons;
 use Array::Diff;
 use English '-no_match_vars';
+use Catmandu::MediaMosa;
+use Imaging qw(:all);
 
 my($pid,$pidfile);
 BEGIN {
@@ -42,13 +44,11 @@ END {
   $pid->remove if $pid;
 }
 
-use MediaMosa;
-use Imaging qw(:all);
 
 $| = 1;
 
 sub mediamosa {
-  state $mediamosa = MediaMosa->new(
+  state $mediamosa = Catmandu::MediaMosa->new(
     %{ config->{mediamosa}->{rest_api} }
   );
 }

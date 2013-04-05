@@ -18,4 +18,4 @@ sub queries {
 
 with qw(Imaging::Dir::Query);
 
-__PACKAGE__;
+1;

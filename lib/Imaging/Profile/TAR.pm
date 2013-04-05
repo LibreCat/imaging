@@ -11,4 +11,4 @@ sub test {
 
 with 'Imaging::Profile';
 
-__PACKAGE__;
+1;

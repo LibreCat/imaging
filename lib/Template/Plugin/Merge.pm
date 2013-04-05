@@ -15,4 +15,4 @@ sub _merge {
   $merge;
 }
 
-__PACKAGE__;
+1;

@@ -43,7 +43,8 @@ my $requires = {
   'Hash::Merge' => 0,
   'File::Pid' => 0,
   'Catmandu::FedoraCommons' => 0,
-  'Template::Plugin::File' => 0
+  'Template::Plugin::File' => 0,
+  'Catmandu::MediaMosa' => 0
 };
 my $recommends = {
 	'Starman' => 0,

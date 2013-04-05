@@ -22,8 +22,8 @@ use Archive::BagIt;
 use File::Pid;
 use IO::CaptureOutput qw(capture_exec);
 use Data::UUID;
-use MediaMosa;
 use Imaging::Meercat qw(:all);
+use Imaging qw(:all);
 
 my $pidfile;
 my $pid;
@@ -50,7 +50,6 @@ END {
     $pid->remove if $pid;
 }
 
-use Imaging qw(:all);
 
 
 #variabelen

@@ -47,7 +47,7 @@ sub xml_to_aleph_sequential {
   return \@data;
 }
 
-__PACKAGE__;
+1;
 =head1 NAME
 
     Template::Plugin::MARC - convert marcxml to aleph sequential

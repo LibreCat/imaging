@@ -4,4 +4,4 @@ use Moo::Role;
 
 requires 'test';
 
-__PACKAGE__;
+1;

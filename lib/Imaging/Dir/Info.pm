@@ -67,4 +67,4 @@ has size => (
   default => sub { 0; }
 );
 
-__PACKAGE__;
+1;

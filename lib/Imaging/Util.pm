@@ -90,4 +90,4 @@ sub mtime_latest_file {
   return $max_mtime;
 }
 
-__PACKAGE__;
+1;

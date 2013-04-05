@@ -4,4 +4,4 @@ use Moo::Role;
 
 requires qw(check queries);
 
-__PACKAGE__;
+1;

@@ -1,6 +1,6 @@
 package Imaging::Routes::jobs;
 use Dancer ':syntax';
-use MediaMosa;
+use Catmandu::MediaMosa;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is :array);
 use Try::Tiny;
@@ -45,7 +45,7 @@ get '/jobs/:asset_id' => sub {
 
 };
 sub mediamosa {
-  state $mediamosa = MediaMosa->new(
+  state $mediamosa = Catmandu::MediaMosa->new(
      %{ config->{mediamosa}->{rest_api} }
   );
 }

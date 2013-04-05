@@ -39,7 +39,7 @@ sub size_pretty {
   }
 }
 
-__PACKAGE__;
+1;
 =head1 NAME
 
     Template::Plugin::SizePretty - pretty print file size

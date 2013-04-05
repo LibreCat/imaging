@@ -42,4 +42,4 @@ sub get_profile {
   return (scalar(@{ $self->list }) > 0) ? $self->list->[-1]->[0] : undef;
 }
 
-__PACKAGE__;
+1;

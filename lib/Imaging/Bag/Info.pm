@@ -70,4 +70,4 @@ sub values {
   exists($self->_hash()->{$key}) && is_array_ref($self->_hash()->{$key}) ? @{ $self->_hash()->{$key} } : ();    
 }
 
-__PACKAGE__;
+1;
