@@ -1,7 +1,8 @@
 package Template::Plugin::MARCTools;
 use parent qw(Template::Plugin);
 use POSIX qw(floor);
-use XML::XPath;
+use XML::LibXML;
+use XML::LibXML::XPathContext;
 
 sub new {
   my ($class, $context) = @_;
@@ -9,7 +10,7 @@ sub new {
   bless {}, $class;
 }
 sub xml_to_aleph_sequential {
-  my $xml = shift;
+  my $xml = $_[0];
   $xml =~ s/(\n|\r)//g;
 
   my @data = ();
@@ -17,27 +18,31 @@ sub xml_to_aleph_sequential {
 
   $xml =~ s/<marc:/</g;
   $xml =~ s/<\/marc:/<\//g;
-  my $xpath  = XML::XPath->new(xml => $xml);
-  my $id = $xpath->findvalue('/record/controlfield[@tag=\'001\']')->value();
+  
+  my $libxml = XML::LibXML->load_xml(string => $xml);
+  my $xpath = XML::LibXML::XPathContext->new($libxml);
+
+  my $id = $xpath->findvalue('/record/controlfield[@tag=\'001\']');
 
   push @data,[$id,"FMT","","","L",["BK"]];
-  my $leader = $xpath->findvalue('/record/leader')->value();
+
+  my $leader = $xpath->findvalue('/record/leader');
   $leader =~ s/ /^/g;
   push @data,[$id,"LDR","","","L",[$leader]];
   foreach my $cntrl ($xpath->find('/record/controlfield')->get_nodelist) {
-    my $tag   = $cntrl->findvalue('@tag')->value();
-    my $value = $cntrl->findvalue('.')->value();
+    my $tag   = $cntrl->findvalue('@tag');
+    my $value = $cntrl->findvalue('.');
     push @data,[$id,$tag,"","","L",[$value]];
   }
   foreach my $data ($xpath->find('/record/datafield')->get_nodelist) {
-    my $tag   = $data->findvalue('@tag')->value();
-    my $ind1  = $data->findvalue('@ind1')->value();
-    my $ind2  = $data->findvalue('@ind2')->value();
+    my $tag   = $data->findvalue('@tag');
+    my $ind1  = $data->findvalue('@ind1');
+    my $ind2  = $data->findvalue('@ind2');
 
     my @subf = ();
     foreach my $subf ($data->find('.//subfield')->get_nodelist) {
-      my $code  = $subf->findvalue('@code')->value();
-      my $value = $subf->findvalue('.')->value();
+      my $code  = $subf->findvalue('@code');
+      my $value = $subf->findvalue('.');
       push @subf,$code,$value;
     }
 

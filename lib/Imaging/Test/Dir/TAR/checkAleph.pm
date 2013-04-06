@@ -38,7 +38,7 @@ sub test {
   }else{
 
     my @rug01_files = grep { 
-        $_ =~ /RUG01-(\d{9})$/o && ($fSYS = $1)
+      $_ =~ /RUG01-(\d{9})$/o && ($fSYS = $1)
     } glob("$topdir/*");
     my $num_rug01_files = scalar(@rug01_files);
 

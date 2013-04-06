@@ -5,64 +5,64 @@ use Try::Tiny;
 use Catmandu::Util qw(require_package);
 
 has _nara_conf  => (
-    is => 'rw',
-    default => sub {
-        [{
-            class => "Imaging::Test::Dir::checkPDF",
-            args => {
-                valid_patterns => ['\.pdf$']
-            }
-         },
-         {
-            class => "Imaging::Test::Dir::checkTIFF",
-            args => {
-                valid_patterns => ['\.tif$']
-            }
-         },
-         {
-            class => "Imaging::Test::Dir::checkJPEG",
-            args => {
-                valid_patterns => ['\.(?:jpg|jpeg)$']
-            }
-         },
-         {
-            class => "Imaging::Test::Dir::TAR::checkFilename",
-            args => {}
-        }];
-    }
+  is => 'rw',
+  default => sub {
+    [{
+        class => "Imaging::Test::Dir::checkPDF",
+        args => {
+            valid_patterns => ['\.pdf$']
+        }
+     },
+     {
+        class => "Imaging::Test::Dir::checkTIFF",
+        args => {
+            valid_patterns => ['\.tif$']
+        }
+     },
+     {
+        class => "Imaging::Test::Dir::checkJPEG",
+        args => {
+            valid_patterns => ['\.(?:jpg|jpeg)$']
+        }
+     },
+     {
+        class => "Imaging::Test::Dir::TAR::checkFilename",
+        args => {}
+    }];
+  }
 );
 has _stash => (
-    is => 'rw',
-    lazy => 1,
-    isa => sub { hash_ref($_[0]); },
-    default => sub {
-        my $self = shift;
-        my $stash = {};
-        my $nara_conf = $self->_nara_conf;
-        foreach my $nara(@$nara_conf){
-            $stash->{$nara->{class}} = require_package($nara->{class})->new(%{ $nara->{args} });
-        }
-        $stash;
+  is => 'rw',
+  lazy => 1,
+  isa => sub { hash_ref($_[0]); },
+  default => sub {
+    my $self = shift;
+    my $stash = {};
+    my $nara_conf = $self->_nara_conf;
+    foreach my $nara(@$nara_conf){
+      $stash->{$nara->{class}} = require_package($nara->{class})->new(%{ $nara->{args} });
     }
+    $stash;
+  }
 );
 
 sub is_fatal {
     1;
 };
 sub test {
-    my $self = shift;
-    my(@errors) = ();
-    my $stash = $self->_stash;
-    my $nara_conf = $self->_nara_conf;
+  my $self = shift;
+  my(@errors) = ();
+  my $stash = $self->_stash;
+  my $nara_conf = $self->_nara_conf;
 
-    foreach my $nara(@$nara_conf){
-        my $ref = $stash->{$nara->{class}};
-        $ref->dir_info($self->dir_info);
-        my($success,$errs) = $ref->test();
-        push @errors,@$errs if(!$success);
-    }
+  foreach my $nara(@$nara_conf){
+    my $ref = $stash->{$nara->{class}};
+    $ref->dir_info($self->dir_info);
+    my($success,$errs) = $ref->test();
+    push @errors,@$errs if(!$success);
+  }
 
-    scalar(@errors) == 0,\@errors;
+  scalar(@errors) == 0,\@errors;
 }   
 
 with qw(Imaging::Test::Dir);
