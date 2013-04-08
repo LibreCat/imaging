@@ -106,7 +106,7 @@
         [% settings.human_readable.${log.status} || log.status %]
         </a>
     </td>
-    <td>
+    <td title="[% log.comments %]">
       [%- IF log.comments.length > 30 %]
       [% log.comments.substr(0,30) _ ".." %]
       [%- ELSE %]

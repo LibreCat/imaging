@@ -22,7 +22,7 @@ get '/jobs/:asset_id' => sub {
         offset => $offset
       });
       if($vpcore->header->request_result() ne "success"){        
-        confess $vpcore->header->request_result_description();
+        die($vpcore->header->request_result_description()."\n");
       }
       $total = $vpcore->header->item_count_total;
       $vpcore->items->each(sub{
