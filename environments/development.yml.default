@@ -182,7 +182,7 @@ mounts:
 status:
  collection:
   status_page: ["registered","reprocess_metadata","reprocess_derivatives","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","archiving","archived","archived_ok","archived_error","published","published_ok","problematic","done"]
-  qa_control: ["registered","derivatives_created","archived","published"]
+  qa_control: ["registered","qa_control_ok","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","reprocess_scans","archived","archived_ok","archived_error","published","published_ok"]
   publishing: ["qa_control_ok","archived","archived_ok","published"]
   archiving: ["qa_control_ok","archived","archived_ok","published","published_ok"]
   done: ["archived_ok","published_ok"]
