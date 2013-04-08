@@ -3,7 +3,7 @@ store:
   package: "Catmandu::Store::Solr"
   options:
    url: "http://localhost:4000/solr/proxy"   
- core:
+ default:
   package: "Catmandu::Store::DBI"
   options:
    data_source: "dbi:mysql:database=imaging"
@@ -27,6 +27,3 @@ store:
   package: "Catmandu::Store::Solr"
   options:
    url: "http://localhost:8983/solr/core2"
-#fix_files:
-# marc2dublincore: "fix/marc2dublincore"
-#base_url: "http://localhost/path/to/dancer"

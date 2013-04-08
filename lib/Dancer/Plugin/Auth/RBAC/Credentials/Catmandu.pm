@@ -21,7 +21,7 @@ sub authorize {
 
   if(!(is_string($login) && is_string($password))){
 
-    $self->errors('login and password are required');
+    $self->errors('login of paswoord ontbreekt');
     return;
 
   }
@@ -31,21 +31,21 @@ sub authorize {
 
   if(!is_hash_ref($account)){
 
-    $self->errors('login and/or password is invalid');
+    $self->errors('login of paswoord is ongeldig');
     return;  
   
   }
 
   if(!is_string($account->{password})){
 
-    $self->errors('attempting to access as inaccessible account');
+    $self->errors('account is niet toegankelijk');
     return;
 
   }
 
   if($account->{password} ne $password){
 
-    $self->errors('login and/or password is invalid');
+    $self->errors('login of paswoord is ongeldig');
     return;
     
   }

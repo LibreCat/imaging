@@ -12,20 +12,17 @@ use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
 use Exporter qw(import);
-our @EXPORT_OK=qw(core projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status set_status dir_info list_files);
+our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status set_status dir_info list_files);
 our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
-sub core {
-  state $core = store("core");
-}
 sub projects { 
-  state $projects = core()->bag("projects");
+  state $projects = store()->bag("projects");
 }
 sub scans {
-  state $scans = core()->bag("scans");
+  state $scans = store()->bag("scans");
 }
 sub users {
-  state $users = core()->bag("users");
+  state $users = store()->bag("users");
 }
 sub index_scan {
   state $index_scans = store("index_scan")->bag;

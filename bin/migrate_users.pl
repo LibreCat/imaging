@@ -47,7 +47,7 @@ sub to_index {
 
   #user info
   if($scan->{user_id}){
-    my $user = store("core")->bag("users2")->get($scan->{user_id});
+    my $user = store()->bag("users2")->get($scan->{user_id});
     if($user){
       my @keys = qw(name login roles);
       $doc->{"user_$_"} = $user->{$_} foreach(@keys);
@@ -73,7 +73,7 @@ sub to_index {
 }
 
 my @users = database->quick_select("users",{});
-my $bag = store("core")->bag('users2');
+my $bag = store()->bag('users2');
 
 say "users => users2";
 foreach my $user(@users){

@@ -68,7 +68,7 @@ post '/directories/:id' => sub {
         mkpath($path) if(!-d $path);
 
         my $this_gid = getgrgid($EGID);
-        my($stdout,$stderr,$success,$exit_code) = capture_exec("sudo chown -R $user->{login}:$this_gid $path && sudo chmod -R 0775 $path");
+        my($stdout,$stderr,$success,$exit_code) = capture_exec("sudo chown -R $user->{login}:$this_gid $path && sudo chmod -R 775 $path");
         die($stderr) if !$success;
         push @messages,"directory '$_' is ok nu";
         users->add($user);

@@ -49,7 +49,7 @@ plugins:
   credentials:
    class: Catmandu
    options:
-    store: core
+    store: default
     bag: users
   permissions:
    class: Config
@@ -341,9 +341,6 @@ profiles:
      args: 
       store: meercat
      on_error: "continue"
-#cron:
-# register:
-#  pidfile: "/tmp/imaging-register.pid"
 mediamosa:
  drush_command:
   mmnara: "drush -r /usr/share/mediamosa mmnara %s"
