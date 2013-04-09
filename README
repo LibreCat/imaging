@@ -17,6 +17,7 @@ rpm:
     mysql-devel
     perl-ClamAV-Client
     shared-mime-info
+    redhat-rpm-config (for packaging to rpm - filter macro's)
 perl:
 	perl -MCPAN -e 'install Module::Build'
     perl -MCPAN -e 'install LWP'
