@@ -1,4 +1,5 @@
 catmandu.yml
+config.yml
 environments/*.yml
 .DS_Store
 *.swp
