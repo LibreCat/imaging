@@ -26,10 +26,7 @@ get '/jobs/:asset_id' => sub {
       }
       $total = $vpcore->header->item_count_total;
       $vpcore->items->each(sub{
-        my $jobs = $_[0];
-        for my $id(keys %$jobs){
-          push @hits,$jobs->{$id};          
-        }
+        push @hits,$_[0];
       });
 
       $offset += $limit;

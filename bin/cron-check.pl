@@ -231,7 +231,7 @@ users->each(sub{
               comments => ""
             }],
             check_log => [],
-            user_id => $user->{id},
+            user_id => $user->{_id},
             #mtime van de nieuwste file in deze directory (!= mtime(dir))
             datetime_directory_last_modified => $mtime,
             #wanneer heeft het systeem de status van dit record voor het laatst aangepast

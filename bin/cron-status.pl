@@ -87,12 +87,10 @@ sub mm_total_finished {
     }
     $item_count_total = $vpcore->header->item_count_total;
     $vpcore->items->each(sub{
-      my $jobs = $_[0];
-      for my $id(keys %$jobs){
-        say "\tjobid $id, status: ".$jobs->{$id}->{status}.", job_type:".$jobs->{$id}->{job_type};
-        $total_finished++ if $jobs->{$id}->{status} eq "FINISHED";
-        $total++;
-      }
+      my $job = $_[0];
+      say "\tjobid $job->{id}, status: ".$job->{status}.", job_type:".$job->{job_type};
+      $total_finished++ if $job->{status} eq "FINISHED";
+      $total++;
     });
 
     $offset += $limit;
