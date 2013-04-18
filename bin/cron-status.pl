@@ -20,6 +20,8 @@ use Array::Diff;
 use English '-no_match_vars';
 use Catmandu::MediaMosa;
 use Imaging qw(:all);
+use DateTime::Format::Strptime;
+use DateTime;
 
 my($pid,$pidfile);
 BEGIN {
@@ -87,10 +89,10 @@ sub mm_total_finished {
     }
     $item_count_total = $vpcore->header->item_count_total;
     $vpcore->items->each(sub{
-      my $job = $_[0];
-      say "\tjobid $job->{id}, status: ".$job->{status}.", job_type:".$job->{job_type};
-      $total_finished++ if $job->{status} eq "FINISHED";
-      $total++;
+      	my $job = $_[0];
+     	say "\tjobid $job->{id}, status: ".$job->{status}.", job_type:".$job->{job_type};
+     	$total_finished++ if $job->{status} eq "FINISHED";
+     	$total++;
     });
 
     $offset += $limit;
@@ -367,7 +369,8 @@ my $index_scan = index_scan();
       next;
     }
 
-    my $d1 = $datetime_formatter->parse_datetime($scan->{datetime_last_modified});
+    #my $d1 = $datetime_formatter->parse_datetime($scan->{datetime_last_modified});
+    my $d1 = DateTime->from_epoch(epoch => $scan->{datetime_last_modified});
     my $d2 = $datetime_formatter->parse_datetime($object_profile->{objLastModDate});
 
     #state moet 'A' zijn
@@ -378,27 +381,32 @@ my $index_scan = index_scan();
     }
 
     #lastModDate moet nieuwer zijn dan aanleverdatum
-    say "\tdate_last_modified: $1";
+    say "\tdate_last_modified: $d1";
     say "\tobjLastModDate: $d2";
     my $cmp = DateTime->compare($d1,$d2);
     if($cmp > 0){
       say "\terror: local version is newer";
       next;
     }
-
+    
+    say "\tcollecting files in grep";
     #check all files are in grep
     {
 
       my $result = $fedora->listDatastreams(pid => $scan->{archive_id});
+      say "\tgot listDatastreams";
       if(!$result->is_ok){
         say "\terror: ".$result->error;
         next;
-      }    
+      }         
+      
       my $obj = $result->parse_content;
-      @files_grep = sort grep { $_->{dsid} =~ /^DS\.\d+$/o } @{ $obj->{datastream} };
+      @files_grep = sort map { $_->{label} } grep { $_->{dsid} =~ /^DS\.\d+$/o } @{ $obj->{datastream} };
+      say "\tgrep: $_" for @files_grep;
 
     }
 
+    say "\tcollecting my files";
     my @files;
 
     if($scan->{profile_id} eq "BAG"){
@@ -408,8 +416,9 @@ my $index_scan = index_scan();
       my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
       @files = sort grep { $_ !~ /^__MANIFEST-MD5\.txt$/ && $_ ne "bag-info.txt" } map { $_->{basename} } @{ $dir_info->files };
     }
+    say "my file: $_" for @files;
 
-    my $diff = Array::Diff->new(\@files,\@files_grep);
+    my $diff = Array::Diff->diff(\@files,\@files_grep);
 
     if($diff->count > 0){
       say "\tnot in imaging:";
@@ -418,6 +427,8 @@ my $index_scan = index_scan();
       say "\t\t$_" for(@{ $diff->deleted });
       next;
     }        
+
+    say "\teverything ok";
 
     set_status($scan,status => "archived");
 
