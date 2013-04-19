@@ -24,6 +24,7 @@ use IO::CaptureOutput qw(capture_exec);
 use Data::UUID;
 use Imaging::Meercat qw(:all);
 use Imaging qw(:all);
+use File::Temp qw(tempfile);
 
 my $pidfile;
 my $pid;
@@ -574,29 +575,39 @@ foreach my $project_id(@project_ids){
 
 #stap 4: ken scans toe aan projects
 say "assigning scans to projects";
-my @scan_ids = ();
+my($fh,$filename) = tempfile(UNLINK => 1);
+die("could not create temporary file\n") unless $fh;
+binmode($fh,":utf8");
+say "writing all ids to temporary file $filename";
+
 scans->each(sub{ 
-    push @scan_ids,$_[0]->{_id} if !-f $_[0]->{path}."/__FIXME.txt"; 
+  say $fh $_[0]->{_id} if !-f $_[0]->{path}."/__FIXME.txt";
 });
-while(my $scan_id = shift(@scan_ids)){
-    my $scan = scans->get($scan_id);
-    my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
-    if($result->total > 0){        
-        my @p_ids = map { $_->{_id} } @{ $result->hits };
-        $scan->{project_id} = \@p_ids;
-        say "assigning project $_ to scan ".$scan->{_id} foreach(@p_ids);
-    }else{
-        $scan->{project_id} = [];
-    }    
-    scans->add($scan);
-    scan2index($scan);
+
+close $fh;
+
+open $fh,"<:utf8",$filename or die($!);
+
+while(my $scan_id = <$fh>){
+  chomp $scan_id;
+  my $scan = scans->get($scan_id);
+  my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
+  if($result->total > 0){        
+    my @p_ids = map { $_->{_id} } @{ $result->hits };
+    $scan->{project_id} = \@p_ids;
+    say "assigning project $_ to scan ".$scan->{_id} foreach(@p_ids);
+  }else{
+    $scan->{project_id} = [];
+  }    
+  scans->add($scan);
+  scan2index($scan);
 }
+
+close $fh;
 
 {
     my($success,$error) = index_scan->commit;   
     die(join('',@$error)) if !$success;
 }
-#release memory
-@scan_ids = ();
 
 say "$this_file ended at ".local_time;
