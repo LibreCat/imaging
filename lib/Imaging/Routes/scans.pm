@@ -103,8 +103,8 @@ post '/scans/:_id' => sub {
 
           my($result,$error);
           try {
-
-            $result = meercat->search(query => $metadata_id,limit => 1,fq => 'source:rug01');     
+            #nota: 'fq' => 'source:rug01' is hier niet nodig, want qa_manager weet wat hij/zij doet
+            $result = meercat->search(query => $metadata_id,limit => 1);     
 
           }catch{
             $error = $_;
@@ -129,7 +129,7 @@ post '/scans/:_id' => sub {
             if(-f $path_baginfo){
               $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
             }
-            my $dc = marc_to_baginfo_dc(xml => $doc->{fXML});
+            my $dc = marc_to_baginfo_dc(xml => $doc->{fXML},source => $doc->{source});
             $baginfo = { %$baginfo,%$dc };
 
             $scan->{metadata}->[0] = {

@@ -82,6 +82,7 @@ sub write_to_baginfo {
 sub marc_to_baginfo_dc {
   my(%opts) = @_;
   my $xml = $opts{xml};
+  my $source = $opts{source} || "rug01",
   my $rec = {};
 
   if(is_string($xml)){
@@ -95,9 +96,9 @@ sub marc_to_baginfo_dc {
 
     my $id = &marc_controlfield($xpath,'001');
 
-    push(@{$rec->{'DC-Title'}}, "RUG01-$id");
+    push(@{$rec->{'DC-Title'}},uc($source)."-$id");
 
-    push(@{$rec->{'DC-Identifier'}}, "rug01:$id");
+    push(@{$rec->{'DC-Identifier'}}, "$source:$id");
     for my $val (&marc_datafield_array($xpath,'852','j')){
       push(@{$rec->{'DC-Identifier'}}, $val) if $val =~ /\S/o;
     }
