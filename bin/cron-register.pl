@@ -109,6 +109,11 @@ sub ensure_archive_id {
 
   }
 
+  if(scalar(@{ $scan->{metadata} })){
+    $scan->{metadata}->[0]->{baginfo} ||= {};
+    $scan->{metadata}->[0]->{baginfo}->{'Archive-Id'} = $scan->{archive_id};
+  }
+
   write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);
 
 
@@ -366,6 +371,12 @@ if(!-w $dir_processed){
         $scan->{path} = $new_path;
 
         #schrijf bag-info.txt uit indien het nog niet bestaat, en schrijf archive_id uit
+        my $path_baginfo = $scan->{path}."/bag-info.txt";
+        if(scalar(@{ $scan->{metadata} }) > 0 && !-f $path_baginfo){
+
+            write_to_baginfo($path_baginfo,$scan->{metadata}->[0]->{baginfo});
+
+        }
         # door nieuwe bag-info.txt hier neer te schrijven, staat ie niet in __MANIFEST-MD5.txt!
         ensure_archive_id($scan);
 
