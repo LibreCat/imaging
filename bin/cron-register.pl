@@ -89,12 +89,22 @@ sub directory_to_queries {
   @queries;
 }
 
-sub ensure_archive_id {
+sub fix_baginfo {
   my $scan = $_[0];
 
   my $baginfo = {};
-  $baginfo = Imaging::Bag::Info->new(source => $scan->{path}."/bag-info.txt")->hash if -f $scan->{path}."/bag-info.txt";
+  my $path_baginfo = $scan->{path}."/bag-info.txt";
 
+  #poging 1: lees bag-info.txt
+  if(-f $path_baginfo){
+    $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
+  }
+  #poging 1 mislukt (bestand leeg of niet bestaande), maar wel opgehaalde metadata?
+  if(keys %$baginfo == 0 && scalar(@{ $scan->{metadata} })){
+    $baginfo = $scan->{metadata}->[0]->{baginfo};
+  }
+
+  #inspecteer of 'Archive-Id' erin zit
   if(
     is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0
   ){
@@ -109,12 +119,12 @@ sub ensure_archive_id {
 
   }
 
+  #stel alles nu in metadata in
   if(scalar(@{ $scan->{metadata} })){
-    $scan->{metadata}->[0]->{baginfo} ||= {};
-    $scan->{metadata}->[0]->{baginfo}->{'Archive-Id'} = $scan->{archive_id};
+    $_->{baginfo} = $baginfo for @{$scan->{metadata}};
   }
 
-  write_to_baginfo($scan->{path}."/bag-info.txt",$baginfo);
+  write_to_baginfo($path_baginfo,$baginfo);
 
 
 }
@@ -371,14 +381,8 @@ if(!-w $dir_processed){
         $scan->{path} = $new_path;
 
         #schrijf bag-info.txt uit indien het nog niet bestaat, en schrijf archive_id uit
-        my $path_baginfo = $scan->{path}."/bag-info.txt";
-        if(scalar(@{ $scan->{metadata} }) > 0 && !-f $path_baginfo){
-
-            write_to_baginfo($path_baginfo,$scan->{metadata}->[0]->{baginfo});
-
-        }
         # door nieuwe bag-info.txt hier neer te schrijven, staat ie niet in __MANIFEST-MD5.txt!
-        ensure_archive_id($scan);
+        fix_baginfo($scan);
 
         #chmod(775,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
         {
@@ -451,7 +455,7 @@ for my $scan_id(@qa_control_ok){
     my $scan = scans->get($scan_id);
 
     #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
-    ensure_archive_id($scan);
+    fix_baginfo($scan);
 
     #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
     my $grep_path = config->{'archive_site'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});

@@ -103,8 +103,8 @@ post '/scans/:_id' => sub {
 
           my($result,$error);
           try {
-            #nota: 'fq' => 'source:rug01' is hier niet nodig, want qa_manager weet wat hij/zij doet
-            $result = meercat->search(query => $metadata_id,limit => 1);     
+
+            $result = meercat->search(query => $metadata_id,limit => 1,fq => 'source:rug01');     
 
           }catch{
             $error = $_;
@@ -129,7 +129,7 @@ post '/scans/:_id' => sub {
             if(-f $path_baginfo){
               $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
             }
-            my $dc = marc_to_baginfo_dc(xml => $doc->{fXML},source => $doc->{source});
+            my $dc = marc_to_baginfo_dc(xml => $doc->{fXML});
             $baginfo = { %$baginfo,%$dc };
 
             $scan->{metadata}->[0] = {
@@ -138,9 +138,14 @@ post '/scans/:_id' => sub {
               fXML => $doc->{fXML},
               baginfo => $baginfo
             };
+
+            #overschrijf archive_id
+            if(is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{$baginfo->{'Archive-Id'}})){
+              $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
+            }
             
             #overschrijf oude bag-info.txt op de schijf
-            write_to_baginfo($path_baginfo,$baginfo) if -f $path_baginfo;
+            write_to_baginfo($path_baginfo,$baginfo) if -d $scan->{path};
 
             push @messages,"metadata $metadata_id werd aangepast";
 
@@ -163,7 +168,7 @@ post '/scans/:_id' => sub {
             push @messages,"metadata_id $params->{metadata_id} werd verwijderd";
           }
           if(scalar(@{ $scan->{metadata} }) == 1){
-            write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {}) if -f $scan->{path}."/bag-info.txt";
+            write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {}) if -d $scan->{path};
           }
         }
 
@@ -408,7 +413,7 @@ post('/scans/:_id/baginfo',sub{
         $scan->{metadata}->[$index_metadata_id]->{baginfo} = $baginfo;
 
         if(scalar(@{ $scan->{metadata} }) == 1){
-          write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {}) if -f $scan->{path}."/bag-info.txt";
+          write_to_baginfo($scan->{path}."/bag-info.txt",$scan->{metadata}->[0]->{baginfo} || {}) if -d $scan->{path};
         }
 
         push @messages,"baginfo werd aangepast";

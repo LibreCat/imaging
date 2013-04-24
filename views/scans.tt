@@ -87,7 +87,7 @@
     <th>melding</th>
   </tr>
   [%- FOREACH scan IN result.hits %]
-  
+    [% file_error = 0 %]
     [% IF scan.status != "done" %]
       [% TRY %]
         [% USE File(scan.path) %]
