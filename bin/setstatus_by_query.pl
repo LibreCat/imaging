@@ -7,7 +7,7 @@ use Catmandu::Sane;
 use Getopt::Long;
 
 sub usage {
-  say "usage: $0 --status <status> --query <query>";
+  return "usage: $0 --status <status> --query <query>\n";
 }
 
 my($query,$status);
@@ -22,21 +22,14 @@ defined($query) || die(usage());
 
 my @ids = ();
 
-my($offset,$limit,$total) = (0,1000,0);
-do{
+index_scan->searcher(
+  query => $query,
+  limit => 1000           
+)->each(sub{
 
-  my $result = index_scan->search(
-    query => $query,
-    start => $offset,
-    limit => $limit            
-  );
-  $total = $result->total;
-  for my $scan(@{ $result->hits }){
-    push @ids,$scan->{_id};
-  }
-  $offset += $limit;
+  push @ids,$_[0]->{_id};
 
-}while($offset < $total);
+});
 
 for my $id(@ids){
   my $scan = scans->get($id);

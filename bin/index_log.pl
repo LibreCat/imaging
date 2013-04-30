@@ -11,20 +11,14 @@ GetOptions(
   "attr=s" => \@attr
 );
 
-my($offset,$limit,$total) = (0,1000,0);
-do{
-  my $result = index_log->search(
-    query => $query,
-    start => $offset,
-    limit => $limit            
-  );
-  $total = $result->total;
-  for my $scan(@{ $result->hits }){
-    print $scan->{_id};
-    for(@attr){
-      print " ".($scan->{$_} // "<not defined>");
-    }
-    print "\n";
+index_log->searcher(
+  query => $query,
+  limit => 1000
+)->each(sub{
+  my $r = shift;
+  print $r->{_id};
+  for(@attr){
+    print " ".($r->{$_} // "<not defined>");
   }
-  $offset += $limit;
-}while($offset < $total);
+  print "\n";
+});

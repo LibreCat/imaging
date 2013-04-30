@@ -7,39 +7,32 @@ use File::Path qw(rmtree);
 use File::Basename;
 use Imaging qw(:all);
 
-my($offset,$limit,$total) = (0,1000,0);
-do{
+index_scan->searcher(
 
-  my $result = index_scan->search(
-    query => "status:done",
-    start => $offset,
-    limit => $limit            
-  );
+  query => "status:done",
+  limit => 1000
 
-  $total = $result->total;
+)->each(sub{
 
-  for my $scan(@{ $result->hits }){
-    say $scan->{_id};
-    my $path = $scan->{path};
-    say "\tpath: $path";
-    if(!-d $path){
-      say STDERR "\t$path does not exist";
-      next;
-    }
-    if(!-w dirname($path)){
-      say STDERR "\tcannot write to parent directory ".dirname($path);
-      next;
-    }
-    say "\tremoving $path";
-    my $num_deleted = rmtree($path);
-    if($num_deleted > 0){
-      say "\t$path was successfully removed";
-    }else{
-      say "\tcould not delete $path";
-    }
+  my $scan = shift;
+
+  say $scan->{_id};
+  my $path = $scan->{path};
+  say "\tpath: $path";
+  if(!-d $path){
+    say STDERR "\t$path does not exist";
+    return
   }
-  $offset += $limit;
+  if(!-w dirname($path)){
+    say STDERR "\tcannot write to parent directory ".dirname($path);
+    return;
+  }
+  say "\tremoving $path";
+  my $num_deleted = rmtree($path);
+  if($num_deleted > 0){
+    say "\t$path was successfully removed";
+  }else{
+    say "\tcould not delete $path";
+  }
 
-}while($offset < $total);
-
-say "total: $total";
+});

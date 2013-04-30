@@ -251,22 +251,18 @@ my $index_scan = index_scan();
 #status update 1: files die verplaatst moeten worden op vraag van dashboard
 {
   my $query = "status:\"reprocess_scans\" OR status:\"reprocess_scans_qa_manager\"";
-  my($start,$limit,$total)=(0,1000,0);
   my @ids = ();
-  do{
 
-    my $result = $index_scan->search(
-      query => $query,
-      start => $start,
-      limit => $limit
-    );
-    $total = $result->total;
-    foreach my $hit(@{ $result->hits || [] }){
-      push @ids,$hit->{_id};
-    }
-    $start += $limit;
+  $index_scan->searcher(
 
-  }while($start < $total);
+    query => $query,    
+    limit => 1000
+
+  )->each(sub{
+
+    push @ids,$_[0]->{_id};
+
+  });
 
   for my $id(@ids){
     move_scan(scans->get($id));
@@ -277,21 +273,18 @@ my $index_scan = index_scan();
 {
 
   my $query = "status:\"registered\" AND asset_id:*";
-  my($start,$limit,$total)=(0,1000,0);
   my @ids = ();
-  do{
-    my $result = $index_scan->search(
-      query => $query,
-      start => $start,
-      limit => $limit
-    );
-    $total = $result->total;
-    foreach my $hit(@{ $result->hits || [] }){
-      push @ids,$hit->{_id};
-    }
-    $start += $limit;
 
-  }while($start < $total);
+  $index_scan->searcher(
+
+    query => $query,
+    limit => 1000
+
+  )->each(sub{
+
+    push @ids,$_[0]->{_id};
+
+  });
 
   for my $id(@ids){
 
@@ -325,23 +318,18 @@ my $index_scan = index_scan();
 
   #collect identifiers
   my $query = "status:\"archiving\"";
-  my($start,$limit,$total)=(0,1000,0);
   my @ids = ();
-  do{
 
-    my $result = $index_scan->search(
-      query => $query,
-      start => $start,
-      limit => $limit
-    );
-    $total = $result->total;
-    foreach my $hit(@{ $result->hits || [] }){
-        push @ids,$hit->{_id};
-    }
-    $start += $limit;
+  $index_scan->searcher(
 
-  }while($start < $total);
+    query => $query,
+    limit => 1000
 
+  )->each(sub{
+
+    push @ids,$_[0]->{_id};
+
+  });
 
   #check status in Fedora
   my $fedora_args = config->{fedora}->{args} // [];

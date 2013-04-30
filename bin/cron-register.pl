@@ -144,25 +144,24 @@ my @ids_ok_for_metadata = ();
 
   say "retrieving metadata for good scans ($query)";
 
-  my($offset,$limit,$total) = (0,1000,0);
-  do{
-      my $result = index_scan->search( 
-        query => $query,
-        reify => scans(),
-        start => $offset,
-        limit => $limit
-      );
-      $total = $result->total;
-      for my $scan(@{ $result->hits }){
-        if(
-            !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
-            !(-f $scan->{path}."/__FIXME.txt")
-        ){
-          push @ids_ok_for_metadata,$scan->{_id};
-        }
-      }
-      $offset += $limit;
-  }while($offset < $total);
+  index_scan->searcher( 
+
+    query => $query,
+    reify => scans(),
+    limit => 1000
+
+  )->each(sub{
+    
+    my $scan = shift;
+
+    if(
+        !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
+        !(-f $scan->{path}."/__FIXME.txt")
+    ){
+      push @ids_ok_for_metadata,$scan->{_id};
+    }
+
+  });
 
 }
 
@@ -182,7 +181,7 @@ foreach my $id(@ids_ok_for_metadata){
   my @queries = directory_to_queries($path);
 
   foreach my $query(@queries){
-    my $res = meercat()->search(query => $query,source => 'source:rug01');
+    my $res = meercat()->search(query => $query,fq => 'source:rug01');
     $scan->{metadata} = [];
     if($res->total > 0){
 
@@ -210,25 +209,22 @@ foreach my $id(@ids_ok_for_metadata){
 
 #stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
 my @incoming_ok = ();
-{
 
-  my($offset,$limit,$total) = (0,1000,0);
-  do{
-    my $result = index_scan->search(
-      query => "status:\"incoming_ok\"",
-      start => $offset,
-      limit => $limit
-    );
-    $total = $result->total;
-    for my $scan(@{ $result->hits }){
-      if(!(-f $scan->{path}."/__FIXME.txt")){
-          push @incoming_ok,$scan->{_id};
-      }
-    }
-    $offset += $limit;
-  }while($offset < $total);
+index_scan->searcher(
 
-}
+  query => "status:\"incoming_ok\"",
+  limit => 1000
+
+)->each(sub{
+
+  my $scan = shift;
+  if(!(-f $scan->{path}."/__FIXME.txt")){
+      push @incoming_ok,$scan->{_id};
+  }
+
+});
+
+
 
 say "registering incoming_ok";
 
@@ -433,23 +429,19 @@ if(!-w $dir_processed){
 
 #opladen naar GREP
 my @qa_control_ok = ();
-{
 
-  my($offset,$limit,$total) = (0,1000,0);
-  do{
-      my $result = index_scan->search(
-        query => "status:\"qa_control_ok\"",
-        start => $offset,
-        limit => $limit
-      );
-      $total = $result->total;
-      for my $hit(@{ $result->hits }){
-          push @qa_control_ok,$hit->{_id};
-      }
-      $offset += $limit;
-  }while($offset < $total);
+index_scan->searcher(
 
-}
+  query => "status:\"qa_control_ok\"",
+  limit => 1000
+
+)->each(sub{
+
+  push @qa_control_ok,$_[0]->{_id};
+
+});
+
+
 for my $scan_id(@qa_control_ok){
 
     my $scan = scans->get($scan_id);
@@ -528,6 +520,7 @@ foreach my $project_id(@project_ids){
 
     my $meercat = meercat();
 
+    #no searcher for meercat: 'fq' is not implemented by Catmandu::Searchable
     my($offset,$limit,$total) = (0,1000,0);
 
     my $fetch_successfull = 1;

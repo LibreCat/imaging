@@ -44,18 +44,19 @@ get('/ready/:user_login',sub{
 
   #stap 2: welke mappen zijn 'incoming*', maar staan blijkbaar niet meer op hun plaats?
   my @missing_scans;
-  {
-      my $query = "status:incoming* AND user_login:".$params->{user_login};
-      my($start,$limit,$total) = (0,100,0);
-      do{
-        my $result = index_scan->search(query => $query,start => $start,limit => $limit);
-        for my $hit(@{ $result->hits }){
-          push @missing_scans,$hit if !(-d $hit->{path});
-        }  
-        $start += $limit;
-      }while($start < $total);
-      
-  };
+  
+  index_scan->searcher(
+
+    query => "status:incoming* AND user_login:".$params->{user_login},
+    limit => 1000
+
+  )->each(sub{
+
+    my $hit = shift;
+    push @missing_scans,$hit if !(-d $hit->{path});
+
+  });
+  
 
   template('ready',{
     directories => \@directories,

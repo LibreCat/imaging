@@ -55,21 +55,19 @@ any('/status',sub {
 
   #ontbrekende scans
   my $missing = {};
-  {
-      my $query = "status:incoming*";
-      my($start,$limit,$total) = (0,100,0);
-      do{
-        my $result = index_scan->search(query => $query,start => $start,limit => $limit);
-        for my $hit(@{ $result->hits }){
-          if( !(-d $hit->{path}) ){
-            $missing->{ $hit->{user_login} }++;
-          }
-        }  
-        $start += $limit;
-      }while($start < $total);
-      
-  };
+  index_scan->searcher(
 
+    query => "status:incoming*",
+    limit => 1000
+
+  )->each(sub{
+
+    my $hit = shift;
+    if( !(-d $hit->{path}) ){
+      $missing->{ $hit->{user_login} }++;
+    }
+
+  });
 
   template('status',{
     missing => $missing,

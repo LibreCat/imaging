@@ -11,19 +11,16 @@ GetOptions(
   "attr=s" => \@attr
 );
 
-my($offset,$limit,$total) = (0,1000,0);
-do{
-  my $result = index_project->search(
-    query => "*:*",
-    start => $offset,
-    limit => $limit            
-  );
-  $total = $result->total;
-  for my $project(@{ $result->hits }){
-    say $project->{_id};
-    for(@{ $project->{list} }){
-      say "\t$_";
-    }
+index_project->searcher(
+  query => $query,
+  limit => 1000
+)->each(sub{
+
+  my $project = shift;
+  say $project->{_id};
+
+  for(@{ $project->{list} }){
+    say "\t$_";
   }
-  $offset += $limit;
-}while($offset < $total);
+
+});
