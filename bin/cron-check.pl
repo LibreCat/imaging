@@ -255,6 +255,7 @@ users->each(sub{
           update_status($scan);
         }
 
+        
         #voeg toe aan te verwerken directories
         push @scan_ids_ready,$scan->{_id}; 
       }
@@ -273,8 +274,10 @@ for my $scan_id(@scan_ids_ready){
   my $scan = $scans->get($scan_id);
 
   #opgelet: reeds gecontroleerde scans met status ~ incoming vallen niet onder deze regeling!
-  next if ( (-d $scan->{path}) || ($scan->{status} =~ /incoming/o) );
-
+  next if -d $scan->{path};
+  
+  $scan->{path} = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$scan->{user_id}."/".$scan->{_id};
+  
   set_status($scan,status => "incoming");
   update_scan($scan);
   update_status($scan,-1);
@@ -372,7 +375,17 @@ foreach my $scan_id(@scan_ids_test){
   my $profile;
 
   #lijst bestanden
-  my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+  my $dir_error;
+  my $dir_info;
+  try{
+    $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+  }catch{
+    $dir_error = $_;    
+  };
+  if($dir_error){
+    say "error while trying to list files in ".$scan->{path}.": $dir_error";
+    next;
+  }
 
   #initialise check_log
   $scan->{check_log} = [];
