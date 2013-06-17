@@ -500,7 +500,9 @@
         dataType: "json",
         url: baseUrl+"/archive?query=identifier~"+$t.attr("data-id"),
         success: function(data){
-          var addClass = data.hits.length == 1 ? "label-success":"label-important";
+          //in grep: 'rood' (want controle is nodig!)
+          //niet in grep: 'groen'
+          var addClass = data.hits.length == 1 ? "label-important":"label-success";
           $t.removeClass(addClass).addClass(addClass);
           $t.html("in archief: "+data.hits.length);
         }
