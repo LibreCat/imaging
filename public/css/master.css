@@ -14,3 +14,7 @@ th, td {
 .table tbody tr.error > td {
 background-color: #f2dede;
 }
+
+.table tbody tr.info td {
+  background-color: #d9edf7;
+}

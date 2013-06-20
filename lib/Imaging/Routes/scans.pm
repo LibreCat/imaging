@@ -104,7 +104,8 @@ post '/scans/:_id' => sub {
           my($result,$error);
           try {
 
-            $result = meercat->search(query => $metadata_id,limit => 1,fq => 'source:rug01');     
+            #$result = meercat->search(query => $metadata_id,limit => 1,fq => 'source:rug01');     
+            $result = meercat->search(query => $metadata_id,limit => 1);     
 
           }catch{
             $error = $_;
