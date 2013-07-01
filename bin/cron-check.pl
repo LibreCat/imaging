@@ -172,7 +172,7 @@ say "$this_file started at ".local_time;
 
 say "looking for scans in ".$mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."\n";
 
-my @scan_ids_ready = ();
+my @scans_ready = ();
 
 users->each(sub{
 
@@ -257,7 +257,7 @@ users->each(sub{
 
         
         #voeg toe aan te verwerken directories
-        push @scan_ids_ready,$scan->{_id}; 
+        push @scans_ready,$dir; 
       }
       close CMD;   
     }catch{
@@ -269,14 +269,23 @@ users->each(sub{
 
 #stap 2: zijn er scans die opnieuw in het systeem geplaatst moeten worden?
 #regel: indien $scan->{path} niet meer bestaat, dan wordt dit toegepast!
-for my $scan_id(@scan_ids_ready){
-
+for my $scan_dir(@scans_ready){
+  
+  my $scan_id = File::Basename::basename($scan_dir);
   my $scan = $scans->get($scan_id);
 
   #opgelet: reeds gecontroleerde scans met status ~ incoming vallen niet onder deze regeling!
   next if -d $scan->{path};
   
-  $scan->{path} = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$scan->{user_id}."/".$scan->{_id};
+  #$scan->{path} = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$scan->{user_id}."/".$scan->{_id};
+  #edit path
+  say "resetting path from ".$scan->{path}." to $scan_dir";
+  $scan->{path} = $scan_dir;
+
+  #edit user    
+  my $user_id = File::Basename::basename(dirname($scan_dir));
+  say "resetting user_id from ".$scan->{user_id}." to $user_id";
+  $scan->{user_id} = $user_id;
   
   set_status($scan,status => "incoming");
   update_scan($scan);
@@ -325,8 +334,9 @@ sub get_package {
   require_package($class)->new(%$args);
 }
 my @scan_ids_test = ();
-foreach my $scan_id(@scan_ids_ready){
+foreach my $scan_dir(@scans_ready){
 
+  my $scan_id = File::Basename::basename($scan_dir);
   my $scan = $scans->get($scan_id);
 
   #check nieuwe directories (opgelet: ook record zonder profile_id onder)
@@ -436,32 +446,5 @@ foreach my $scan_id(@scan_ids_test){
   update_status($scan,-1);
 
 }
-
-#check of alle incoming_* er nog staan
-#gevaarlijk voor oude records die terug naar incoming moeten, en dan plotseling verwijderd worden!
-#say "checking if all incoming are still there..";
-#{
-#    my $total_incoming = 0;
-#    my($offset,$limit) = (0,1000);
-#
-#    do{
-#
-#        my $result = index_scan->search(query => "status:incoming*",limit => $limit,offset=>$offset);
-#        $total_incoming = $result->total();
-#
-#        foreach my $hit(@{ $result->hits }){
-#            my $scan = scans->get($hit->{_id});            
-#            if(!-d $scan->{path}){
-#                say "\t".$scan->{_id}." removed or renamed";
-#                index_scan->delete($scan->{_id});
-#                index_scan->commit;
-#                index_log->delete_by_query(query => "scan_id:\"".$scan->{_id}."\"");
-#                index_log->commit;
-#                scans->delete($scan->{_id});
-#            }
-#        }
-#        $offset += $limit;
-#    }while($offset < $total_incoming);
-#}
 
 say "$this_file ended at ".local_time;
