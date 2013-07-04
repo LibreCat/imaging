@@ -283,9 +283,9 @@ for my $scan_dir(@scans_ready){
   $scan->{path} = $scan_dir;
 
   #edit user    
-  my $user_id = File::Basename::basename(dirname($scan_dir));
-  say "resetting user_id from ".$scan->{user_id}." to $user_id";
-  $scan->{user_id} = $user_id;
+  #my $user_id = File::Basename::basename(dirname($scan_dir));
+  #say "resetting user_id from ".$scan->{user_id}." to $user_id";
+  #$scan->{user_id} = $user_id;
   
   set_status($scan,status => "incoming");
   update_scan($scan);
