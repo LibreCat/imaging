@@ -47,7 +47,8 @@
 			[% IF comments == "" %]
 				[% comments = "Status wijziging" %]
 			[% END %]
-      <textarea name="comments" class="span6">[% comments | html %]</textarea>
+      <!--<textarea name="comments" class="span6">[% comments | html %]</textarea>-->
+      <input type="text" name="comments" value="[% comments | html %]"></input>
     </div>
   </div>
   <div class="form-actions">

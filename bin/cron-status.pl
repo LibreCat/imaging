@@ -212,6 +212,9 @@ sub move_scan {
   #pas paden aan
   $scan->{path} = $new_path;
 
+  #stel nieuwe gebruiker in
+  #$scan->{user_id} = $scan->{new_user};
+
   #update databank en index
   set_status($scan,status => "incoming");
 

@@ -13,3 +13,355 @@ layout: "main"
 # all the magic of encoding and decoding. You should not care
 # about unicode within your app when this setting is set (recommended).
 charset: "UTF-8"
+template: "template_toolkit"
+engines:
+ template_toolkit:
+  encoding:  'utf8'
+  start_tag: '[%'
+  end_tag:   '%]'
+  ENCODING: "UTF-8"
+  PRIVATE: 0
+  TRIM: 1
+  EVAL_PERL: 1
+  ANYCASE: "no"
+
+#plugins
+plugins:
+ Email:
+  driver: "smtp"
+  host: "localhost"
+  port: 25
+  encoding: "base64"
+  from: "libservice@ugent.be"
+  type: "html"
+  subject: "Dashboard Scanning workflow"
+  to: "Fran.Vlaeminck@UGent.be"
+  cc: "Ariane.VandeVyver@UGent.be"
+ Database:
+  driver: mysql
+  database: imaging
+  host: localhost
+  port: 3306
+  username: imaging
+  password: imaging
+  dbi_params:
+   RaiseError: 1
+   AutoCommit: 1
+   mysql_auto_reconnect: 1
+  on_connect_do:
+   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,has_dir bool default 0,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
+   - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
+ Auth::RBAC:
+  credentials:
+   class: Catmandu
+   options:
+    store: default
+    bag: users
+  permissions:
+   class: Config
+   options:
+    control:
+     admin:
+      permissions:
+       manage_accounts:
+        operations: ["edit"]
+       directories:
+        operations: ["edit"]
+       projects:
+        operations: ["edit"]
+       scans:
+        operations: ["metadata","status","rename","comment"]
+     collectie_beheerder:
+      permissions:
+       projects: 
+        operations: ["edit"]
+       scans:
+        operations: ["comment"]
+     scanner:
+      permissions:
+       directories: 
+        operations: ["view"]
+       scans:
+        operations: ["comment","status"]
+     it_manager:
+      permissions:
+       manage_accounts:
+        operations: ["edit"]
+       directories:
+        operations: ["edit"]
+       scans:
+        operations: ["comment"]
+     qa_manager:
+      permissions:
+       scans:
+        operations: ["status","rename","comment","metadata"]
+     archivaris: {}
+     catalograaf: {}
+cache: {}
+home:
+ roles: 
+  # sprintf( config->{home}->{roles}->{$first_role} , $user->{login} )
+  admin: "/users"
+  scanner: "/ready/%s"
+  qa_manager: "/qa_control"
+  collectie_beheerder: "/projects"
+ default: "/scans"
+app:
+ qa_control:
+  default_sort: "datetime_last_modified asc"
+ logs:
+  default_sort: "datetime desc"
+ scans:
+  default_sort: "datetime_last_modified desc"
+  facet_fields: ["project_name","status"]
+  edit:
+   when: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives"]
+   baginfo:
+    - key: "Archive-Id"
+      edit: 1
+    - key: "Bag-Size"
+      edit: 0
+    - key: "Bagging-Date"
+      edit: 0
+    - key: "Payload-Oxum"
+      edit: 0
+    - key: "DC-Title"
+      edit: 1
+      required: 1
+    - key: "DC-Identifier"
+      edit: 1
+      required: 1
+    - key: "DC-Description"
+      edit: 1
+      tag: "textarea"
+    - key: "DC-Type"
+      edit: 1
+      tag: "select"
+      values: ["Text","Audio","Sound","Image","Dataset","MovingImage"]
+      required: 1
+    - key: "DC-Creator"
+      edit: 1
+      required: 1
+    - key: "DC-AccessRights"
+      edit: 1
+      tag: "select"
+      values: ["open","closed","ugent","media ugent","media closed"]
+      required: 1
+    - key: "DC-Subject"
+      edit: 1
+default_app: "/"
+refresh_rate: 5
+all: {}
+mounts:
+ directories:
+  path: "/mnt/data01"
+  owner:
+   processed: imaging
+   archive: fedora
+  group:
+   processed: imaging
+   archive: fedora
+  rights:
+   processed: "775" 
+   archive: "775"
+  subdirectories:
+   ready: "01_ready"
+   processed: "02_processed"   
+  network_directories:
+   #vergeet de slash niet na file:// die in windows localhost aangeeft!
+   ready:
+    #windows: "file:///X:"
+    windows: "file://nasan1n.ugent.be/ready"
+   processed:
+    #windows: "file:///Y:"
+    windows: "file://nasan1n.ugent.be/processed"
+  ready: 
+   #warn 3 days after first arrival
+   warn_after: 
+    days: 3
+   #delete 1 day after the warning
+   delete_after:
+    days: 1
+   #how long till directory is processed?
+   upload_idle_time:
+    seconds: 5
+status:
+ collection:
+  status_page: ["registered","reprocess_metadata","reprocess_derivatives","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","archiving","archived","archived_ok","archived_error","published","published_ok","problematic","done"]
+  qa_control: ["registered","qa_control_ok","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","reprocess_scans","archived","archived_ok","archived_error","published","published_ok"]
+  publishing: ["qa_control_ok","archived","archived_ok","published"]
+  archiving: ["qa_control_ok","archived","archived_ok","published","published_ok"]
+  done: ["archived_ok","published_ok"]
+  in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
+  #opgelet: zolang reprocess_* staat het nog in processed, nadien terug in 01_ready
+  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager"]
+ change:
+  qa_manager: &statuschangeqamanager
+   registered: 
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok","problematic"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   reprocess_scans:
+    values: []
+   reprocess_scans_qa_manager:
+    values: []
+   reprocess_metadata: 
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   reprocess_derivatives: 
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","qa_control_ok"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   qa_control_ok: 
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   archiving:
+    values: []
+   archived:
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived_ok","archived_error","problematic"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   archived_ok:
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_error","problematic","published"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   published:
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published_ok","published_error","problematic"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   published_ok:
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published","published_error","done"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   problematic:
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+  admin: *statuschangeqamanager
+human_readable:
+ problematic: "problematisch"
+ incoming: "aangeboden scan"
+ incoming_error: "automatische check gefaald"
+ incoming_ok: "automatische check successvol"
+ processing: "in verwerking"
+ registered: "registratie voltooid"
+ reprocess_scans: "terug naar scanner"
+ reprocess_metadata: "terug naar catalografie"
+ reprocess_derivatives: "afgeleiden foutief"
+ reprocess_scans_qa_manager: "naar qa_manager"
+ qa_control_ok: "qa controle succesvol"
+ archiving: "archivering bezig"
+ archived: "gearchiveerd"
+ archived_ok: "archivering ok"
+ archived_error: "archivering fout"
+ published: "gepubliceerd"
+ published_ok: "publicatie ok"
+ published_error: "publicatie fout"
+directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Default"]
+profile_detector:
+ #opgelet: laatste in de lijst geldt als default, en wordt dus niet getest!
+ list: [["BAG","Imaging::Profile::BAG"],["TAR","Imaging::Profile::TAR"],["NARA","Imaging::Profile::NARA"]]
+profiles:
+ NARA:
+  description: "inc/profiles/description/NARA.tt"
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkEmpty"
+     args:
+      inverse: 1
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkDirStructure"
+     args:
+      conf:
+       glob: "*.tif *.jpg *.fff *.pdf"
+       all: 1
+       message: "map mag enkel deze bestanden bevatten: *.tif *.jpg *.fff *.pdf. (Submappen zijn niet toegelaten)"
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkTIFF"
+     args:
+      valid_patterns:
+       - '\.(?:tif)$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkJPEG"
+     args:
+      valid_patterns:
+       - '\.jpg$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::NARA::checkFilename"
+     args:
+      types: ["MA","AC","ST"]
+      valid_patterns:
+       - '\.(?:tif|fff|pdf|jpg)$'
+       #- '^(?!manifest-md5\.txt$)'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::NARA::checkAleph"
+     args:
+      store: meercat
+     on_error: "continue"
+ BAG:
+  description: "inc/profiles/description/BAG.tt"
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkBag"
+     args: {}
+     on_error: "stop"
+ TAR:
+  description: "inc/profiles/description/TAR.tt"
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkEmpty"
+     args:
+      valid_patterns:
+       - '^RUG\d{2}-\d{9}$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::TAR::checkNARA"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::TAR::checkAleph"
+     args: 
+      store: meercat
+     on_error: "continue"
+mediamosa:
+ drush_command:
+  mmnara: "drush -r /usr/share/mediamosa mmnara %s"
+  import_directory: "drush -r /usr/share/mediamosa mm-import-directory %s"
+  'bt-bag': "drush -r /usr/share/mediamosa bt-bag %s %s"
+ rest_api:
+  user: "bt"
+  password: "bt"
+  base_url: "http://localhost/mediamosa"
+archive_site:
+ mount_incoming_bag: "/mnt/data01/03_grep/process-in/BAG"
+ base_url: "https://grep.ugent.be"
+ rest_api:
+  path: "/app/api"
+publication_site:
+ base_url: "http://adore.ugent.be"
+fedora:
+ args: ["http://localhost:4000/fedora","",""]

@@ -5,6 +5,11 @@
         <p>Beste catalograaf,</p>
         <table>
             <tr>
+              <th colspan="2">
+                [% scan.item("_id") %]
+              </th>
+            </tr>
+            <tr>
                 <th colspan="2" style="padding:10px 0px 10px;text-align:left">
                     De metadata van dit Aleph-record moet worden aangepast:
                 </th>
