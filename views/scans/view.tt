@@ -102,7 +102,7 @@
 </dl>
 
 <div class="tabbable">
-  <ul class="nav nav-tabs">
+  <ul class="nav nav-tabs" id="tab_scan">
     <li class="active"><a href="#tab-status-history" data-toggle="tab">Status geschiedenis</a></li>
     <li><a href="#tab-files" data-toggle="tab">Bestanden <span class="badge badge-info">[% files.size || 0 %]</span></a></li>
     <li>
@@ -128,7 +128,7 @@
           <th>tijd</th>
           <th>commentaar</th>
         </tr>
-        [%- FOREACH status_entry IN scan.item("status_history") %]
+        [%- FOREACH status_entry IN log.item("status_history") %]
         <tr>
           <td>[% status_entry.user_login %]</td>
           <td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
@@ -225,7 +225,7 @@
         [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
 
         <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]#tab-metadata" style="display:inline">
-            <button type="submit" onclick="return confirm('Hierdoor wordt de metadata overschreven. Bent je zeker?');" class="tip" title="Herstel originele metadata">
+            <button type="submit" onclick="return confirm('Hierdoor wordt de metadata overschreven. Bent u zeker?');" class="tip" title="Herstel originele metadata">
                 <i class="icon-repeat"></i>
             </button>            
             <input type="hidden" name="action" value="add_metadata" />
@@ -365,6 +365,13 @@
     </div>
 
   </div>
+
+  <!--purge all-->
+  [%- IF auth.can('scans','purge') -%]
+  <div class="alert alert-danger" style="text-align:right">
+    <button id="purge">verwijder</button>
+  </div>
+  [%- END -%]
 </div>
 <script type="text/javascript" charset="utf-8">
   var baseUrl = "[% request.uri_base %]";
@@ -558,6 +565,53 @@
       var x;
       x = setInterval(func,mm_check_jobs_timeout);
     }
+
+   
+    //purge knop
+    $("#purge").click(function(evt){
+      //bevestiging vragen
+      var c_purge = confirm('Hierdoor wordt dit record, en bijhorende data verwijderd. Bent u zeker?');
+      if(!c_purge)return;
+      
+      //verwijderen
+      $.ajax({
+        dataType: "json",
+        url: baseUrl+"/scans/[%- scan.item("_id") -%]", 
+        type: "DELETE",
+        success: function(data){
+          alert("Dit record werd met success verwijderd! U wordt nu omgeleid naar de overzichtspagina.");
+          window.location.href = baseUrl+"/scans";
+        },
+        error: function(ajax,textStatus,errorThrown){
+          var res = JSON.parse(ajax.responseText);
+          var err = res.errors[0];
+          if(err == "NOT_AUTHORIZED"){
+            alert("U beschikt niet over de nodige rechten om records te verwijderen!");
+          }else if(err == "NOT_FOUND"){
+            alert("[%- scan.item("_id") -%] werd niet terug gevonden");
+          }else if(err == "NO_COMMENT_SUPPLIED"){
+            alert("Gelieve een reden op te geven");
+          }else if(err == "PATH_NOT_DELETED"){
+            alert("Dit record werd verwijderd, maar de data op locatie [%- scan.item("path") -%] kon niet verwijderd worden. Contacteer uw admin.");
+          }
+        }
+      });
+    }); 
+
+    //tab switch
+    $(document).keydown(function(e){
+      if(e.which != 9)return;
+      e.preventDefault();
+      var tab_scan = $("#tab_scan");
+      var tabs = tab_scan.find("li");
+      for(var i = 0;i < tabs.length;i++){
+        if($(tabs[i]).hasClass("active")){          
+          var new_i = i == tabs.length - 1 ? 0:i+1;
+          $(tabs[new_i]).find("a").tab('show');
+          break;
+        }
+      }
+    });
   });
   
 </script>

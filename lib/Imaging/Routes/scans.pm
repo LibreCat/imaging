@@ -13,7 +13,7 @@ use List::MoreUtils qw(first_index);
 use Clone qw(clone);
 use Time::HiRes;
 use File::Basename qw();
-use File::Path qw(mkpath);
+use File::Path qw(mkpath rmtree);
 use Data::UUID;
 use Hash::Merge qw(merge);
 use Imaging::Dir::Info;
@@ -54,6 +54,74 @@ get('/scans',sub {
     errors => \@errors
   });
 });
+
+del '/scans/:_id' => sub {
+
+  my $params = params();
+  my $auth = auth();
+  my $id = $params->{_id};
+  my $comments = $params->{comments};
+  my @errors;
+  my $res = { errors => \@errors, record => $id };
+
+  content_type 'json';
+
+  #vereist:
+  # 1.  rechten om scans te verwijderen
+  # 2.  scan moet bestaan
+  # 3.  reden moet opgegeven worden
+
+  if(!$auth->can('scans','purge')){
+
+    push @errors,"NOT_AUTHORIZED";
+
+  }else{
+
+    my $scan = scans->get($id);
+    my $path = $scan->{path};
+
+    if(!$scan){
+
+      push @errors,"NOT_FOUND";
+
+    }
+#    elsif(!is_string($comments)){
+#
+#      push @errors,"NO_COMMENT_SUPPLIED";
+#
+#    }
+    elsif(is_string($path) && -d $path && !can_delete_file($path)){
+
+      push @errors,"CANNOT_DELETE_PATH";
+
+    }else{
+
+      index_scan()->delete($id);
+      index_scan()->commit();
+      scans()->delete($id);
+      
+      if(-d $path){
+        my $error;
+        rmtree($path,{error => \$error});
+        if(scalar(@$error)){
+          push @errors,"PATH_NOT_DELETED";
+        }
+      }      
+      
+      my $log;
+      ($scan,$log) = set_status($scan,status => "purged",comments => $comments);
+      update_status($log,-1);
+
+    }
+
+  }
+
+  $res->{status} = scalar(@errors) ? "error":"ok";
+  status (scalar(@errors) ? 500:200);
+
+  json($res);
+
+};
 
 post '/scans/:_id' => sub {
   my $params = params;
@@ -215,6 +283,9 @@ get('/scans/:_id',sub {
       push @projects,$project if is_hash_ref($project);
     }
   }
+  
+  #log
+  my $log = get_log($scan);
 
   my($files,$size);
   #lijst bestanden
@@ -226,6 +297,7 @@ get('/scans/:_id',sub {
     
   template('scans/view',{
     scan => $scan,
+    log => $log,
     files => $files,
     size => $size,
     user => users->get($scan->{user_id}),
@@ -255,7 +327,7 @@ get('/scans/:_id/json',sub{
   $response->{status} = scalar(@errors) == 0 ? "ok":"error";
   $response->{errors} = \@errors;
   $response->{messages} = \@messages;
-  return to_json($response,{pretty => 0});
+  return json($response);
 
 });
 
@@ -286,7 +358,7 @@ get('/scans/:_id/comments',,sub{
   $response->{messages} = \@messages;
   $response->{data} = $comments;
 
-  return to_json($response,{pretty => 0});
+  return json($response);
 });
 
 post('/scans/:_id/comments',,sub{
@@ -342,7 +414,7 @@ post('/scans/:_id/comments',,sub{
   $response->{messages} = \@messages;
   $response->{data} = $comment;
 
-  return to_json($response,{pretty => 0});
+  return json($response,{pretty => 0});
 });
 post('/scans/:_id/baginfo',sub{
   my $params = params;
@@ -427,7 +499,7 @@ post('/scans/:_id/baginfo',sub{
   $response->{status} = scalar(@errors) == 0 ? "ok":"error";
   $response->{errors} = \@errors;
   $response->{messages} = \@messages;
-  return to_json($response,{pretty => 0});
+  return json($response);
 });
 
 post '/scans/:_id/:status' => sub {
@@ -475,7 +547,8 @@ post '/scans/:_id/:status' => sub {
       if(status_change_allowed($status_from,$status_to)){
 
         #wijzig status
-        set_status($scan,
+        my $log;
+        ($scan,$log) = set_status($scan,
           status => $status_to,
           user_login => session('user')->{login},
           comments => $comments
@@ -540,7 +613,8 @@ post '/scans/:_id/:status' => sub {
 
         scans->add($scan);
         scan2index($scan);
-        status2index($scan,-1);
+        logs()->add($log);
+        status2index($log,-1);
         my($success,$error) = index_scan->commit;
         ($success,$error) = index_log->commit;
 

@@ -70,7 +70,7 @@ plugins:
        projects:
         operations: ["edit"]
        scans:
-        operations: ["metadata","status","rename","comment"]
+        operations: ["metadata","status","rename","comment","purge"]
      collectie_beheerder:
       permissions:
        projects: 
@@ -94,7 +94,7 @@ plugins:
      qa_manager:
       permissions:
        scans:
-        operations: ["status","rename","comment","metadata"]
+        operations: ["status","rename","comment","metadata","purge"]
      archivaris: {}
      catalograaf: {}
 cache: {}
@@ -187,64 +187,72 @@ mounts:
     seconds: 5
 status:
  collection:
-  status_page: ["registered","reprocess_metadata","reprocess_derivatives","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","archiving","archived","archived_ok","archived_error","published","published_ok","problematic","done"]
+  status_page: ["registered","reprocess_metadata","reprocess_derivatives","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","archiving","archived","archived_ok","archived_error","published","published_ok","problematic","done","rejected"]
   qa_control: ["registered","qa_control_ok","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","reprocess_scans","archived","archived_ok","archived_error","published","published_ok"]
   publishing: ["qa_control_ok","archived","archived_ok","published"]
   archiving: ["qa_control_ok","archived","archived_ok","published","published_ok"]
   done: ["archived_ok","published_ok"]
   in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
   #opgelet: zolang reprocess_* staat het nog in processed, nadien terug in 01_ready
-  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager"]
+  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager","problematic"]
  change:
   qa_manager: &statuschangeqamanager
    registered: 
-    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok","problematic"]
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok","problematic","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_scans:
-    values: []
+    values: ["rejected"]
+    messages: []
    reprocess_scans_qa_manager:
-    values: []
+    values: ["rejected"]
+    messages: []
    reprocess_metadata: 
-    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    reprocess_derivatives: 
-    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","qa_control_ok"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","qa_control_ok","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    qa_control_ok: 
-    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    archiving:
-    values: []
+    values: ["rejected"]
+    messages: []
    archived:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived_ok","archived_error","problematic"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived_ok","archived_error","problematic","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    archived_ok:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_error","problematic","published"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_error","problematic","published","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    published:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published_ok","published_error","problematic"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published_ok","published_error","problematic","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    published_ok:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published","published_error","done"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published","published_error","done","rejected"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
    problematic:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","qa_control_ok","rejected"]
+    messages:
+     reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
+     reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+   rejected:
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok","problematic"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
@@ -268,6 +276,8 @@ human_readable:
  published: "gepubliceerd"
  published_ok: "publicatie ok"
  published_error: "publicatie fout"
+ rejected: "afgekeurd"
+ purged: "verwijderd"
 directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Default"]
 profile_detector:
  #opgelet: laatste in de lijst geldt als default, en wordt dus niet getest!
@@ -276,9 +286,9 @@ profiles:
  NARA:
   description: "inc/profiles/description/NARA.tt"
   packages:
-   - class: "Imaging::Test::Dir::scan"
-     args: {}
-     on_error: "stop"
+#   - class: "Imaging::Test::Dir::scan"
+#     args: {}
+#     on_error: "stop"
    - class: "Imaging::Test::Dir::checkPermissions"
      args: {}
      on_error: "continue"

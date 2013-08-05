@@ -4,6 +4,7 @@ use Catmandu::MediaMosa;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is :array);
 use Try::Tiny;
+use Dancer::Plugin::Imaging::Routes::Common;
 
 get '/jobs/:asset_id' => sub {
 
@@ -38,7 +39,7 @@ get '/jobs/:asset_id' => sub {
   $response->{status} = scalar(@errors) == 0 ? "ok":"error";
 
   content_type 'json';  
-  return to_json($response);
+  return json($response);
 
 };
 sub mediamosa {

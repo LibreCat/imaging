@@ -72,5 +72,5 @@ while(my $id = <STDIN>){
   }
 
   update_scan($scan);
-  update_status($scan,-1);    
+  update_status(get_log($scan),-1);    
 }

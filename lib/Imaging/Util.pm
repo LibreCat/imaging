@@ -6,9 +6,9 @@ use File::MimeInfo;
 use File::Find;
 use Exporter qw(import);
 
-our @EXPORT_OK = qw(data_at file_info mtime mtime_latest_file);
+our @EXPORT_OK = qw(data_at file_info mtime mtime_latest_file can_delete_file);
 our %EXPORT_TAGS = (
-  files => [qw(file_info mtime_latest_file mtime)],
+  files => [qw(file_info mtime_latest_file mtime can_delete_file)],
   data => [qw(data_at)]
 );
 
@@ -88,6 +88,24 @@ sub mtime_latest_file {
     no_chdir => 1
   },$dir);
   return $max_mtime;
+}
+
+sub can_delete_file {
+  my $file = shift;
+  return unless is_string($file);
+  return unless (-f $file || -d $file || -l $file);
+  if(-f $file || -l $file){
+    return -w dirname($file);
+  }else{
+    return unless -w dirname($file);
+    return unless -w $file;
+    my @directories = <$file/*>;
+    for(@directories){
+      my $ok = can_delete_file($_);
+      return unless $ok;
+    }
+  }
+  return 1;
 }
 
 1;

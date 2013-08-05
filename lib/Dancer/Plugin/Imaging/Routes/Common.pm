@@ -75,6 +75,9 @@ sub sanity_check {
     };
     scalar(@errors)==0,\@errors;
 }
+sub json {
+  to_json($_[0],{ pretty => params()->{pretty} ? 1 : 0 });
+}
 
 
 register mount_conf => \&mount_conf;
@@ -83,6 +86,7 @@ register subdirectories => \&subdirectories;
 register sanity_check => \&sanity_check;
 register not_found => \&not_found;
 register simple_search_params => \&simple_search_params;
+register json => \&json;
 
 register_plugin;
 

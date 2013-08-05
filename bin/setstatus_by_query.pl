@@ -35,8 +35,8 @@ for my $id(@ids){
   my $scan = scans->get($id);
   next if !$scan;
   say $scan->{_id};
-
-  set_status($scan,status => $status);
+  my $log;
+  ($scan,$log) = set_status($scan,status => $status);
   update_scan($scan);
-  update_status($scan,-1);
+  update_status($log,-1);
 }

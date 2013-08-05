@@ -7,6 +7,7 @@ use File::Path qw(rmtree);
 use File::Basename;
 use Imaging qw(:all);
 
+#delete scans with status 'done'
 index_scan->searcher(
 
   query => "status:done",

@@ -12,7 +12,7 @@ use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
 use Exporter qw(import);
-our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status set_status dir_info list_files);
+our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status set_status dir_info list_files logs get_log);
 our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
 sub projects { 
@@ -20,6 +20,9 @@ sub projects {
 }
 sub scans {
   state $scans = store()->bag("scans");
+}
+sub logs {
+  state $logs = store()->bag("logs");
 }
 sub users {
   state $users = store()->bag("users");
@@ -49,7 +52,7 @@ sub local_time {
     '%FT%TZ', DateTime->from_epoch(epoch=>$time,time_zone => DateTime::TimeZone->new(name => 'local'))
   );
 }
-sub project2index {
+sub project2doc {
   my $project = shift;
   my $doc = {};
   $doc->{$_} = $project->{$_} foreach(qw(_id name name_subproject description query num_hits));
@@ -76,31 +79,46 @@ sub project2index {
   # doc.list => "lijst van mogelijke items"
   # project.list => "lijst van items"
   $doc->{total} = scalar(@{ $project->{list} });
-  index_project->add($doc);
+ 
+  $doc;
 }
-sub status2index {
-  my($scan,$history_index) = @_;    
-  my $doc;
-  my $index_log = index_log();
-  my $user = users->get($scan->{user_id});
+sub project2index {
+  index_project->add(project2doc($_[0]));
+}
+sub get_log {
+  my $scan = shift;
+  logs()->get($scan->{_id}) || new_log($scan);
+}
+sub status2docs {
+  my($log,$history_index) = @_;    
+  my @docs;  
 
   my $history_objects;
-  if(array_exists($scan->{status_history},$history_index)){
-    $history_objects = [ $scan->{status_history}->[$history_index] ];
+  if(array_exists($log->{status_history},$history_index)){
+    $history_objects = [ $log->{status_history}->[$history_index] ];
   }else{
-    $history_objects = $scan->{status_history};
+    $history_objects = $log->{status_history};
   }
 
   foreach my $history(@$history_objects){
     next if $history->{status} =~ /incoming_/o;
-    $doc = clone($history);
+    my $doc = clone($history);
     $doc->{datetime} = formatted_date($doc->{datetime});
-    $doc->{scan_id} = $scan->{_id};
-    $doc->{owner} = $user->{login};
+    $doc->{scan_id} = $log->{_id};
+    $doc->{owner} = $log->{user_id};
     my $blob = join('',map { $doc->{$_} } sort keys %$doc);
     $doc->{_id} = md5_hex($blob);
-    $index_log->add($doc);
+    push @docs,$doc;    
   }
+
+  \@docs;
+
+}
+sub status2index {
+  my($log,$history_index) = @_;     
+  my $index_log = index_log();
+  my $docs = status2docs($log,$history_index);
+  $index_log->add($_) for @$docs;
 }
 sub marcxml_flatten {
   my $xml = shift;
@@ -118,65 +136,71 @@ sub marcxml_flatten {
   }
   return \@text;
 }
-sub scan2index {
-    my $scan = shift;       
+sub scan2doc {
+  my $scan = shift;      
 
-    #default doc
-    my $doc = clone($scan);
+  my $log = get_log($scan); 
 
-    #metadata
-    my @metadata_ids = ();
-    push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $scan->{metadata} }); 
-    $doc->{metadata_id} = \@metadata_ids;
-    $doc->{marc} = [];
-    push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
+  #default doc
+  my $doc = clone($scan);
 
-    #status history
-    for(my $i = 0;$i < scalar(@{ $scan->{status_history} });$i++){
-        my $item = $scan->{status_history}->[$i];
-        $doc->{status_history}->[$i] = $item->{user_login}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
-    }
+  #metadata
+  my @metadata_ids = ();
+  push @metadata_ids,$_->{source}.":".$_->{fSYS} foreach(@{ $scan->{metadata} }); 
+  $doc->{metadata_id} = \@metadata_ids;
+  $doc->{marc} = [];
+  push @{ $doc->{marc} },@{ marcxml_flatten($_->{fXML}) } foreach(@{$scan->{metadata}});
 
-    #project info
-    delete $doc->{project_id};
-    if(is_array_ref($scan->{project_id}) && scalar(@{$scan->{project_id}}) > 0){
-        foreach my $project_id(@{$scan->{project_id}}){
-            my $project = projects->get($project_id);
-            next if !is_hash_ref($project);
-            foreach my $key(keys %$project){
-                next if $key eq "list";
-                my $subkey = "project_$key";
-                $subkey =~ s/_{2,}/_/go;
-                $doc->{$subkey} ||= [];
-                push @{$doc->{$subkey}},$project->{$key};
-            }
-        }
-    }
+  #status history
+  for(my $i = 0;$i < scalar(@{ $log->{status_history} });$i++){
+    my $item = $log->{status_history}->[$i];
+    $doc->{status_history}->[$i] = $item->{user_login}."\$\$".$item->{status}."\$\$".formatted_date($item->{datetime})."\$\$".$item->{comments};
+  }
 
-    #user info
-    if($scan->{user_id}){
-      my $user = users->get($scan->{user_id});
-      if($user){
-        my @keys = qw(name login roles);
-        $doc->{"user_$_"} = $user->{$_} foreach(@keys);
+  #project info
+  delete $doc->{project_id};
+  if(is_array_ref($scan->{project_id}) && scalar(@{$scan->{project_id}}) > 0){
+    foreach my $project_id(@{$scan->{project_id}}){
+      my $project = projects->get($project_id);
+      next if !is_hash_ref($project);
+      foreach my $key(keys %$project){
+        next if $key eq "list";
+        my $subkey = "project_$key";
+        $subkey =~ s/_{2,}/_/go;
+        $doc->{$subkey} ||= [];
+        push @{$doc->{$subkey}},$project->{$key};
       }
     }
-    
-    #convert datetime to iso
-    foreach my $key(keys %$doc){
-        next if $key !~ /datetime/o;
-        if(is_array_ref($doc->{$key})){
-            $_ = formatted_date($_) for(@{ $doc->{$key} });
-        }else{
-            $doc->{$key} = formatted_date($doc->{$key});
-        }
+  }
+
+  #user info
+  if($scan->{user_id}){
+    my $user = users->get($scan->{user_id});
+    if($user){
+      my @keys = qw(name login roles);
+      $doc->{"user_$_"} = $user->{$_} foreach(@keys);
     }
+  }
+  
+  #convert datetime to iso
+  foreach my $key(keys %$doc){
+    next if $key !~ /datetime/o;
+    if(is_array_ref($doc->{$key})){
+      $_ = formatted_date($_) for(@{ $doc->{$key} });
+    }else{
+      $doc->{$key} = formatted_date($doc->{$key});
+    }
+  }
 
-    #opkuisen
-    my @deletes = qw(metadata comments busy warnings new_path new_user publication_id);
-    delete $doc->{$_} for(@deletes);
+  #opkuisen
+  my @deletes = qw(metadata comments busy warnings new_path new_user publication_id);
+  delete $doc->{$_} for(@deletes);
 
-    index_scan()->add($doc);
+  $doc;
+
+}
+sub scan2index {  
+  index_scan()->add(scan2doc($_[0]));
 }
 sub dir_info {
   Imaging::Dir::Info->new(dir => shift);
@@ -207,22 +231,39 @@ sub update_scan {
   die(join('',@$error)) if !$success;
 }
 sub update_status {
-  my($scan,$index) = @_;
-  status2index($scan,$index);
+  my($log,$index) = @_;
+  logs()->add($log);
+  status2index($log,$index);
   my($success,$error) = index_log->commit;
   die(join('',@$error)) if !$success;
 }
+#input: <scan>,status => <new-status>,user_login => <executing user-login>,comment => <comments>
+#return: scan AND log (full record!)
 sub set_status {
   my($scan,%opts)=@_;
+
   $scan->{status} = $opts{status};
-  $scan->{status_history} //= [];
-  push @{ $scan->{status_history} },{
+  my $log = get_log($scan);
+  $log->{status_history} //= [];
+  push @{ $log->{status_history} },{
     user_login => ($opts{user_login} // "-"),
     status => $opts{status},
     datetime => Time::HiRes::time,
     comments => ($opts{comments}  // "")
   };
   $scan->{datetime_last_modified} = Time::HiRes::time;
+  $log->{datetime_last_modified} = $scan->{datetime_last_modified}; 
+
+  $scan,$log;
 }
+sub new_log {
+  my $scan = shift;
+  {
+    _id => $scan->{_id},
+    user_id => $scan->{user_id},
+    status_history => [],
+    datetime_last_modified => Time::HiRes::time
+  };
+};
 
 1;

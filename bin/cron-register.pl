@@ -272,11 +272,12 @@ if(!-w $dir_processed){
             }
             if(scalar(@errors) > 0){
                 say "\t\tfailed";
-                set_status($scan,status => "incoming_error");
+                my $log;
+                ($scan,$log) = set_status($scan,status => "incoming_error");
                 $scan->{check_log} = \@errors;
 
                 update_scan($scan);
-                update_status($scan,-1);
+                update_status($log,-1);
 
                 #see you later!
                 #not recoverable: aborting
@@ -393,7 +394,8 @@ if(!-w $dir_processed){
 
         #status 'registered'
         delete $scan->{$_} for(qw(busy));
-        set_status($scan,status => "registered");
+        my $log;
+        ($scan,$log) = set_status($scan,status => "registered");
 
         #afgeleiden maken mbv Mediamosa
         if($scan->{profile_id} eq "NARA"){
@@ -420,7 +422,7 @@ if(!-w $dir_processed){
         }
 
         update_scan($scan);
-        update_status($scan,-1);
+        update_status($log,-1);
 
     }
 }
@@ -491,10 +493,11 @@ for my $scan_id(@qa_control_ok){
     say $stdout;    
     say "scan archiving";
 
-    set_status($scan,status => "archiving");
+    my $log;
+    ($scan,$log) = set_status($scan,status => "archiving");
 
     update_scan($scan);
-    update_status($scan,-1);
+    update_status($log,-1);
 
     say "scan record updated";
 

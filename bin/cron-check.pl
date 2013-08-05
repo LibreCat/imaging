@@ -219,17 +219,11 @@ users->each(sub{
           my $mtime = mtime_latest_file($dir);
 
           say "adding new record $basename";
+          my $log;
           $scan = {
             _id => $basename,
             name => undef,
             path => $dir,
-            status => "incoming",
-            status_history => [{
-              user_login => $user->{login},
-              status => "incoming",
-              datetime => Time::HiRes::time,
-              comments => ""
-            }],
             check_log => [],
             user_id => $user->{_id},
             #mtime van de nieuwste file in deze directory (!= mtime(dir))
@@ -250,9 +244,11 @@ users->each(sub{
             #archive_id => "archive.ugent.be:lkzejrzlrj-lfkjslfjsf"
           };
 
+          ($scan,$log) = set_status($scan,status => "incoming",user_login => $user->{login});
+
           #update scans, index_scan en index_log
           update_scan($scan);
-          update_status($scan);
+          update_status($log);
         }
 
         
@@ -277,19 +273,14 @@ for my $scan_dir(@scans_ready){
   #opgelet: reeds gecontroleerde scans met status ~ incoming vallen niet onder deze regeling!
   next if -d $scan->{path};
   
-  #$scan->{path} = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$scan->{user_id}."/".$scan->{_id};
   #edit path
   say "resetting path from ".$scan->{path}." to $scan_dir";
   $scan->{path} = $scan_dir;
 
-  #edit user    
-  #my $user_id = File::Basename::basename(dirname($scan_dir));
-  #say "resetting user_id from ".$scan->{user_id}." to $user_id";
-  #$scan->{user_id} = $user_id;
-  
-  set_status($scan,status => "incoming");
+  my $log;
+  ($scan,$log) = set_status($scan,status => "incoming");
   update_scan($scan);
-  update_status($scan,-1);
+  update_status($log,-1);
 
 }
 
@@ -375,6 +366,7 @@ foreach my $scan_dir(@scans_ready){
 foreach my $scan_id(@scan_ids_test){
 
   my $scan = $scans->get($scan_id);
+  my $log;
 
   $scan->{busy} = 1;
 
@@ -435,7 +427,7 @@ foreach my $scan_id(@scan_ids_test){
       }
     }
 
-    set_status($scan,status => ($num_fatal > 0 ? "incoming_error":"incoming_ok"));
+    ($scan,$log) = set_status($scan,status => ($num_fatal > 0 ? "incoming_error":"incoming_ok"));
 
   }
 
@@ -443,7 +435,7 @@ foreach my $scan_id(@scan_ids_test){
 
   #update scans, index_scan en index_log
   update_scan($scan);
-  update_status($scan,-1);
+  update_status($log,-1) if $log;
 
 }
 

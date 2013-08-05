@@ -216,13 +216,14 @@ sub move_scan {
   #$scan->{user_id} = $scan->{new_user};
 
   #update databank en index
-  set_status($scan,status => "incoming");
+  my $log;
+  ($scan,$log) = set_status($scan,status => "incoming");
 
   #gedaan ermee
   delete $scan->{$_} for(qw(busy new_path new_user asset_id));
 
   update_scan($scan);
-  update_status($scan,-1);
+  update_status($log,-1);
 
   #done? rechten aanpassen aan dat van 01_ready submap
   #775 zodat imaging achteraf de map terug in processed kan verplaatsen!
@@ -421,10 +422,11 @@ my $index_scan = index_scan();
 
     say "\teverything ok";
 
-    set_status($scan,status => "archived");
+    my $log;
+    ($scan,$log) = set_status($scan,status => "archived");
 
     update_scan($scan);
-    update_status($scan,-1);
+    update_status($log,-1);
 
   }
 }
