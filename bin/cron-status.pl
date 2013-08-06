@@ -178,8 +178,9 @@ sub move_scan {
   #maak directory en plaats __FIXME.txt
   mkpath($new_path);
   #plaats __FIXME.txt
+  my $log = get_log($scan);
   open FILE,">$new_path/__FIXME.txt" or return complain($!);
-  print FILE $scan->{status_history}->[-1]->{comments};
+  print FILE $log->{status_history}->[-1]->{comments};
   close FILE;
 
  
@@ -223,7 +224,7 @@ sub move_scan {
   delete $scan->{$_} for(qw(busy new_path new_user asset_id));
 
   update_scan($scan);
-  update_status($log,-1);
+  update_log($log,-1);
 
   #done? rechten aanpassen aan dat van 01_ready submap
   #775 zodat imaging achteraf de map terug in processed kan verplaatsen!
@@ -426,7 +427,7 @@ my $index_scan = index_scan();
     ($scan,$log) = set_status($scan,status => "archived");
 
     update_scan($scan);
-    update_status($log,-1);
+    update_log($log,-1);
 
   }
 }

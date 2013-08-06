@@ -38,5 +38,5 @@ for my $id(@ids){
   my $log;
   ($scan,$log) = set_status($scan,status => $status);
   update_scan($scan);
-  update_status($log,-1);
+  update_log($log,-1);
 }

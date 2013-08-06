@@ -110,7 +110,7 @@ del '/scans/:_id' => sub {
       
       my $log;
       ($scan,$log) = set_status($scan,status => "purged",comments => $comments);
-      update_status($log,-1);
+      update_log($log,-1);
 
     }
 
@@ -511,16 +511,25 @@ post '/scans/:_id/:status' => sub {
   my $mount_conf = mount_conf;
   my $session = session();
   my $scan = scans->get($params->{_id});
-  $scan or return not_found();
 
-  if(! $auth->can('scans','status') ){
-    return forward('/access_denied',{
-        text => "U mist de nodige gebruikersrechten om de status van dit record aan te passen"
-    });
-  }
+  content_type 'json';
+
+  my $response = {
+    errors => \@errors,
+    messages => \@messages
+  };
+
   my $status_change_conf = status_change_conf();
 
-  if($scan->{busy}){
+  if(!$scan){
+
+    push @errors, "scandirectory $params->{_id} niet gevonden";
+
+  }elsif(! $auth->can('scans','status') ){
+
+    push @errors,"U mist de nodige gebruikersrechten om de status van dit record aan te passen";
+
+  }elsif($scan->{busy}){
 
     push @errors,"Systeem is bezig met een operatie op deze scan";
 
@@ -614,12 +623,10 @@ post '/scans/:_id/:status' => sub {
         scans->add($scan);
         scan2index($scan);
         logs()->add($log);
-        status2index($log,-1);
+        log2index($log,-1);
         my($success,$error) = index_scan->commit;
         ($success,$error) = index_log->commit;
 
-        #redirect
-        return redirect(uri_for("/scans/$scan->{_id}"));
       }else{
 
         push @errors,"status kan niet worden gewijzigd van $status_from naar $status_to";
@@ -628,41 +635,12 @@ post '/scans/:_id/:status' => sub {
     }
   }
 
-  var errors => \@errors;
-  var messages => \@messages;
+  $response->{status} = scalar(@errors) == 0 ? "ok":"error";
 
-  delete $params->{_id};  
-  forward("/scans/".$scan->{_id}."/status",$params,{ method => "GET" });
+  json($response);
 
 };
 
-get('/scans/:_id/status',sub{
-  my $params = params();
-  my @errors = ();
-  my @messages = ();
-  my $scan = scans->get($params->{_id});
-  $scan or return not_found();
-
-  if(! auth()->can('scans','status') ){
-    return forward('/access_denied',{
-      text => "U mist de nodige gebruikersrechten om de status van dit record aan te passen"
-    });
-  }
-
-  #indien men hierheen is geforwarded via post route
-  my $e = var 'errors';
-  my $m = var 'messages';
-  push @errors,@$e if $e;
-  push @messages,@$m if $m;
-
-  template('scans/status',{
-    scan => $scan,
-    errors => \@errors,
-    messages => \@messages,
-    user => users->get($scan->{user_id})
-  });
-
-});
 sub conf_baginfo {
   state $conf_baginfo = config->{app}->{scans}->{edit}->{baginfo};
 }

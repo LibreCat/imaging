@@ -248,7 +248,7 @@ users->each(sub{
 
           #update scans, index_scan en index_log
           update_scan($scan);
-          update_status($log);
+          update_log($log);
         }
 
         
@@ -280,7 +280,7 @@ for my $scan_dir(@scans_ready){
   my $log;
   ($scan,$log) = set_status($scan,status => "incoming");
   update_scan($scan);
-  update_status($log,-1);
+  update_log($log,-1);
 
 }
 
@@ -435,7 +435,7 @@ foreach my $scan_id(@scan_ids_test){
 
   #update scans, index_scan en index_log
   update_scan($scan);
-  update_status($log,-1) if $log;
+  update_log($log,-1) if $log;
 
 }
 

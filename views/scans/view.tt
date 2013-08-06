@@ -16,9 +16,11 @@
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
 
+<!--
 [%- IF auth.can('scans','status') && !scan.busy && status_change_conf.${ scan.status }.values.size > 0 && !TO_FIX %]
     <a class="btn btn-small" href="[% request.uri_base %]/scans/[% scan.item('_id') %]/status">Wijzig status</a>
 [% END %]
+-->
 
 [% IF scan.status == "registered" && scan.busy && scan.asset_id %]
   <div class="alert">
@@ -103,8 +105,7 @@
 
 <div class="tabbable">
   <ul class="nav nav-tabs" id="tab_scan">
-    <li class="active"><a href="#tab-status-history" data-toggle="tab">Status geschiedenis</a></li>
-    <li><a href="#tab-files" data-toggle="tab">Bestanden <span class="badge badge-info">[% files.size || 0 %]</span></a></li>
+    <li class="active"><a href="#tab-files" data-toggle="tab">Bestanden <span class="badge badge-info">[% files.size || 0 %]</span></a></li>
     <li>
       <a href="#tab-metadata" data-toggle="tab">
       Metadata
@@ -115,31 +116,16 @@
       [%- END %]
       </a>
     </li>
+    [%- IF auth.can('scans','status') -%]
+    <li><a href="#tab-change-status" data-toggle="tab">Wijzig status</a></li>
+    [% END %]
+    <li><a href="#tab-status-history" data-toggle="tab">Status geschiedenis <span class="badge badge-info">[% log.status_history.size || 0 %]</a></li>
     <li><a href="#tab-checklog" data-toggle="tab">Check log <span class="badge badge-info">[% scan.check_log.size || 0 %]</span></a></li>
     <li><a href="#tab-comments" data-toggle="tab">Comments <span class="badge badge-info">[% scan.comments.size || 0 %]</span></a></li>
   </ul>
   <div class="tab-content">
 
-    <div class="tab-pane active" id="tab-status-history">
-      <table class="table table-striped table-condensed">
-        <tr>
-          <th>gebruiker</th>
-          <th>status</th>
-          <th>tijd</th>
-          <th>commentaar</th>
-        </tr>
-        [%- FOREACH status_entry IN log.item("status_history") %]
-        <tr>
-          <td>[% status_entry.user_login %]</td>
-          <td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
-          <td>[% date.format(POSIX.floor(status_entry.datetime),'%d-%m-%Y %H:%M:%S') %]</td>
-          <td>[% status_entry.comments | html %]</td>
-        </tr>
-        [%- END %]
-      </table>
-    </div>
-
-    <div class="tab-pane" id="tab-files">
+    <div class="tab-pane active" id="tab-files">
       [%- states_in_processed = settings.status.collection.in_processed -%]
       [%- states_in_ready = settings.status.collection.in_ready-%]
 
@@ -341,6 +327,31 @@
       [%- END %]
     </div>
 
+    [%- IF auth.can('scans','status') -%]
+    <div class="tab-pane" id="tab-change-status">
+      [% PROCESS scans/status_include.tt %]
+    </div>
+    [% END %]
+
+    <div class="tab-pane" id="tab-status-history">
+      <table class="table table-striped table-condensed">
+        <tr>
+          <th>gebruiker</th>
+          <th>status</th>
+          <th>tijd</th>
+          <th>commentaar</th>
+        </tr>
+        [%- FOREACH status_entry IN log.item("status_history") %]
+        <tr>
+          <td>[% status_entry.user_login %]</td>
+          <td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
+          <td>[% date.format(POSIX.floor(status_entry.datetime),'%d-%m-%Y %H:%M:%S') %]</td>
+          <td>[% status_entry.comments | html %]</td>
+        </tr>
+        [%- END %]
+      </table>
+    </div>
+
     <div class="tab-pane" id="tab-checklog">
       [%- IF scan.check_log.size > 0 %]
       <pre><code>[% scan.check_log.join("\n") | html %]</code></pre>
@@ -359,19 +370,22 @@
         <blockquote>
           [% comment.text | html %]
           <small>posted by [% comment.user_login %] at [% comment.datetime %]</small>
-        </
+        </blockquote>
       [% END %]
       </div>
     </div>
 
+
   </div>
 
   <!--purge all-->
+  <!--
   [%- IF auth.can('scans','purge') -%]
   <div class="alert alert-danger" style="text-align:right">
     <button id="purge">verwijder</button>
   </div>
   [%- END -%]
+  -->
 </div>
 <script type="text/javascript" charset="utf-8">
   var baseUrl = "[% request.uri_base %]";
@@ -379,6 +393,7 @@
   /* goto tab */
   // Javascript to enable link to tab
   if (window.location.hash && window.location.hash != "") {
+    console.log(window.location.hash);
       $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
   } 
 
@@ -387,77 +402,85 @@
       window.location.hash = e.target.hash;
   });
 
-  $('#add-comment').submit(function(evt) {
-    evt.preventDefault();
-    var f = $(this),
-        textInput = f.find(':input[name="text"]'),
-        text = textInput.val();
-    textInput.val("");
-    $.post(f.attr('action'), {text: text}, function(res) {
-      if (!res.status === 'ok') return;
-      var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
-        res.data.user_login + ' at '+res.data.datetime+
-        '</small></blockquote>');
-      comment.hide();
-      $("#comments").prepend(comment);
-      comment.slideDown();
-    }, 'json');
-  });
+  [%- IF auth.can('scans','comment') -%]
+
+    $('#add-comment').submit(function(evt) {
+      evt.preventDefault();
+      var f = $(this),
+          textInput = f.find(':input[name="text"]'),
+          text = textInput.val();
+      textInput.val("");
+      $.post(f.attr('action'), {text: text}, function(res) {
+        if (!res.status === 'ok') return;
+        var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
+          res.data.user_login + ' at '+res.data.datetime+
+          '</small></blockquote>');
+        comment.hide();
+        $("#comments").prepend(comment);
+        comment.slideDown();
+      }, 'json');
+    });
+
+  [% END %]
 
   var baginfoConfig = [% settings.app.scans.edit.baginfo.json || "{}" %];
 
-  $('.baginfo-add').click(function(evt) {
-    evt.preventDefault();
-    var key = $(this).text();
-    for (var i = 0;i < baginfoConfig.length;i++){
+  [%- IF auth.can('scans','metadata') -%]
 
-      if (baginfoConfig[i].key == key) {
+    $('.baginfo-add').click(function(evt) {
+      evt.preventDefault();
+      var key = $(this).text();
+      for (var i = 0;i < baginfoConfig.length;i++){
 
-        var data = ['<div class="control-group baginfo"><label class="control-label"><b>', key,
-          '</b></label><div class="controls">'];
-        if(baginfoConfig[i].values && baginfoConfig[i].values.length > 0){
+        if (baginfoConfig[i].key == key) {
 
-          data.push('<select name="', key, '" class="baginfostyle">');
-          for (var j = 0;j < baginfoConfig[i].values.length;j++) {
-              data.push('<option value="'+baginfoConfig[i].values[j]+'">'+baginfoConfig[i].values[j]+'</option>');
+          var data = ['<div class="control-group baginfo"><label class="control-label"><b>', key,
+            '</b></label><div class="controls">'];
+          if(baginfoConfig[i].values && baginfoConfig[i].values.length > 0){
+
+            data.push('<select name="', key, '" class="baginfostyle">');
+            for (var j = 0;j < baginfoConfig[i].values.length;j++) {
+                data.push('<option value="'+baginfoConfig[i].values[j]+'">'+baginfoConfig[i].values[j]+'</option>');
+            }
+            data.push('</select>');
+
+          }else if(baginfoConfig[i].tag && baginfoConfig[i].tag == "textarea"){
+
+            data.push('<textarea name="',key,'" class="baginfostyle" ></textarea>');
+
+          }else{
+
+            data.push('<input type="text" name="', key, '" value="" class="baginfostyle"/>');
+
           }
-          data.push('</select>');
-
-        }else if(baginfoConfig[i].tag && baginfoConfig[i].tag == "textarea"){
-
-          data.push('<textarea name="',key,'" class="baginfostyle" ></textarea>');
-
-        }else{
-
-          data.push('<input type="text" name="', key, '" value="" class="baginfostyle"/>');
+          data.push(' <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button></div></div>');
+          var f = $(this).closest('form');
+          f.find('.baginfo:last').after(data.join(''));
+          var btn = f.find(':button[type="submit"]');
+          btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+          break;
 
         }
-        data.push(' <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button></div></div>');
-        var f = $(this).closest('form');
-        f.find('.baginfo:last').after(data.join(''));
-        var btn = f.find(':button[type="submit"]');
-        btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
-        break;
-
       }
-    }
-  });
+    });
 
-  $('.baginfo-remove').live('click', function(evt) {
+    $('.baginfo-remove').live('click', function(evt) {
 
-    evt.preventDefault();
-    var btn = $(this).closest('form').find(':button[type="submit"]');
-    btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
-    $(this).closest('.baginfo').remove();
+      evt.preventDefault();
+      var btn = $(this).closest('form').find(':button[type="submit"]');
+      btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+      $(this).closest('.baginfo').remove();
 
-  });
+    });
 
-  $('.baginfo :input[name^="DC-"]').live('change', function(evt) {
+    $('.baginfo :input[name^="DC-"]').live('change', function(evt) {
 
-    var btn = $(this).closest('form').find(':button[type="submit"]');
-    btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+      var btn = $(this).closest('form').find(':button[type="submit"]');
+      btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
 
-  });
+    });
+
+  [% END %]
 
   //submit-on-enter
   $('input').keydown(function(e){
@@ -467,35 +490,39 @@
     }
   });
 
-  $('form.edit-baginfo').submit(function(evt) {
-    evt.preventDefault();
-    var $dialog = $("#dialog");
-    $dialog.hide();
-    var f = $(this);
-    $.post(f.attr('action'), f.serialize(), function(data) {
+  [%- IF auth.can('scans','metadata') -%]
 
-      var btn = f.find(':button[type="submit"]');
-      btn.button("loading");
-      if (data.status === 'ok') {
-        btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
-      }else{
-        btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
-        var $dialog = $("#dialog");                
-        var html = ["<p>Fout:<a class=\"close\">x</a></p><ul>"];
-        for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
-        html.push("</ul>");
-        $dialog.html(html.join(''));
-        $dialog.removeClass("alert-info").addClass("alert-error");
-        $dialog.fadeIn('fast',function(){
-          $(this).find(".close").click(function(){
-              $dialog.hide();
+    $('form.edit-baginfo').submit(function(evt) {
+      evt.preventDefault();
+      var $dialog = $("#dialog");
+      $dialog.hide();
+      var f = $(this);
+      $.post(f.attr('action'), f.serialize(), function(data) {
+
+        var btn = f.find(':button[type="submit"]');
+        btn.button("loading");
+        if (data.status === 'ok') {
+          btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
+        }else{
+          btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
+          var $dialog = $("#dialog");                
+          var html = ["<p>Fout:<a class=\"close\">x</a></p><ul>"];
+          for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
+          html.push("</ul>");
+          $dialog.html(html.join(''));
+          $dialog.removeClass("alert-info").addClass("alert-error");
+          $dialog.fadeIn('fast',function(){
+            $(this).find(".close").click(function(){
+                $dialog.hide();
+            });
           });
-        });
-      }
-      btn.button("reset");
+        }
+        btn.button("reset");
 
-    },'json');
-  });
+      },'json');
+    });
+
+  [% END %]
 
   $(document).ready(function(){
  
@@ -566,37 +593,40 @@
       x = setInterval(func,mm_check_jobs_timeout);
     }
 
-   
-    //purge knop
-    $("#purge").click(function(evt){
-      //bevestiging vragen
-      var c_purge = confirm('Hierdoor wordt dit record, en bijhorende data verwijderd. Bent u zeker?');
-      if(!c_purge)return;
-      
-      //verwijderen
-      $.ajax({
-        dataType: "json",
-        url: baseUrl+"/scans/[%- scan.item("_id") -%]", 
-        type: "DELETE",
-        success: function(data){
-          alert("Dit record werd met success verwijderd! U wordt nu omgeleid naar de overzichtspagina.");
-          window.location.href = baseUrl+"/scans";
-        },
-        error: function(ajax,textStatus,errorThrown){
-          var res = JSON.parse(ajax.responseText);
-          var err = res.errors[0];
-          if(err == "NOT_AUTHORIZED"){
-            alert("U beschikt niet over de nodige rechten om records te verwijderen!");
-          }else if(err == "NOT_FOUND"){
-            alert("[%- scan.item("_id") -%] werd niet terug gevonden");
-          }else if(err == "NO_COMMENT_SUPPLIED"){
-            alert("Gelieve een reden op te geven");
-          }else if(err == "PATH_NOT_DELETED"){
-            alert("Dit record werd verwijderd, maar de data op locatie [%- scan.item("path") -%] kon niet verwijderd worden. Contacteer uw admin.");
+    [%- IF auth.can('scans','purge') -%]   
+
+      //purge knop
+      $("#purge").click(function(evt){
+        //bevestiging vragen
+        var c_purge = confirm('Hierdoor wordt dit record, en bijhorende data verwijderd. Bent u zeker?');
+        if(!c_purge)return;
+        
+        //verwijderen
+        $.ajax({
+          dataType: "json",
+          url: baseUrl+"/scans/[%- scan.item("_id") -%]", 
+          type: "DELETE",
+          success: function(data){
+            alert("Dit record werd met success verwijderd! U wordt nu omgeleid naar de overzichtspagina.");
+            window.location.href = baseUrl+"/scans";
+          },
+          error: function(ajax,textStatus,errorThrown){
+            var res = JSON.parse(ajax.responseText);
+            var err = res.errors[0];
+            if(err == "NOT_AUTHORIZED"){
+              alert("U beschikt niet over de nodige rechten om records te verwijderen!");
+            }else if(err == "NOT_FOUND"){
+              alert("[%- scan.item("_id") -%] werd niet terug gevonden");
+            }else if(err == "NO_COMMENT_SUPPLIED"){
+              alert("Gelieve een reden op te geven");
+            }else if(err == "PATH_NOT_DELETED"){
+              alert("Dit record werd verwijderd, maar de data op locatie [%- scan.item("path") -%] kon niet verwijderd worden. Contacteer uw admin.");
+            }
           }
-        }
-      });
-    }); 
+        });
+      }); 
+
+    [% END %]
 
     //tab switch
     $(document).keydown(function(e){
@@ -615,4 +645,17 @@
   });
   
 </script>
+<script type="text/javascript" src="[% request.uri_base %]/js/jwerty.js"></script>
+[% IF auth.can('scans','metadata') %]
+<script type="text/javascript">
+  /*
+    See http://suan.github.io/jquery-keycombinator/
+        http://keithcirkel.co.uk/jwerty/
+  */
+  jwerty.key('ctrl+s',function(ev){
+    ev.preventDefault();
+    $('form.edit-baginfo').submit();
+  },this,'#tab-metadata');
+</script>
+[% END %]
 [%- END %]

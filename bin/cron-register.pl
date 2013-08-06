@@ -277,7 +277,7 @@ if(!-w $dir_processed){
                 $scan->{check_log} = \@errors;
 
                 update_scan($scan);
-                update_status($log,-1);
+                update_log($log,-1);
 
                 #see you later!
                 #not recoverable: aborting
@@ -422,7 +422,7 @@ if(!-w $dir_processed){
         }
 
         update_scan($scan);
-        update_status($log,-1);
+        update_log($log,-1);
 
     }
 }
@@ -497,7 +497,7 @@ for my $scan_id(@qa_control_ok){
     ($scan,$log) = set_status($scan,status => "archiving");
 
     update_scan($scan);
-    update_status($log,-1);
+    update_log($log,-1);
 
     say "scan record updated";
 

@@ -1,0 +1,77 @@
+[% TO_FIX = 1 %]
+[%- TRY %]
+    [% FIXME = scan.path _ "/__FIXME.txt" %]
+    [%- USE File(FIXME) %]
+[% CATCH %]
+    [% TO_FIX = 0 %]
+[% END %]
+
+[% IF !TO_FIX && !scan.busy %]
+
+  <form method="POST" action="[% request.uri_for('/scans/' _ scan.item('_id') _ '/status') %]" accept-charset="UTF-8" class="form-horizontal" id="scan-change-status">
+    <p>De huidige status is <strong>[% settings.human_readable.${scan.status} || scan.status %]</strong></p>
+    <div class="control-group">
+      <label for="status-to" class="control-label">nieuwe status</label>
+      <div class="controls">
+        <select name="status_to" id="status_to">
+        [% status_to = status_change_conf.item(scan.status) %]
+        [%- FOREACH status IN status_to.item("values") %]
+          [%- message = status_to.messages.${status} IF status_to.messages.${status} -%]
+          <option value="[% status %]"[% IF params.status_to == status %] selected="selected"[% END %] data-message="[% message %]">[% settings.human_readable.${status} || status %]</option>
+        [%- END %]       
+        [% IF !( status_to && status_to.item("values").size > 0 ) %]
+          <option value="">-- status niet wijzigbaar --</option>
+        [% END %]
+        </select>
+      </div>
+    </div>
+    <div class="control-group">
+      <label for="comments" class="control-label">opmerkingen</label>
+      <div class="controls">
+        [% comments = params.comments %]
+        [% IF comments == "" %]
+          [% comments = "Status wijziging" %]
+        [% END %]
+        <!--<textarea name="comments" class="span6">[% comments | html %]</textarea>-->
+        <input type="text" name="comments" value="[% comments | html %]"></input>
+      </div>
+    </div>
+    <div class="form-actions">
+      <input type="submit" value="Wijzig" name="submit" id="submit" class="btn btn-primary"/>
+    </div>
+  </form>
+
+  <script type="text/javascript">
+    $('#scan-change-status').submit(function (evt) {
+      evt.preventDefault();
+      //vraag om bevestiging
+      var select_status_to = document.getElementById("status_to");
+      var option_status_to = select_status_to.options[select_status_to.selectedIndex];
+      if(option_status_to.getAttribute("data-message")){
+        if(!confirm(option_status_to.getAttribute("data-message"))){
+          return;
+        }
+      }
+      var f = $(this);
+      
+      $.post(f.attr('action'),f.serialize(),function(data){
+        console.log(data);
+        if(data.messages.length > 0){
+          alert(data.messages.join('\n'));
+        }
+        if(data.errors.length > 0){
+          alert(data.errors.join('\n'));
+        }
+        if(data.status == "ok"){
+          //browser weigert om pagina te laden met '#' erin
+          if(window.location.href.indexOf('#') == -1){
+            window.location.href = window.location.href;
+          }else{
+            window.location.reload();
+          }
+        }
+      });
+    });
+  </script>
+
+[% END %]

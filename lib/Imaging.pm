@@ -12,7 +12,7 @@ use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
 use Exporter qw(import);
-our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index status2index marcxml_flatten update_scan update_status set_status dir_info list_files logs get_log);
+our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index log2index marcxml_flatten update_scan update_log set_status dir_info list_files logs get_log);
 our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
 sub projects { 
@@ -89,7 +89,7 @@ sub get_log {
   my $scan = shift;
   logs()->get($scan->{_id}) || new_log($scan);
 }
-sub status2docs {
+sub log2docs {
   my($log,$history_index) = @_;    
   my @docs;  
 
@@ -114,10 +114,10 @@ sub status2docs {
   \@docs;
 
 }
-sub status2index {
+sub log2index {
   my($log,$history_index) = @_;     
   my $index_log = index_log();
-  my $docs = status2docs($log,$history_index);
+  my $docs = log2docs($log,$history_index);
   $index_log->add($_) for @$docs;
 }
 sub marcxml_flatten {
@@ -230,10 +230,10 @@ sub update_scan {
   my($success,$error) = index_scan->commit;
   die(join('',@$error)) if !$success;
 }
-sub update_status {
+sub update_log {
   my($log,$index) = @_;
   logs()->add($log);
-  status2index($log,$index);
+  log2index($log,$index);
   my($success,$error) = index_log->commit;
   die(join('',@$error)) if !$success;
 }
