@@ -217,7 +217,7 @@ sub move_scan {
   #$scan->{user_id} = $scan->{new_user};
 
   #update databank en index
-  my $log;
+ 
   ($scan,$log) = set_status($scan,status => "incoming");
 
   #gedaan ermee
@@ -428,6 +428,65 @@ my $index_scan = index_scan();
 
     update_scan($scan);
     update_log($log,-1);
+
+  }
+}
+
+#status update 4: zijn er records die verwijderd mogen worden?
+say "looking for scans to be purged";
+{
+  #collect identifiers
+  my $query = "status:\"purge\"";
+  my @ids = ();
+
+  $index_scan->searcher(
+    query => $query,
+    limit => 1000
+  )->each(sub{
+    push @ids,$_[0]->{_id};
+  });
+
+  for my $id(@ids){
+
+    my $scan = $scans->get($id);
+    my $path = $scan->{path};
+
+    #verwijder scan uit tabel 'scans', maar registreer verwijdering in tabel 'logs'
+    if(is_string($path) && -d $path && !can_delete_file($path)){
+
+      push @{ $scan->{warnings} },{
+        datetime => Time::HiRes::time,
+        text => "Het systeem kan deze map niet verwijderen. Contacteer uw admin om dit probleem op te lossen",
+        username => "-"
+      };
+      $scans->add($scan);
+
+      say "  $id: unable to delete path $path";
+    
+    }else{
+     
+      $index_scan->delete($id);
+      $index_scan->commit();
+      $scans->delete($id);
+
+      if(-d $path){
+        my $error;
+        rmtree($path,{error => \$error});
+        if(scalar(@$error)){
+          say "  $id: deleted from database, but errors while deleting path $path:";
+          say "    $_" for @$error;
+        }else{
+          say "  $id: deleted";
+        }
+      }else{
+        say "  $id: deleted (path $path not found)";
+      }
+
+      my $log;
+      ($scan,$log) = set_status($scan,status => "purged");
+      update_log($log,-1);
+
+    } 
 
   }
 }

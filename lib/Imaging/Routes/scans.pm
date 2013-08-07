@@ -55,73 +55,73 @@ get('/scans',sub {
   });
 });
 
-del '/scans/:_id' => sub {
-
-  my $params = params();
-  my $auth = auth();
-  my $id = $params->{_id};
-  my $comments = $params->{comments};
-  my @errors;
-  my $res = { errors => \@errors, record => $id };
-
-  content_type 'json';
-
-  #vereist:
-  # 1.  rechten om scans te verwijderen
-  # 2.  scan moet bestaan
-  # 3.  reden moet opgegeven worden
-
-  if(!$auth->can('scans','purge')){
-
-    push @errors,"NOT_AUTHORIZED";
-
-  }else{
-
-    my $scan = scans->get($id);
-    my $path = $scan->{path};
-
-    if(!$scan){
-
-      push @errors,"NOT_FOUND";
-
-    }
+#del '/scans/:_id' => sub {
+#
+#  my $params = params();
+#  my $auth = auth();
+#  my $id = $params->{_id};
+#  my $comments = $params->{comments};
+#  my @errors;
+#  my $res = { errors => \@errors, record => $id };
+#
+#  content_type 'json';
+#
+#  #vereist:
+#  # 1.  rechten om scans te verwijderen
+#  # 2.  scan moet bestaan
+#  # 3.  reden moet opgegeven worden
+#
+#  if(!$auth->can('scans','purge')){
+#
+#    push @errors,"NOT_AUTHORIZED";
+#
+#  }else{
+#
+#    my $scan = scans->get($id);
+#    my $path = $scan->{path};
+#
+#    if(!$scan){
+#
+#      push @errors,"NOT_FOUND";
+#
+#    }
 #    elsif(!is_string($comments)){
 #
 #      push @errors,"NO_COMMENT_SUPPLIED";
 #
 #    }
-    elsif(is_string($path) && -d $path && !can_delete_file($path)){
-
-      push @errors,"CANNOT_DELETE_PATH";
-
-    }else{
-
-      index_scan()->delete($id);
-      index_scan()->commit();
-      scans()->delete($id);
-      
-      if(-d $path){
-        my $error;
-        rmtree($path,{error => \$error});
-        if(scalar(@$error)){
-          push @errors,"PATH_NOT_DELETED";
-        }
-      }      
-      
-      my $log;
-      ($scan,$log) = set_status($scan,status => "purged",comments => $comments);
-      update_log($log,-1);
-
-    }
-
-  }
-
-  $res->{status} = scalar(@errors) ? "error":"ok";
-  status (scalar(@errors) ? 500:200);
-
-  json($res);
-
-};
+#    elsif(is_string($path) && -d $path && !can_delete_file($path)){
+#
+#      push @errors,"CANNOT_DELETE_PATH";
+#
+#    }else{
+#
+#      index_scan()->delete($id);
+#      index_scan()->commit();
+#      scans()->delete($id);
+#      
+#      if(-d $path){
+#        my $error;
+#        rmtree($path,{error => \$error});
+#        if(scalar(@$error)){
+#          push @errors,"PATH_NOT_DELETED";
+#        }
+#      }      
+#      
+#      my $log;
+#      ($scan,$log) = set_status($scan,status => "purged",comments => $comments);
+#      update_log($log,-1);
+#
+#    }
+#
+#  }
+#
+#  $res->{status} = scalar(@errors) ? "error":"ok";
+#  status (scalar(@errors) ? 500:200);
+#
+#  json($res);
+#
+#};
 
 post '/scans/:_id' => sub {
   my $params = params;

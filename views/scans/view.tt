@@ -16,11 +16,13 @@
 [%- IF scan %]
 <h1>[% scan.item("_id") %]</h1>
 
-<!--
-[%- IF auth.can('scans','status') && !scan.busy && status_change_conf.${ scan.status }.values.size > 0 && !TO_FIX %]
-    <a class="btn btn-small" href="[% request.uri_base %]/scans/[% scan.item('_id') %]/status">Wijzig status</a>
-[% END %]
--->
+<div class="row">
+  [%- FOREACH warning IN scan.warnings %]
+  <div class="alert alert-error span8">
+    <strong>[% warning.text | html %]</strong>
+  </div>
+  [%- END %]
+</div>
 
 [% IF scan.status == "registered" && scan.busy && scan.asset_id %]
   <div class="alert">
@@ -329,7 +331,7 @@
 
     [%- IF auth.can('scans','status') -%]
     <div class="tab-pane" id="tab-change-status">
-      [% PROCESS scans/status_include.tt %]
+      [% PROCESS inc/status.tt %]
     </div>
     [% END %]
 
@@ -494,15 +496,25 @@
 
     $('form.edit-baginfo').submit(function(evt) {
       evt.preventDefault();
+      /*
       var $dialog = $("#dialog");
       $dialog.hide();
+      */
       var f = $(this);
+
       $.post(f.attr('action'), f.serialize(), function(data) {
+        var $dialog = $("#dialog");
 
         var btn = f.find(':button[type="submit"]');
         btn.button("loading");
         if (data.status === 'ok') {
-          btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');
+          btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');          
+          $dialog.removeClass("alert-info").addClass("alert-success");
+          $dialog.html("Metadata werd opgeslagen!");
+          $dialog.fadeIn('fast',function(){
+            $(this).delay(1000).fadeOut("slow");
+          });
+
         }else{
           btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
           var $dialog = $("#dialog");                
@@ -510,13 +522,16 @@
           for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
           html.push("</ul>");
           $dialog.html(html.join(''));
-          $dialog.removeClass("alert-info").addClass("alert-error");
+          $dialog.removeClass("alert-info").addClass("alert-error");                  
           $dialog.fadeIn('fast',function(){
             $(this).find(".close").click(function(){
-                $dialog.hide();
+              $dialog.hide();
             });
           });
+
         }
+
+        
         btn.button("reset");
 
       },'json');
@@ -596,6 +611,7 @@
     [%- IF auth.can('scans','purge') -%]   
 
       //purge knop
+      /*
       $("#purge").click(function(evt){
         //bevestiging vragen
         var c_purge = confirm('Hierdoor wordt dit record, en bijhorende data verwijderd. Bent u zeker?');
@@ -625,6 +641,7 @@
           }
         });
       }); 
+      */
 
     [% END %]
 
@@ -654,8 +671,8 @@
   */
   jwerty.key('ctrl+s',function(ev){
     ev.preventDefault();
-    $('form.edit-baginfo').submit();
-  },this,'#tab-metadata');
+    $('form.edit-baginfo').submit();    
+  });
 </script>
 [% END %]
 [%- END %]

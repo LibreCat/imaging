@@ -14,7 +14,7 @@ store:
      serialization_format: "messagepack"
     scans: *sformat
     users: *sformat
-    users2: *sformat
+    logs: *sformat
  index_scan:
   package: "Catmandu::Store::Solr"
   options:

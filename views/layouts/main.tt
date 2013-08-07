@@ -1,109 +1,100 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <link rel="stylesheet" href="[% request.uri_base %]/css/bootstrap.min.css" type="text/css" media="screen"/>
-
-        <link rel="stylesheet" href="[% request.uri_base %]/css/master.css" type="text/css" media="screen"/>
-
-        <style type="text/css" media="screen">
-          body {
-            padding-top: 64px;
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="[% request.uri_base %]/css/bootstrap.min.css" type="text/css" media="screen"/>
+    <link rel="stylesheet" href="[% request.uri_base %]/css/master.css" type="text/css" media="screen"/>
+    <style type="text/css" media="screen">
+      body {
+        padding-top: 64px;
+      }
+      h1 {
+        margin-bottom: 24px;
+      }
+      .table .actions {
+        float: right;
+      }
+      .form-inline .btn-group {
+        display: inline-block;
+        vertical-align: middle;
+      }
+      #dialog {
+        position:fixed;
+        z-index:100;
+        width:150px;
+        left:5px;
+        top:50px;
+        display:none;
+      }
+    </style>
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <script type="text/javascript" src="[% request.uri_base %]/js/jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="[% request.uri_base %]/js/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+      $(document).ready(function() {
+        $('.tip').tooltip();
+        $('form.autosubmit select').change(function() {
+          $(this).closest('form').submit();
+        });
+        $('a[data-confirm]').click(function(evt) {
+          if (!confirm($(this).data('confirm'))) {
+            evt.preventDefault();
           }
-          h1 {
-            margin-bottom: 24px;
-          }
-          .table .actions {
-            float: right;
-          }
-          .form-inline .btn-group {
-            display: inline-block;
-            vertical-align: middle;
-          }
-          #dialog {
-            position:fixed;
-            z-index:100;
-            width:150px;
-            left:5px;
-            top:50px;
-            display:none;
-          }
-        </style>
-        <!--[if lt IE 9]>
-        <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-        <script type="text/javascript" src="[% request.uri_base %]/js/jquery-1.7.1.min.js"></script>
-        <script type="text/javascript" src="[% request.uri_base %]/js/bootstrap.min.js"></script>
-
-        <script type="text/javascript" charset="utf-8">
-          $(document).ready(function() {
-              $('.tip').tooltip();
-              $('form.autosubmit select').change(function() {
-                $(this).closest('form').submit();
-              });
-              $('a[data-confirm]').click(function(evt) {
-                if (!confirm($(this).data('confirm'))) {
-                  evt.preventDefault();
-                }
-              });
-          });
-        </script>
-        <title>Imaging</title>
-    </head>
-    <body>
-
-      <div class="navbar navbar-fixed-top">
-        <div class="navbar-inner">
-          <div class="container">
-
-            <div class="alert" id="dialog"></div>
-
-            <a class="brand" href="[% request.uri_base %]">Imaging</a>
-            <div class="nav-collapse">
-              <ul class="nav">
-              [%- IF session.user.id %]
-                <li><a href="[% request.uri_for('/projects') %]">projecten</a></li>
-                <li><a href="[% request.uri_for('/scans') %]">zoek</a></li>
-                <li><a href="[% request.uri_for('/logs') %]">logs</a></li>
-                <li><a href="[% request.uri_for('/status') %]">status</a></li>
-                [%- IF auth.can('manage_accounts','edit') %]
-                <li><a href="[% request.uri_for('/users') %]">gebruikers</a></li>
-                [%- END %]
-                [%- IF auth.can('directories','edit') %]
-                <li><a href="[% request.uri_for('/directories') %]">mappen</a></li>
-                [%- END %]
-                [% path_ready =  mount _ "/" _ mount_conf.subdirectories.ready _ "/" _ session.user.login %]
-                [% has_dir = 1 %]                
-                [% TRY %]
-                  [% USE File(path_ready) %]
-                [% CATCH %]
-                  [% has_dir = 0 %]
-                [% END %]
-                [%- IF has_dir %]
-                <li><a href="[% request.uri_for('/ready/' _ session.user.login ) %]">ready</a></li>
-                [%- END %]
-                [%- IF auth.asa('admin') ||  auth.asa('qa_manager') %]
-                <li><a href="[% request.uri_for('/qa_control') %]">qa_controle</a></li>
-                [%- END %]
-                <li><a href="[% request.uri_for('/info') %]">info</a></li>
+        });
+      });
+    </script>
+    <title>Imaging</title>
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <div class="alert" id="dialog"></div>
+          <a class="brand" href="[% request.uri_base %]">Imaging</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+            [%- IF session.user.id %]
+              <li><a href="[% request.uri_for('/projects') %]">projecten</a></li>
+              <li><a href="[% request.uri_for('/scans') %]">zoek</a></li>
+              <li><a href="[% request.uri_for('/logs') %]">logs</a></li>
+              <li><a href="[% request.uri_for('/status') %]">status</a></li>
+              [%- IF auth.can('manage_accounts','edit') %]
+              <li><a href="[% request.uri_for('/users') %]">gebruikers</a></li>
               [%- END %]
-              </ul>
-
-              [% IF session.user.id %]
-              <ul class="nav pull-right">
-                <li><a href="[% request.uri_for('/account') %]">[% session.user.login | html %]</a></li>
-                <li><a href="[% request.uri_for('/logout') %]">logout</a></li>
-              </ul>
-              [% END %]           
-            </div>
+              [%- IF auth.can('directories','edit') %]
+              <li><a href="[% request.uri_for('/directories') %]">mappen</a></li>
+              [%- END %]
+              [% path_ready =  mount _ "/" _ mount_conf.subdirectories.ready _ "/" _ session.user.login %]
+              [% has_dir = 1 %]                
+              [% TRY %]
+                [% USE File(path_ready) %]
+              [% CATCH %]
+                [% has_dir = 0 %]
+              [% END %]
+              [%- IF has_dir %]
+              <li><a href="[% request.uri_for('/ready/' _ session.user.login ) %]">ready</a></li>
+              [%- END %]
+              [%- IF auth.asa('admin') ||  auth.asa('qa_manager') %]
+              <li><a href="[% request.uri_for('/qa_control') %]">qa_controle</a></li>
+              [%- END %]
+              <li><a href="[% request.uri_for('/info') %]">info</a></li>
+            [%- END %]
+            </ul>
+            [% IF session.user.id %]
+            <ul class="nav pull-right">
+              <li><a href="[% request.uri_for('/account') %]">[% session.user.login | html %]</a></li>
+              <li><a href="[% request.uri_for('/logout') %]">logout</a></li>
+            </ul>
+            [% END %]           
           </div>
         </div>
       </div>
-
-      <div class="container">
-        [% content %]
-      </div>
-
-    </body>
+    </div>
+    <div class="container">
+      [% content %]
+    </div>
+  </body>
 </html>

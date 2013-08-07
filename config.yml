@@ -37,20 +37,20 @@ plugins:
   subject: "Dashboard Scanning workflow"
   to: "Fran.Vlaeminck@UGent.be"
   cc: "Ariane.VandeVyver@UGent.be"
- Database:
-  driver: mysql
-  database: imaging
-  host: localhost
-  port: 3306
-  username: imaging
-  password: imaging
-  dbi_params:
-   RaiseError: 1
-   AutoCommit: 1
-   mysql_auto_reconnect: 1
-  on_connect_do:
-   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,has_dir bool default 0,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
-   - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
+# Database:
+#  driver: mysql
+#  database: imaging
+#  host: localhost
+#  port: 3306
+#  username: imaging
+#  password: imaging
+#  dbi_params:
+#   RaiseError: 1
+#   AutoCommit: 1
+#   mysql_auto_reconnect: 1
+#  on_connect_do:
+#   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,has_dir bool default 0,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
+#   - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
  Auth::RBAC:
   credentials:
    class: Catmandu
@@ -176,15 +176,16 @@ mounts:
     #windows: "file:///Y:"
     windows: "file://nasan1n.ugent.be/processed"
   ready: 
-   #warn 3 days after first arrival
+   #warn 90 days after first arrival
    warn_after: 
-    days: 3
-   #delete 1 day after the warning
+    #days: 90
+    seconds: 2
+   #delete 30 days after the warning
    delete_after:
-    days: 1
+    days: 30
    #how long till directory is processed?
    upload_idle_time:
-    seconds: 5
+    seconds: 10
 status:
  collection:
   status_page: ["registered","reprocess_metadata","reprocess_derivatives","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","archiving","archived","archived_ok","archived_error","published","published_ok","problematic","done"]
@@ -197,60 +198,97 @@ status:
   in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager","problematic"]
  change:
   qa_manager: &statuschangeqamanager
+   incoming:
+    values: ["purge"]
+    messages:
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
+   incoming_ok:
+    values: ["purge"]
+    messages:
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
+   incoming_error:
+    values: ["purge"]
+    messages:
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    registered: 
-    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok","problematic"]
+    values: ["reprocess_scans","reprocess_metadata","reprocess_derivatives","reprocess_scans_qa_manager","qa_control_ok","problematic","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    reprocess_scans:
     values: []
     messages: []
+
    reprocess_scans_qa_manager:
     values: []
     messages: []
+
    reprocess_metadata: 
-    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","qa_control_ok","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    reprocess_derivatives: 
-    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","qa_control_ok"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","qa_control_ok","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    qa_control_ok: 
-    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives"]
+    values: ["registered","problematic","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    archiving:
-    values: []
-    messages: []
+    values: ["purge"]
+    messages:
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    archived:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived_ok","archived_error","problematic"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived_ok","archived_error","problematic","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    archived_ok:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_error","problematic","published"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_error","problematic","published","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    published:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published_ok","published_error","problematic"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published_ok","published_error","problematic","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    published_ok:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published","published_error","done"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","archived","archived_ok","archived_error","published","published_error","done","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
    problematic:
-    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","qa_control_ok"]
+    values: ["registered","reprocess_scans","reprocess_scans_qa_manager","reprocess_metadata","reprocess_derivatives","qa_control_ok","purge"]
     messages:
      reprocess_scans: "Deze wijziging is permanent! Bent u zeker?"
      reprocess_scans_qa_manager: "Deze wijziging is permanent! Bent u zeker?"
+     purge: "Hiermee wordt deze scan, en bijhorende data verwijderd! Bent u zeker?"
+
   admin: *statuschangeqamanager
 human_readable:
  problematic: "problematisch"
@@ -271,6 +309,7 @@ human_readable:
  published: "gepubliceerd"
  published_ok: "publicatie ok"
  published_error: "publicatie fout"
+ purge: "verwijder"
  purged: "verwijderd"
 directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Default"]
 profile_detector:
