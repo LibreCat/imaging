@@ -14,6 +14,7 @@ use Clone qw(clone);
 use Time::HiRes;
 use File::Basename qw();
 use File::Path qw(mkpath rmtree);
+use File::Copy qw(move);
 use Data::UUID;
 use Hash::Merge qw(merge);
 use Imaging::Dir::Info;
@@ -25,6 +26,7 @@ Hash::Merge::set_behavior('RIGHT_PRECEDENT');
 hook before_template_render => sub {
   my $tokens = $_[0];
   $tokens->{status_change_conf} = status_change_conf();
+  $tokens->{get_prev_next} = \&get_prev_next;
 };
 get('/scans',sub {
   my $params = params;
@@ -49,79 +51,16 @@ get('/scans',sub {
     push @errors,"ongeldige zoekvraag";
   };
 
+  #registreer identifiers voor prev/next
+  my @ids;
+  push @ids,$_->{_id} for @{ $result->hits() || [] };
+  session(search_scan_ids => \@ids);
+
   template('scans',{
     result => $result,
     errors => \@errors
   });
 });
-
-#del '/scans/:_id' => sub {
-#
-#  my $params = params();
-#  my $auth = auth();
-#  my $id = $params->{_id};
-#  my $comments = $params->{comments};
-#  my @errors;
-#  my $res = { errors => \@errors, record => $id };
-#
-#  content_type 'json';
-#
-#  #vereist:
-#  # 1.  rechten om scans te verwijderen
-#  # 2.  scan moet bestaan
-#  # 3.  reden moet opgegeven worden
-#
-#  if(!$auth->can('scans','purge')){
-#
-#    push @errors,"NOT_AUTHORIZED";
-#
-#  }else{
-#
-#    my $scan = scans->get($id);
-#    my $path = $scan->{path};
-#
-#    if(!$scan){
-#
-#      push @errors,"NOT_FOUND";
-#
-#    }
-#    elsif(!is_string($comments)){
-#
-#      push @errors,"NO_COMMENT_SUPPLIED";
-#
-#    }
-#    elsif(is_string($path) && -d $path && !can_delete_file($path)){
-#
-#      push @errors,"CANNOT_DELETE_PATH";
-#
-#    }else{
-#
-#      index_scan()->delete($id);
-#      index_scan()->commit();
-#      scans()->delete($id);
-#      
-#      if(-d $path){
-#        my $error;
-#        rmtree($path,{error => \$error});
-#        if(scalar(@$error)){
-#          push @errors,"PATH_NOT_DELETED";
-#        }
-#      }      
-#      
-#      my $log;
-#      ($scan,$log) = set_status($scan,status => "purged",comments => $comments);
-#      update_log($log,-1);
-#
-#    }
-#
-#  }
-#
-#  $res->{status} = scalar(@errors) ? "error":"ok";
-#  status (scalar(@errors) ? 500:200);
-#
-#  json($res);
-#
-#};
 
 post '/scans/:_id' => sub {
   my $params = params;
@@ -619,6 +558,29 @@ post '/scans/:_id/:status' => sub {
           $scan->{new_user} = session('user')->{login};
 
         }
+        #registered: terug verplaatsen van 03_processed naar 02_registered
+        elsif($status_to eq "registered"){
+          my $new_path = mount()."/".$mount_conf->{subdirectories}->{registered}."/".$scan->{_id};
+          say STDERR "moving from $scan->{path} to $new_path";
+          if(-d $scan->{path} && $scan->{path} ne $new_path){
+            move($scan->{path},$new_path);
+            $scan->{path} = $new_path;
+          }
+        }
+        #scan is bekeken door qa_manager? Hij kan dus verplaatst worden naar 03_processed
+        else{
+          my $start = Time::HiRes::time;
+          my $new_path = mount()."/".$mount_conf->{subdirectories}->{processed}."/".$scan->{_id};
+          say STDERR "moving from $scan->{path} to $new_path";
+          if(-d $scan->{path} && $scan->{path} ne $new_path){
+            move($scan->{path},$new_path);
+            $scan->{path} = $new_path;
+          }
+          my $diff = Time::HiRes::time - $start;
+          say STDERR "diff: $diff";      
+        }
+
+        my $start = Time::HiRes::time;
 
         scans->add($scan);
         scan2index($scan);
@@ -626,6 +588,9 @@ post '/scans/:_id/:status' => sub {
         log2index($log,-1);
         my($success,$error) = index_scan->commit;
         ($success,$error) = index_log->commit;
+
+        my $diff = Time::HiRes::time - $start;
+        say STDERR "diff: $diff"; 
 
       }else{
 
@@ -750,6 +715,20 @@ sub ensure_path {
 sub can_edit_metadata {
   state $edit_when = config->{app}->{scans}->{edit}->{'when'} // [];
   array_includes($edit_when,$_[0]);
+}
+sub get_prev_next {
+  my $id = $_[0];
+  my $pn ={};
+  return $pn unless is_string($id);
+  my $search_scan_ids = session('search_scan_ids') || [];
+  for(my $i = 0;$i < scalar(@$search_scan_ids);$i++){
+    if($search_scan_ids->[$i] eq $id){
+      $pn->{prev} = $i > 0 ? $search_scan_ids->[$i - 1] : undef;
+      $pn->{next} = $i < scalar(@$search_scan_ids) - 1 ? $search_scan_ids->[$i+1] : undef;
+      last;
+    }
+  }
+  $pn;
 }
 
 true;

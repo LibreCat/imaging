@@ -17,7 +17,7 @@ get('/ready/:user_login',sub{
   my $subdirectories = subdirectories();
   my $dir = "$mount/".$subdirectories->{ready}."/".$user->{login};
  
-  #stap 1: voor welke mappen bestaat een record? 
+  #voor welke mappen bestaat een record? 
   my @directories;
   if(-d $dir){
 
@@ -42,26 +42,9 @@ get('/ready/:user_login',sub{
     
   }
 
-  #stap 2: welke mappen zijn 'incoming*', maar staan blijkbaar niet meer op hun plaats?
-  my @missing_scans;
-  
-#  index_scan->searcher(
-#
-#    query => "status:incoming* AND user_login:".$params->{user_login},
-#    limit => 1000
-#
-#  )->each(sub{
-#
-#    my $hit = shift;
-#    push @missing_scans,$hit if !(-d $hit->{path});
-#
-#  });
-  
-
   template('ready',{
     directories => \@directories,
-    user => $user,
-    missing_scans => \@missing_scans
+    user => $user
   });
 
 });

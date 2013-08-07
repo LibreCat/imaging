@@ -63,7 +63,10 @@
         <a href="[% request.uri_base %]/project/[% project.item("_id") %]">[% project.name | html %]</a>
         [%- IF auth.can('projects','edit') %]
         <div class="btn-group actions">
+          <!--
           <a class="btn btn-small" href="[% request.uri_base %]/project/[% project.item("_id") %]/delete"><i class="icon-trash"></i></a>
+          -->
+          <a class="btn btn-small link_delete_project" data-id="[% project.item('_id') %]" href="[% request.uri_base %]/project/[% project.item("_id") %]"><i class="icon-trash"></i></a>
         </div>
         [%- END %]
       </td>
@@ -89,4 +92,29 @@
   [%- END %]
   </tbody>
 </table>
+<script type="text/javascript">
+  $(document).ready(function(e){
+    $('a.link_delete_project').click(function(e){
+      e.preventDefault();
+      var $this = $(this);
+      var id = $this.attr('data-id');
+
+      if(!confirm("Hiermee verwijdert u dit project! Bent u zeker?"))return;
+      
+      $.ajax({
+        dataType: "json",
+        type: "DELETE",
+        url: $this.attr("href"),
+        success: function(res){
+          if(res.status == "ok"){ 
+            window.location.href = window.location.href;
+          }else{
+            alert(res.errors.join('\n'));
+          }
+        }
+      });
+
+    });
+  });
+</script>
 [%- END %]

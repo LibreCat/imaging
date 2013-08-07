@@ -130,7 +130,7 @@ app:
       required: 1
     - key: "DC-Identifier"
       edit: 1
-      required: 1
+      #required: 1
     - key: "DC-Description"
       edit: 1
       tag: "textarea"
@@ -141,7 +141,7 @@ app:
       required: 1
     - key: "DC-Creator"
       edit: 1
-      required: 1
+      #required: 1
     - key: "DC-AccessRights"
       edit: 1
       tag: "select"
@@ -156,30 +156,39 @@ mounts:
  directories:
   path: "/mnt/data01"
   owner:
+   registered: imaging
    processed: imaging
    archive: fedora
   group:
+   registered: imaging
    processed: imaging
    archive: fedora
   rights:
+   registered: "775"
    processed: "775" 
    archive: "775"
   subdirectories:
    ready: "01_ready"
-   processed: "02_processed"   
+   registered: "02_registered"
+   processed: "03_processed"   
   network_directories:
+
    #vergeet de slash niet na file:// die in windows localhost aangeeft!
    ready:
     #windows: "file:///X:"
     windows: "file://nasan1n.ugent.be/ready"
+
+   registered:
+    #windows: "file:///Y:"
+    windows: "file://nasan1n.ugent.be/registered"
+
    processed:
     #windows: "file:///Y:"
     windows: "file://nasan1n.ugent.be/processed"
   ready: 
    #warn 90 days after first arrival
    warn_after: 
-    #days: 90
-    seconds: 2
+    days: 90
    #delete 30 days after the warning
    delete_after:
     days: 30
@@ -195,7 +204,8 @@ status:
   done: ["archived_ok","published_ok"]
   in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
   #opgelet: zolang reprocess_* staat het nog in processed, nadien terug in 01_ready
-  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager","problematic"]
+  in_registered: ["registered"]
+  in_processed: ["reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager","problematic"]
  change:
   qa_manager: &statuschangeqamanager
    incoming:

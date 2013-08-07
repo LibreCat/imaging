@@ -14,6 +14,9 @@
 
 [% PROCESS inc/errors_messages.tt %]
 [%- IF scan %]
+
+[% PROCESS inc/prev_next.tt %]
+
 <h1>[% scan.item("_id") %]</h1>
 
 <div class="row">
@@ -23,6 +26,7 @@
   </div>
   [%- END %]
 </div>
+
 
 [% IF scan.status == "registered" && scan.busy && scan.asset_id %]
   <div class="alert">
@@ -128,6 +132,7 @@
   <div class="tab-content">
 
     <div class="tab-pane active" id="tab-files">
+      [%- states_in_registered = settings.status.collection.in_registered -%]
       [%- states_in_processed = settings.status.collection.in_processed -%]
       [%- states_in_ready = settings.status.collection.in_ready-%]
 
@@ -138,6 +143,11 @@
         [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
         [% directory = settings.mounts.directories.path _ "/" _ settings.mounts.directories.subdirectories.ready _ "/" %]
         [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ scan.path.replace(directory,"") %]
+
+      [% ELSIF states_in_registered.grep(scan.status).size > 0 %]
+
+        [%# file:///V:/registered/BHSL-PAP-0064  %]
+        [% scan_system_directory = settings.mounts.directories.network_directories.registered.windows _ "/"  _ scan.item("_id") %]
 
       [% ELSIF states_in_processed.grep(scan.status).size > 0 %]
 
@@ -176,7 +186,7 @@
           <th>type</th>
         </tr>
         [%- FOREACH file IN files %]
-        <tr>
+        <tr [% 'class="error"' IF file.size <= 0 %]>
         [% IF !file.error %]
           <td>
             [% file_name = file.path.replace(scan.path _ "/","") %]
@@ -395,8 +405,7 @@
   /* goto tab */
   // Javascript to enable link to tab
   if (window.location.hash && window.location.hash != "") {
-    console.log(window.location.hash);
-      $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
+    $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
   } 
 
   // Change hash for page-reload
@@ -608,43 +617,6 @@
       x = setInterval(func,mm_check_jobs_timeout);
     }
 
-    [%- IF auth.can('scans','purge') -%]   
-
-      //purge knop
-      /*
-      $("#purge").click(function(evt){
-        //bevestiging vragen
-        var c_purge = confirm('Hierdoor wordt dit record, en bijhorende data verwijderd. Bent u zeker?');
-        if(!c_purge)return;
-        
-        //verwijderen
-        $.ajax({
-          dataType: "json",
-          url: baseUrl+"/scans/[%- scan.item("_id") -%]", 
-          type: "DELETE",
-          success: function(data){
-            alert("Dit record werd met success verwijderd! U wordt nu omgeleid naar de overzichtspagina.");
-            window.location.href = baseUrl+"/scans";
-          },
-          error: function(ajax,textStatus,errorThrown){
-            var res = JSON.parse(ajax.responseText);
-            var err = res.errors[0];
-            if(err == "NOT_AUTHORIZED"){
-              alert("U beschikt niet over de nodige rechten om records te verwijderen!");
-            }else if(err == "NOT_FOUND"){
-              alert("[%- scan.item("_id") -%] werd niet terug gevonden");
-            }else if(err == "NO_COMMENT_SUPPLIED"){
-              alert("Gelieve een reden op te geven");
-            }else if(err == "PATH_NOT_DELETED"){
-              alert("Dit record werd verwijderd, maar de data op locatie [%- scan.item("path") -%] kon niet verwijderd worden. Contacteer uw admin.");
-            }
-          }
-        });
-      }); 
-      */
-
-    [% END %]
-
     //tab switch
     $(document).keydown(function(e){
       if(e.which != 9)return;
@@ -663,16 +635,33 @@
   
 </script>
 <script type="text/javascript" src="[% request.uri_base %]/js/jwerty.js"></script>
-[% IF auth.can('scans','metadata') %]
 <script type="text/javascript">
   /*
     See http://suan.github.io/jquery-keycombinator/
         http://keithcirkel.co.uk/jwerty/
   */
-  jwerty.key('ctrl+s',function(ev){
-    ev.preventDefault();
-    $('form.edit-baginfo').submit();    
+  [% IF auth.can('scans','metadata') %]
+
+    jwerty.key('ctrl+s',function(ev){
+      ev.preventDefault();
+      $('form.edit-baginfo').submit();    
+    });
+    
+  [% END %]
+
+  jwerty.key('arrow-left',function(evt){
+    evt.preventDefault();
+    var href = $("#link_prev").attr('href');
+    if(href == undefined)return;
+    window.location.href = href;
   });
+
+  jwerty.key('arrow-right',function(evt){
+    evt.preventDefault();
+    var href = $("#link_next").attr('href');
+    if(href == undefined)return;
+    window.location.href = href;
+  });
+
 </script>
-[% END %]
 [%- END %]

@@ -27,58 +27,58 @@ sub mount_conf {
     my $config = config;
     my $mc;
     if(
-        is_hash_ref($config->{mounts}) && is_hash_ref($config->{mounts}->{directories}) &&
-        is_string($config->{mounts}->{directories}->{path})
+      is_hash_ref($config->{mounts}) && is_hash_ref($config->{mounts}->{directories}) &&
+      is_string($config->{mounts}->{directories}->{path})
     ){
       my $topdir = $config->{mounts}->{directories}->{path};
       my $subdirectories = is_hash_ref($config->{mounts}->{directories}->{subdirectories}) ? $config->{mounts}->{directories}->{subdirectories} : {};
-      foreach(qw(ready processed)){
-          $subdirectories->{$_} = is_string($subdirectories->{$_}) ? $subdirectories->{$_} : $_;
+      foreach(qw(ready registered processed)){
+        $subdirectories->{$_} = is_string($subdirectories->{$_}) ? $subdirectories->{$_} : $_;
       }
       $mc = {
-          path => $topdir,
-          subdirectories => $subdirectories
+        path => $topdir,
+        subdirectories => $subdirectories
       }
     }else{
       $mc = {
-          path => "/tmp",
-          subdirectories => {
-              "ready" => "ready",
-              "processed" => "processed"
-          }
+        path => "/tmp",
+        subdirectories => {
+          "ready" => "ready",
+          "registered" => "registered",
+          "processed" => "processed"
+        }
       };
     }
     $mc;
   };
 }
 sub mount {
-    state $mount = mount_conf->{path};
+  state $mount = mount_conf->{path};
 }
 sub subdirectories {
-    state $subdirectories = mount_conf->{subdirectories};
+  state $subdirectories = mount_conf->{subdirectories};
 }
 sub sanity_check {
-    my @errors = ();
-    try{
-        my $mount = mount();
-        my $subdirectories = subdirectories();
-        -d $mount || mkpath($mount);
-        foreach(keys %$subdirectories){
-            my $sub = "$mount/".$subdirectories->{$_};
-            mkpath($sub) if !-d $sub;
-			if(!-w $sub){
-				push @errors,"systeem heeft geen schrijfrechten op map $_ ";
-			}
-        }
-    }catch{
-        push @errors,$_;
-    };
-    scalar(@errors)==0,\@errors;
+  my @errors = ();
+  try{
+    my $mount = mount();
+    my $subdirectories = subdirectories();
+    -d $mount || mkpath($mount);
+    foreach(keys %$subdirectories){
+      my $sub = "$mount/".$subdirectories->{$_};
+      mkpath($sub) if !-d $sub;
+      if(!-w $sub){
+        push @errors,"systeem heeft geen schrijfrechten op map $_ ";
+      }
+    }
+  }catch{
+      push @errors,$_;
+  };
+  scalar(@errors)==0,\@errors;
 }
 sub json {
   to_json($_[0],{ pretty => params()->{pretty} ? 1 : 0 });
 }
-
 
 register mount_conf => \&mount_conf;
 register mount => \&mount;

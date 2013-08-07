@@ -53,9 +53,12 @@
         }
       }
       var f = $(this);
+
+      var btn = f.find('input[type="submit"]');
+      btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+      btn.button("loading");
       
       $.post(f.attr('action'),f.serialize(),function(data){
-        console.log(data);
         if(data.messages.length > 0){
           alert(data.messages.join('\n'));
         }

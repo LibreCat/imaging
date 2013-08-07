@@ -111,6 +111,7 @@ sub log2docs {
     push @docs,$doc;    
   }
 
+
   \@docs;
 
 }

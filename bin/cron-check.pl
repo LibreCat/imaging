@@ -207,6 +207,7 @@ for my $scan_dir(@scans_ready){
   #edit path
   say "resetting path from ".$scan->{path}." to $scan_dir";
   $scan->{path} = $scan_dir;
+  $scan->{warnings} = [];
 
   my $log;
   ($scan,$log) = set_status($scan,status => "incoming");
@@ -267,6 +268,8 @@ foreach my $scan_id(@scan_ids_test){
   my $log;
 
   $scan->{busy} = 1;
+  #report that this scan is busy
+  $scans->add($scan);  
 
   say "checking $scan_id at $scan->{path}";
 
@@ -331,6 +334,8 @@ foreach my $scan_id(@scan_ids_test){
 
   $scan->{datetime_last_modified} = Time::HiRes::time;
 
+  #TODO!!!
+  $scan->{busy} = 0;
   #update scans, index_scan en index_log
   update_scan($scan);
   update_log($log,-1) if $log;

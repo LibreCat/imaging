@@ -225,6 +225,20 @@ post('/project/:_id',sub{
         push @errors,$error if !$success;
       }
     }
+
+    #check query
+    my($m_result,$m_error);
+    try {
+      $m_result = meercat->search(query => $params->{query},fq => 'source:rug01',limit => 0);
+    }catch{
+      $m_error = $_;
+    };
+    if($m_error){
+      push @errors,"query $params->{query} is een ongeldige query";
+    }elsif($m_result->total <= 0){
+      push @errors,"query $params->{query} leverde geen resultaten op";
+    }
+
     #insert => pas op: wijzig _id niet!!!! (bij /add wordt _id afgeleid door md5_hex(name+name_subproject))
     if(scalar(@errors)==0){
       $params->{datetime_start} =~ /^(\d{2})-(\d{2})-(\d{4})$/o;
@@ -235,7 +249,9 @@ post('/project/:_id',sub{
         description => $params->{description},
         datetime_start => $datetime->epoch,
         datetime_last_modified => Time::HiRes::time,
-        query => $params->{query}
+        query => $params->{query},
+        num_hits => $m_result->total,
+        list => []
       };
       $project = { %$project,%$new };
       projects->add($project);
@@ -253,48 +269,41 @@ post('/project/:_id',sub{
   forward "/project/$_id",$params,{ method => "GET" };
 
 });
-get('/project/:_id/delete',sub{
 
-  my $config = config;
+del('/project/:_id',sub{
+
   my $params = params;
   my(@messages,@errors);
-
-  #check project exists
-  my $project = projects->get($params->{_id});
-  if(!$project){
-    return forward('/not_found',{
-      requested_path => request->path
-    });
-  }
-
-  template('project/delete',{
+  my $res = {
     errors => \@errors,
-    messages => \@messages,
-    project => $project
-  });
-
-});
-
-post('/project/:_id/delete',sub{
-
-  my $config = config;
-  my $params = params;
-  my(@messages,@errors);
+    messages => \@messages
+  };
 
   #check project exists
   my $project = projects->get($params->{_id});
   if(!$project){
-    return forward('/not_found',{
-      requested_path => request->path
-    });
+
+    push @errors,"project $params->{_id} werd niet gevonden";
+
+  }elsif(!auth()->can("projects","edit")){
+
+    push @errors,"U beschikt niet over de nodige rechten om projectinformatie aan te passen";
+  
+  }else{
+
+    #remove and back to list
+    projects->delete($params->{_id});
+    index_project->delete($params->{_id});
+    index_project->commit;
+
   }
 
-  #remove and back to list
-  projects->delete($params->{_id});
-  index_project->delete($params->{_id});
-  index_project->commit;
-  return redirect(uri_for("/projects"));  
+  $res->{status} = scalar(@errors) ? "error":"ok";
+
+  content_type 'json';
+  json($res);
 
 });
+
 
 true;

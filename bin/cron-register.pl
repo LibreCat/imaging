@@ -47,8 +47,8 @@ BEGIN {
 
 }
 END {
-    #verwijder lock
-    $pid->remove if $pid;
+  #verwijder lock
+  $pid->remove if $pid;
 }
 
 
@@ -62,7 +62,7 @@ sub directory_translator_packages {
     my $config = config;
     my $list = [];
     if(is_array_ref($config->{directory_to_query})){
-        $list = $config->{directory_to_query};
+      $list = $config->{directory_to_query};
     }
     $list;
   };
@@ -155,8 +155,8 @@ my @ids_ok_for_metadata = ();
     my $scan = shift;
 
     if(
-        !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
-        !(-f $scan->{path}."/__FIXME.txt")
+      !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
+      !(-f $scan->{path}."/__FIXME.txt")
     ){
       push @ids_ok_for_metadata,$scan->{_id};
     }
@@ -207,7 +207,7 @@ foreach my $id(@ids_ok_for_metadata){
 #release memory
 @ids_ok_for_metadata = ();
 
-#stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_ready (en maak hierbij manifest)
+#stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_registered (en maak hierbij manifest)
 my @incoming_ok = ();
 
 index_scan->searcher(
@@ -219,7 +219,7 @@ index_scan->searcher(
 
   my $scan = shift;
   if(!(-f $scan->{path}."/__FIXME.txt")){
-      push @incoming_ok,$scan->{_id};
+    push @incoming_ok,$scan->{_id};
   }
 
 });
@@ -229,202 +229,203 @@ index_scan->searcher(
 say "registering incoming_ok";
 
 my $mount_conf = mount_conf();
-my $dir_processed = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{processed};
+my $dir_registered = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{registered};
 
-if(!-w $dir_processed){
+if(!-w $dir_registered){
 
-    #not recoverable: aborting
-    say "\tcannot write to $dir_processed";    
+  #not recoverable: aborting
+  say "\tcannot write to $dir_registered";    
 
 }else{
 
-    foreach my $id (@incoming_ok){
-        my $scan = scans()->get($id);    
+  foreach my $id (@incoming_ok){
+    my $scan = scans()->get($id);    
 
-        say "\tscan $id:";
+    say "\tscan $id:";
 
-        if(!-w dirname($scan->{path})){
+    if(!-w dirname($scan->{path})){
 
-            say "\t\tcannot move $scan->{path} from parent directory";
-            #not recoverable: aborting
-            next;
+      say "\t\tcannot move $scan->{path} from parent directory";
+      #not recoverable: aborting
+      next;
 
-        }         
+    }         
 
-        #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
-        my $mtime_latest_file = mtime_latest_file($scan->{path});
-        if($mtime_latest_file > $scan->{datetime_last_modified}){
-            say "\t\tis changed since last check, I'm sorry! Aborting..";
-            #not recoverable: aborting
-            next;
-        }
+    #check: tussen laatste cron-check en registratie kan de map nog aangepast zijn..
+    my $mtime_latest_file = mtime_latest_file($scan->{path});
+    if($mtime_latest_file > $scan->{datetime_last_modified}){
+      say "\t\tis changed since last check, I'm sorry! Aborting..";
+      #not recoverable: aborting
+      next;
+    }
 
-        #check BAGS!
-        if($scan->{profile_id} eq "BAG"){
-            say "\t\tvalidating as bagit";
-            my @errors = ();
-            my $bag = Archive::BagIt->new();
-            my $success = $bag->read($scan->{path});        
-            if(!$success){
-                push @errors,@{ $bag->_error };
-            }elsif(!$bag->valid){
-                push @errors,@{ $bag->_error };
-            }
-            if(scalar(@errors) > 0){
-                say "\t\tfailed";
-                my $log;
-                ($scan,$log) = set_status($scan,status => "incoming_error");
-                $scan->{check_log} = \@errors;
-
-                update_scan($scan);
-                update_log($log,-1);
-
-                #see you later!
-                #not recoverable: aborting
-                next;
-            }else{
-                say "\t\tsuccessfull";
-            }
-        }
-        
-        
-        #ok, tijdelijk toekennen aan uitvoerende gebruiker, opdat niemand kan tussenkomen..
-        #vergeet zelfde rechten niet toe te kennen aan bovenliggende map (anders kan je verwijderen..)
-        my $this_uid = getpwuid($UID);
-        my $this_gid = getgrgid($EGID);
-
-        my $uid = data_at(config,"mounts.directories.owner.processed") || $this_uid;
-        my $gid = data_at(config,"mounts.directories.group.processed") || $this_gid;
-        my $rights = data_at(config,"mounts.directories.rights.processed") || "775";
-
-        
-        my($uname) = getpwnam($uid);
-        if(!is_string($uname)){
-            say "\t\t$uid is not a valid user name";
-            #not recoverable: aborting
-            next;
-        }
-        say "\t\tchanging ownership of '$scan->{path}' to $this_uid:$this_gid";
-
-        {
-            my $command = "sudo chown -R $this_uid:$this_gid $scan->{path} && sudo chmod -R 770 $scan->{path}";
-            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-            if(!$success){
-                say "\t\tcannot change ownership: $stderr";
-                #not recoverable: aborting
-                next;
-            }
-
-        }
-
-        my $old_path = $scan->{path};
-        my $new_path = "$dir_processed/".File::Basename::basename($old_path);   
-
-
-        #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
-        say "\t\tcreating __MANIFEST-MD5.txt";   
-        my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
-        if(-f $path_manifest){
-            if(!unlink($path_manifest)){
-                say "\t\tcannot remove old __MANIFEST-MD5.txt";
-                #not recoverable: aborting
-                next;
-            }
-        }
-
-        #maak nieuwe manifest
-        if(!-w $scan->{path}){
-            say "\t\tcannot write to directory $scan->{path}";
-            #not recoverable: aborting
-            next;
-        }
-
-        my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
-
-        local(*MANIFEST);
-        open MANIFEST,">$path_manifest" or die($!);
-        foreach my $file(@{ $dir_info->files() }){
-            next if $file->{path} eq $path_manifest;
-    
-            say "\t\tmaking checksum for ".$file->{path};
-            local(*FILE);
-            if(!(
-                -f -r $file->{path}
-            )){
-                say "\t\t$file->{path} is not a regular file or is not readable";
-                unlink($path_manifest);
-                #not recoverable: aborting
-                next;
-            }
-            open FILE,$file->{path} or die($!);
-            my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
-            my $filename = $file->{path};
-            $filename =~ s/^$old_path\///;
-            print MANIFEST "$md5sum_file $filename\r\n";
-            close FILE;
-        }
-        close MANIFEST;
-
-        
-        #verplaats  
-        say "\t\tmoving from $old_path to $new_path";
-        if(!move($old_path,$new_path)){
-            say "\t\tcannot move $old_path to $new_path";
-            #not recoverable: aborting
-            next;
-        }
-
-        #pas locatie aan
-        $scan->{path} = $new_path;
-
-        #schrijf bag-info.txt uit indien het nog niet bestaat, en schrijf archive_id uit
-        # door nieuwe bag-info.txt hier neer te schrijven, staat ie niet in __MANIFEST-MD5.txt!
-        fix_baginfo($scan);
-
-        #chmod(775,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
-        {
-            my $command = "sudo chown -R $uid:$gid $new_path && sudo chmod -R $rights $new_path";
-            my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-
-            if(!$success){
-                #niet zo erg, valt op te lossen via manuele tussenkomst
-                say STDERR $stderr;
-            }
-        }
-
-        #status 'registered'
-        delete $scan->{$_} for(qw(busy));
+    #check BAGS!
+    if($scan->{profile_id} eq "BAG"){
+      say "\t\tvalidating as bagit";
+      my @errors = ();
+      my $bag = Archive::BagIt->new();
+      my $success = $bag->read($scan->{path});        
+      if(!$success){
+        push @errors,@{ $bag->_error };
+      }elsif(!$bag->valid){
+        push @errors,@{ $bag->_error };
+      }
+      if(scalar(@errors) > 0){
+        say "\t\tfailed";
         my $log;
-        ($scan,$log) = set_status($scan,status => "registered");
-
-        #afgeleiden maken mbv Mediamosa
-        if($scan->{profile_id} eq "NARA"){
-
-          my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
-          say "\t$command";
-          my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-          say "stderr:";
-          say $stderr;
-          say "stdout:";
-          say $stdout;
-
-          if(!$success){
-            say STDERR $stderr;
-          }elsif($stdout =~ /new asset id: (\w+)\n/m){
-            say "asset_id found:$1";
-            $scan->{busy} = 1;
-            $scan->{asset_id} = $1;
-            $scan->{datetime_last_modified} = Time::HiRes::time;
-            update_scan($scan);
-          }else{
-            say STDERR "cannot find asset_id in response";
-          }
-        }
+        ($scan,$log) = set_status($scan,status => "incoming_error");
+        $scan->{check_log} = \@errors;
 
         update_scan($scan);
         update_log($log,-1);
 
+        #see you later!
+        #not recoverable: aborting
+        next;
+      }else{
+        say "\t\tsuccessfull";
+      }
     }
+    
+    
+    #ok, tijdelijk toekennen aan uitvoerende gebruiker, opdat niemand kan tussenkomen..
+    #vergeet zelfde rechten niet toe te kennen aan bovenliggende map (anders kan je verwijderen..)
+    my $this_uid = getpwuid($UID);
+    my $this_gid = getgrgid($EGID);
+
+    my $uid = data_at(config,"mounts.directories.owner.registered") || $this_uid;
+    my $gid = data_at(config,"mounts.directories.group.registered") || $this_gid;
+    my $rights = data_at(config,"mounts.directories.rights.registered") || "775";
+
+    
+    my($uname) = getpwnam($uid);
+    if(!is_string($uname)){
+      say "\t\t$uid is not a valid user name";
+      #not recoverable: aborting
+      next;
+    }
+    say "\t\tchanging ownership of '$scan->{path}' to $this_uid:$this_gid";
+
+    {
+
+      my $command = "sudo chown -R $this_uid:$this_gid $scan->{path} && sudo chmod -R 770 $scan->{path}";
+      my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+      if(!$success){
+        say "\t\tcannot change ownership: $stderr";
+        #not recoverable: aborting
+        next;
+      }
+
+    }
+
+    my $old_path = $scan->{path};
+    my $new_path = "$dir_registered/".File::Basename::basename($old_path);   
+
+
+    #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
+    say "\t\tcreating __MANIFEST-MD5.txt";   
+    my $path_manifest = $scan->{path}."/__MANIFEST-MD5.txt";
+    if(-f $path_manifest){
+      if(!unlink($path_manifest)){
+        say "\t\tcannot remove old __MANIFEST-MD5.txt";
+        #not recoverable: aborting
+        next;
+      }
+    }
+
+    #maak nieuwe manifest
+    if(!-w $scan->{path}){
+      say "\t\tcannot write to directory $scan->{path}";
+      #not recoverable: aborting
+      next;
+    }
+
+    my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
+
+    local(*MANIFEST);
+    open MANIFEST,">$path_manifest" or die($!);
+    foreach my $file(@{ $dir_info->files() }){
+      next if $file->{path} eq $path_manifest;
+
+      say "\t\tmaking checksum for ".$file->{path};
+      local(*FILE);
+      if(!(
+        -f -r $file->{path}
+      )){
+        say "\t\t$file->{path} is not a regular file or is not readable";
+        unlink($path_manifest);
+        #not recoverable: aborting
+        next;
+      }
+      open FILE,$file->{path} or die($!);
+      my $md5sum_file = Digest::MD5->new->addfile(*FILE)->hexdigest;
+      my $filename = $file->{path};
+      $filename =~ s/^$old_path\///;
+      print MANIFEST "$md5sum_file $filename\r\n";
+      close FILE;
+    }
+    close MANIFEST;
+
+    
+    #verplaats  
+    say "\t\tmoving from $old_path to $new_path";
+    if(!move($old_path,$new_path)){
+      say "\t\tcannot move $old_path to $new_path";
+      #not recoverable: aborting
+      next;
+    }
+
+    #pas locatie aan
+    $scan->{path} = $new_path;
+
+    #schrijf bag-info.txt uit indien het nog niet bestaat, en schrijf archive_id uit
+    # door nieuwe bag-info.txt hier neer te schrijven, staat ie niet in __MANIFEST-MD5.txt!
+    fix_baginfo($scan);
+
+    #chmod(775,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
+    {
+      my $command = "sudo chown -R $uid:$gid $new_path && sudo chmod -R $rights $new_path";
+      my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+
+      if(!$success){
+        #niet zo erg, valt op te lossen via manuele tussenkomst
+        say STDERR $stderr;
+      }
+    }
+
+    #status 'registered'
+    delete $scan->{$_} for(qw(busy));
+    my $log;
+    ($scan,$log) = set_status($scan,status => "registered");
+
+    #afgeleiden maken mbv Mediamosa
+    if($scan->{profile_id} eq "NARA"){
+
+      my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
+      say "\t$command";
+      my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+      say "stderr:";
+      say $stderr;
+      say "stdout:";
+      say $stdout;
+
+      if(!$success){
+        say STDERR $stderr;
+      }elsif($stdout =~ /new asset id: (\w+)\n/m){
+        say "asset_id found:$1";
+        $scan->{busy} = 1;
+        $scan->{asset_id} = $1;
+        $scan->{datetime_last_modified} = Time::HiRes::time;
+        update_scan($scan);
+      }else{
+        say STDERR "cannot find asset_id in response";
+      }
+    }
+
+    update_scan($scan);
+    update_log($log,-1);
+
+  }
 }
 #release memory
 @incoming_ok = ();
@@ -446,60 +447,60 @@ index_scan->searcher(
 
 for my $scan_id(@qa_control_ok){
 
-    my $scan = scans->get($scan_id);
+  my $scan = scans->get($scan_id);
 
-    #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
-    fix_baginfo($scan);
+  #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
+  fix_baginfo($scan);
 
-    #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
-    my $grep_path = config->{'archive_site'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
-    my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
-    my $command;
+  #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
+  my $grep_path = config->{'archive_site'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
+  my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
+  my $command;
 
-    #geen bag? Maak er dan een bag van
-    if(!$is_bag){
+  #geen bag? Maak er dan een bag van
+  if(!$is_bag){
 
-      $command = sprintf(
-          config->{mediamosa}->{drush_command}->{'bt-bag'},
-          $scan->{path},                   
-          $grep_path
-      );
-        
-    }else{
+    $command = sprintf(
+      config->{mediamosa}->{drush_command}->{'bt-bag'},
+      $scan->{path},                   
+      $grep_path
+    );
+      
+  }else{
 
-        $command = "cp -R $scan->{path} $grep_path && rm -f $grep_path/__MANIFEST-MD5.txt";
+    $command = "cp -R $scan->{path} $grep_path && rm -f $grep_path/__MANIFEST-MD5.txt";
 
-    }
+  }
 
-    say "command: $command";
-    my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-    say "stderr:";
-    say $stderr;
-    say "stdout:";
-    say $stdout;
+  say "command: $command";
+  my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+  say "stderr:";
+  say $stderr;
+  say "stdout:";
+  say $stdout;
 
-    next if !$success;
+  next if !$success;
 
-    my $uid = data_at(config,"mounts.directories.owner.archive") || "fedora";
-    my $gid = data_at(config,"mounts.directories.group.archive") || "fedora";
-    my $rights = data_at(config,"mounts.directories.rights.archive") || "775";
+  my $uid = data_at(config,"mounts.directories.owner.archive") || "fedora";
+  my $gid = data_at(config,"mounts.directories.group.archive") || "fedora";
+  my $rights = data_at(config,"mounts.directories.rights.archive") || "775";
 
-    $command = "sudo chown -R $uid:$gid $grep_path && sudo chmod -R $rights $grep_path";
-    ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-    say $command;
-    say "stderr:";
-    say $stderr;
-    say "stdout:";
-    say $stdout;    
-    say "scan archiving";
+  $command = "sudo chown -R $uid:$gid $grep_path && sudo chmod -R $rights $grep_path";
+  ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+  say $command;
+  say "stderr:";
+  say $stderr;
+  say "stdout:";
+  say $stdout;    
+  say "scan archiving";
 
-    my $log;
-    ($scan,$log) = set_status($scan,status => "archiving");
+  my $log;
+  ($scan,$log) = set_status($scan,status => "archiving");
 
-    update_scan($scan);
-    update_log($log,-1);
+  update_scan($scan);
+  update_log($log,-1);
 
-    say "scan record updated";
+  say "scan record updated";
 
 }
 #release memory
@@ -514,71 +515,71 @@ projects()->each(sub{
 
 foreach my $project_id(@project_ids){
 
-    my $project = projects()->get($project_id);
+  my $project = projects()->get($project_id);
 
-    my $query = $project->{query};
-    next if !$query;
+  my $query = $project->{query};
+  next if !$query;
 
-    my @list = ();
+  my @list = ();
 
-    my $meercat = meercat();
+  my $meercat = meercat();
 
-    #no searcher for meercat: 'fq' is not implemented by Catmandu::Searchable
-    my($offset,$limit,$total) = (0,1000,0);
+  #no searcher for meercat: 'fq' is not implemented by Catmandu::Searchable
+  my($offset,$limit,$total) = (0,1000,0);
 
-    my $fetch_successfull = 1;
-    try{
-        do{
+  my $fetch_successfull = 1;
+  try{
+    do{
 
-            my $res = $meercat->search(query => $query,fq => 'source:rug01',start => $offset,limit => $limit);
-            $total = $res->total;
+      my $res = $meercat->search(query => $query,fq => 'source:rug01',start => $offset,limit => $limit);
+      $total = $res->total;
 
-            foreach my $hit(@{ $res->hits }){
-                my $ref = from_xml($hit->{fXML},ForceArray => 1);
+      foreach my $hit(@{ $res->hits }){
+        my $ref = from_xml($hit->{fXML},ForceArray => 1);
 
-                #zoek items in Z30 3, en nummering in Z30 h
-                my @items = ();
+        #zoek items in Z30 3, en nummering in Z30 h
+        my @items = ();
 
-                foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
-                  if($marc_datafield->{tag} eq "Z30"){
-                    my $item = {
-                      source => $hit->{source},
-                      fSYS => $hit->{fSYS}
-                    };
-                    foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
-                      if($marc_subfield->{code} eq "3"){
-                        $item->{"location"} = $marc_subfield->{content};
-                      }
-                      if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
-                        $item->{"number"} = $1;
-                      }
-                    }
-                    say "\t".join(',',values %$item);
-                    push @items,$item;
-                  }
-                }
-                push @list,@items;
+        foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
+          if($marc_datafield->{tag} eq "Z30"){
+            my $item = {
+              source => $hit->{source},
+              fSYS => $hit->{fSYS}
+            };
+            foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
+              if($marc_subfield->{code} eq "3"){
+                $item->{"location"} = $marc_subfield->{content};
+              }
+              if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
+                $item->{"number"} = $1;
+              }
             }
+            say "\t".join(',',values %$item);
+            push @items,$item;
+          }
+        }
+        push @list,@items;
+      }
 
-            $offset += $limit;
+      $offset += $limit;
 
-        }while($offset < $total);
+    }while($offset < $total);
 
-    }catch{
-        $fetch_successfull = 0;
-        say STDERR $_;
-    };
-    if($fetch_successfull){
-        say "storing new object list to database";
-        $project->{list} = \@list;
-        $project->{datetime_last_modified} = Time::HiRes::time;
-        projects()->add($project);
-        project2index($project);
-    }
+  }catch{
+    $fetch_successfull = 0;
+    say STDERR $_;
+  };
+  if($fetch_successfull){
+    say "storing new object list to database";
+    $project->{list} = \@list;
+    $project->{datetime_last_modified} = Time::HiRes::time;
+    projects()->add($project);
+    project2index($project);
+  }
 };
 {
-    my($success,$error) = index_project->commit;   
-    die(join('',@$error)) if !$success;
+  my($success,$error) = index_project->commit;   
+  die(join('',@$error)) if !$success;
 }
 #release memory
 @project_ids = ();
@@ -617,8 +618,8 @@ while(my $scan_id = <$fh>){
 close $fh;
 
 {
-    my($success,$error) = index_scan->commit;   
-    die(join('',@$error)) if !$success;
+  my($success,$error) = index_scan->commit;   
+  die(join('',@$error)) if !$success;
 }
 
 say "$this_file ended at ".local_time;

@@ -81,6 +81,7 @@
               <li><a href="[% request.uri_for('/qa_control') %]">qa_controle</a></li>
               [%- END %]
               <li><a href="[% request.uri_for('/info') %]">info</a></li>
+              <li><a href="[% request.uri_for('/lost') %]">verdwenen</a></li>
             [%- END %]
             </ul>
             [% IF session.user.id %]

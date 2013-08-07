@@ -1,0 +1,15 @@
+<h1>Verdwenen scans (uit 01_ready)</h1>
+<table class="table table-striped table-condensed">
+  <tr>
+    <th>naam</th>
+    <th>gebruiker</th>
+  </tr>
+  [% FOREACH scan IN missing_scans %]
+  <tr class="error">
+    <td>
+      <a href="[% request.uri_base _ '/scans/' _ scan.item('_id')  %]">[% scan.item("_id") %]</a>
+    </td>
+    <td>[% scan.user_id %]</td>
+  </tr>
+  [% END %]
+</table>
