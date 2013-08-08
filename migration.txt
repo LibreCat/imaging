@@ -1,0 +1,33 @@
+1.  maak backup van databank 'imaging'
+2.  aanmaak nieuwe mappen
+
+    mv /mnt/data01/02_processed /mnt/data01/02_registered
+    mkdir /mnt/data01/03_processed
+    mv /mnt/data01/03_grep /mnt/data01/04_grep (niet noodzakelijk)
+
+    rechten op 02_registered en 03_processed: imaging:imaging drwxrwsr-x
+
+    aanpassen netwerkconfiguratie voor nfs in windows
+
+
+2.  perl bin/migrate_scans.pl (DEEL 1)
+
+    2.1 Schrijf alle identifiers van de tabel 'scans' naar bestand
+    2.2 Itereer over identifiers. Voor elke scan:
+      2.2.1 verplaats 'status_history' naar nieuwe hash 'log' (met zelfde id als de scan),
+            en sla op in tabel 'logs'
+      2.2.2 paden waarin '02_processed' voorkomen
+
+        indien 'status' == 'registered': 
+          wijziging waarde van 'path' 02_processed -> 02_registered
+
+        status != 'registered'
+          wijziging waarde van 'path' 02_processed -> 03_processed
+          verplaats scan naar nieuwe locatie in 03_processed
+
+3.  perl bin/install_tables.pl
+
+    Creëert tabel 'sessions' volgens relationeel model
+    Gebruikers worden uiteraard hiermee uitgelogd.
+
+4.  aanpassen config.yml en environments/*.yml (hoofdconfiguratie zit nu in config.yml ipv in de environment)

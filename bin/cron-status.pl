@@ -491,5 +491,58 @@ say "looking for scans to be purged";
   }
 }
 
+#status update 5: zijn er scans die opnieuw in mediamosa opgeladen moeten worden?
+say "looking for scans to be reprocessed by mediamosa";
+{
+  #collect identifiers
+  my $query = "status:\"reprocess_derivatives\"";
+  my @ids = ();
+
+  $index_scan->searcher(
+    query => $query,
+    limit => 1000
+  )->each(sub{
+    push @ids,$_[0]->{_id};
+  });
+
+  for my $id(@ids){
+
+    my $scan = $scans->get($id);
+    my $path = $scan->{path};
+
+    my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
+    say "\t$command";
+
+    next;
+
+    my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
+    say "\tstderr: $stderr" if $stderr;
+    say "\tstdout: $stdout" if $stdout;
+
+    if(!$success){
+
+      say "\toperation failed";
+
+    }elsif($stdout =~ /new asset id: (\w+)\n/m){
+
+      say "\tasset_id found:$1";
+      $scan->{busy} = 1;
+      $scan->{asset_id} = $1;
+      $scan->{datetime_last_modified} = Time::HiRes::time;
+
+    }else{
+
+      say "\tcannot find asset_id in response";
+
+    }
+
+    update_scan($scan);
+    update_log(get_log($scan),-1);
+  
+  }
+
+}
+
+
 
 say "$this_file ended at ".local_time;

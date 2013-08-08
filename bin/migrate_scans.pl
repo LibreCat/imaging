@@ -18,12 +18,17 @@ scans->each(sub{
 });
 close $fh;
 
-#itereer over scans, verplaats status_history naar tabel 'logs'
+#mv 02_processed 02_registered
+#mkdir 03_processed
+
+#itereer over scans, verplaats status_history naar tabel 'logs', en wijzig 'path' =>  TODO: effectieve create van 02_registered en 03_processed + test of paden nog werken
 open $fh,"<:utf8",$filename or die($!);
 while(my $scan_id = <$fh>){
   chomp $scan_id;
   say $scan_id;
   my $scan = scans->get($scan_id);
+
+  #verplaats status_history
   my $log = {
     _id => $scan_id,
     user_id => $scan->{user_id},
@@ -31,10 +36,33 @@ while(my $scan_id = <$fh>){
     datetime_last_modified => $scan->{datetime_last_modified}
   };
   delete $scan->{status_history};
+  
+  #verplaats 'path'  
+  if($scan->{path} =~ /02_processed/){
+
+    my $old_path = $scan->{path};
+    #02_processed bestaat niet meer, wel 02_registered
+    $scan->{path} =~ s/02_processed/02_registered/;
+    
+    #<> 'registered'? Verplaatsen naar 03_processed
+    if($scan->{status} ne "registered"){
+
+      my $new_path = $scan->{path};
+      $new_path =~ s/02_registered/03_processed/;
+      mv($scan->{path},$new_path);
+      $scan->{path} = $new_path;
+
+    }
+
+    say "\tpath moved from $old_path to $scan->{path}";
+  }
+
 
   #databank
   scans()->add($scan);
   logs()->add($log);
+
+  say "\tlog moved to logs";
   
   #index
   my $scan_doc = scan2doc($scan);
