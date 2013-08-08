@@ -1,0 +1,1 @@
+delete from sessions where timestampdiff(SECOND,last_active,CURRENT_TIMESTAMP) > 3600*24;

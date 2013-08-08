@@ -12,7 +12,7 @@ use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
 use Exporter qw(import);
-our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index log2index marcxml_flatten update_scan update_log set_status dir_info list_files logs get_log);
+our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index log2index marcxml_flatten update_scan update_log set_status dir_info list_files logs get_log scan2doc log2docs);
 our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
 sub projects { 

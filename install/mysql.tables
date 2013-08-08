@@ -1,0 +1,6 @@
+CREATE TABLE `sessions` (
+  `id` char(40) NOT NULL,
+  `session_data` longblob NOT NULL,
+  `last_active` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+);

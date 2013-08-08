@@ -10,9 +10,11 @@
       [% SET params.item("sort") = settings.app.scans.default_sort IF params.item("sort") == "" %]
       <select name="sort" id="sort">
           <option value=""></option>
-          [%- FOREACH item IN [["_id","naam"],["user_login","gebruiker"],["status","status"],["datetime_last_modified","laatst gewijzigd"]] %]
+          [%- FOREACH item IN settings.app.scans.sorts %]
+    
           <option value="[% item.0 %] asc" [% IF params.item("sort") == ( item.0 _ " asc" ) %]selected="selected"[% END %]>[% item.1 %] oplopend</option>
           <option value="[% item.0 %] desc" [% IF params.item("sort") == ( item.0 _ " desc" ) %]selected="selected"[% END %]>[% item.1 %] aflopend</option>
+
           [%- END %]
       </select>
       <label for="num">toon</label>
@@ -25,7 +27,18 @@
     </div>
 </form>
 
-[%- IF result.last_page > 1 %]
+<!--
+  Catmandu::Paged verwacht totalEntries en entriesPerPage, 
+  maar bij een foutieve query wordt een Catmandu::Hits terug
+  gegeven, zonder deze attributen (errors van solr worden
+  genegeerd).
+  Daarom: check result.hits.size
+  Error:
+
+    core - template - undef error - totalEntries and entriesPerPage must be supplied at /usr/local/share/perl5/Catmandu/Paged.pm line 34
+
+-->
+[%- IF result.hits && result.hits.size > 0 && result.last_page > 1 %]
 <div class="pagination">
   <ul>
     [%- IF result.first_page && result.first_page < result.page %]

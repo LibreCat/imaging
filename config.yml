@@ -97,7 +97,16 @@ plugins:
         operations: ["status","rename","comment","metadata","purge"]
      archivaris: {}
      catalograaf: {}
-cache: {}
+cache:
+ session:
+  package: "Cache::FastMmap"
+  options:
+   share_file: "/tmp/imaging.session.data"
+   empty_on_exit: 0
+   #init_file: 1
+   expire_time: '20m'
+   cache_size: '20m'
+   page_size: '512k'
 home:
  roles: 
   # sprintf( config->{home}->{roles}->{$first_role} , $user->{login} )
@@ -108,10 +117,28 @@ home:
  default: "/scans"
 app:
  qa_control:
+  sorts: &sorts
+    -
+      - "datetime_last_modified"
+      - "laatst gewijzigd"
+    -
+      - "datetime_started"
+      - "startdatum"
+    -
+      - "_id"
+      - "naam"
+    - 
+      - "user_login"
+      - "gebruiker"
+    - 
+      - "status"
+      - "status"
+
   default_sort: "datetime_last_modified asc"
  logs:
   default_sort: "datetime desc"
  scans:
+  sorts: *sorts
   default_sort: "datetime_last_modified desc"
   facet_fields: ["project_name","status"]
   edit:

@@ -1,9 +1,11 @@
 #!/usr/bin/env perl
 use Dancer;
 use Plack::Builder;
+use Plack::Session::Store::Cache;
 
 #laad configuratie van catmandu één keer!
 use Catmandu qw(:load);
+use Catmandu::Util qw(require_package);
 
 #things that must happen first
 use Imaging::Routes::Control::First;
@@ -20,5 +22,11 @@ my $app = sub {
 	Dancer->dance($request);
 };
 builder {
+#  enable 'Session',
+#    store => Plack::Session::Store::Cache->new(
+#    cache => require_package(config->{cache}->{session}->{package})->new(
+#      %{ config->{cache}->{session}->{options} }
+#    )
+#  );
   $app;
 };

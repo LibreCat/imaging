@@ -8,6 +8,10 @@ use Try::Tiny;
 
 sub simple_search_params {
   my $params = params();
+  params_to_search($params);
+}
+sub params_to_search {
+  my $params = $_[0];
   my $query = is_string($params->{q}) ? $params->{q} : "*";
 
   my $page = is_natural($params->{page}) && int($params->{page}) > 0 ? int($params->{page}) : 1;
@@ -86,6 +90,7 @@ register subdirectories => \&subdirectories;
 register sanity_check => \&sanity_check;
 register not_found => \&not_found;
 register simple_search_params => \&simple_search_params;
+register params_to_search => \&params_to_search;
 register json => \&json;
 
 register_plugin;

@@ -1,92 +1,121 @@
-#!/bin/bash
-
-# imaging
+#!/bin/sh
 #
-# chkconfig:   345 85 15
-# description: imaging script
+# Imaging
 #
+# chkconfig: 345 85 15
+# description: Imaging application
 
+# pidfile: /var/run/imaging.pid
+
+PID=/var/run/imaging.pid
+
+# Source function library.
 . /etc/rc.d/init.d/functions
 
-export PATH="$PATH:/usr/local/bin"
-export PERL5LIB="/opt/Catmandu/lib"
-imaging_home="/opt/Imaging"
-pidfile="/var/run/imaging.pid"
-imaging_error="/var/log/Imaging/error.log"
-imaging_log="/var/log/Imaging/access.log"
-dirname_error=`dirname $imaging_error`
-test -d $dirname_error || mkdir -p $dirname_error || exit 1
-dirname_log=`dirname $imaging_log`
-test -d $dirname_log || mkdir -p $dirname_log || exit 1
-plackup_opts="-s Starman -E development $imaging_home/bin/app.pl --access-log $imaging_log"
+# Source networking configuration.
+. /etc/sysconfig/network
 
-RET=0
+# Check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 1
 
-pid_exists (){
-	pid=$(get_pid)
-	re=0
-	if [ -z $pid ];then
-		re=1
-	else
-		kill -0 $pid &> /dev/null
-		re=$?
-	fi 
-	echo $re
+SERVER_PORT=5000
+SERVER_WORKERS=15
+SERVER_USER="imaging"
+SERVER_GROUP="imaging"
+DANCER_DIR="/opt/Imaging"
+ACCESS_LOG="/var/log/Imaging/access.log"
+ERROR_LOG="/var/log/Imaging/error.log"
+PLACK_ENV="deployment"
+plackup="/usr/local/bin/plackup"
+lockfile=/var/lock/subsys/imaging
+
+[ -f /etc/sysconfig/imaging.conf ] && . /etc/sysconfig/imaging.conf
+
+starman_args="--pid $PID --workers $SERVER_WORKERS --user $SERVER_USER --group $SERVER_GROUP --error-log $ERROR_LOG --disable-keepalive --max-requests 50"
+plackup_args="-E $PLACK_ENV -p $SERVER_PORT --access-log $ACCESS_LOG -s Starman $starman_args -D"
+DANCER_APP="$DANCER_DIR/bin/app.psgi"
+website="Imaging"
+
+start() {
+  [ -x $plackup ] || exit 5
+  [ -f $DANCER_APP ] || exit 6
+  echo -n $"Starting $website: "
+  $plackup $plackup_args -a $DANCER_APP 2>&1 > /dev/null
+  retval=$?
+  if [ $retval -eq 0 ]; then
+    success $"$website started"
+    touch $lockfile
+  else
+    failure $"Unable to start"
+  fi
+  echo
+  return $retval
 }
-get_pid () {
-	cat $pidfile 2> /dev/null
+
+status () {
+  if [ -f $PID ]; then
+
+    kill -0 `cat $PID` &> /dev/null
+    retval=$?
+    if [ $retval -eq 0 ]; then
+
+      echo "$website is running"
+      success
+      echo
+      return $retval
+
+    else
+
+      echo "$website is not running, but pidfile $PID exists"
+      failure
+
+    fi
+
+  else
+
+    echo "$website is not running"
+    failure
+
+  fi
+
+  echo
+
+  return 1
+}
+stop() {
+  echo -n $"Stopping $website: "
+  if [ -f $PID ]; then
+    kill `cat $PID` 2>&1> /dev/null
+    retval=$?
+    [ $retval -eq 0 ] && success && rm -f $lockfile
+    echo
+    return $retval
+  fi
+  failure $"pid $PID not found"
+  echo
+  return 1
+}
+
+restart() {
+  stop
+  start
 }
 
 case "$1" in
   start)
-    echo "starting imaging"
-    RET=$(pid_exists)
-    if [ "$RET" -eq "0" ];then
-	    echo "imaging already running"
-		  RET=1;
-    else
-      sudo -u imaging /usr/local/bin/plackup $plackup_opts 1> /dev/null 2> $imaging_error &
-      RET=$?
-      PID=$!
-      if [ "$RET" -eq "0" ];then
-        echo $PID > $pidfile
-        echo "imaging started"
-      else
-          echo "imaging could not be started"
-      fi
-    fi
-  ;;
+      $1
+      ;;
   stop)
-    echo "shutting down imaging"
-    RET=$(pid_exists)
-    if [ ! "$RET" -eq "0" ];then
-      echo "imaging already stopped"
-      RET=1
-    else
-      RET=$?
-      p=$(get_pid)	
-      kill -15 $p
-      rm -f $pidfile
-    fi
-  ;;
-  status)
-    RET=$(pid_exists)
-    if [ "$RET" -eq "0" ];then
-      echo "imaging is running"
-    else
-      echo "imaging is not running"
-    fi
-  ;;
+      $1
+      ;;
   restart)
-  	$0 stop
-	  echo "waiting for master to finish off the workers.."
-	  sleep 2
-	  $0 start
-  ;;
+      $1
+      ;;
+  status)
+      $1
+      ;;
   *)
-    echo "Usage: $N {start|stop|status|restart}" >&2
-    RET=1
-  ;;
+    echo $"Usage: $0 {start|stop|restart}"
+    exit 2
 esac
 
-exit $RET

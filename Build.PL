@@ -44,7 +44,9 @@ my $requires = {
   'File::Pid' => 0,
   'Catmandu::FedoraCommons' => 0,
   'Template::Plugin::File' => 0,
-  'Catmandu::MediaMosa' => 0
+  'Catmandu::MediaMosa' => 0,
+  'Plack::Session::Store::Cache' => 0,
+  'Cache::FastMmap' => 0
 };
 my $recommends = {
 	'Starman' => 0,

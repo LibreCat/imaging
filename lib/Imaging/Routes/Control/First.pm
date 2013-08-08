@@ -26,14 +26,14 @@ hook before => sub {
 sub remember_search_params {
   my $app = shift;
   my $params = params();
-  for my $name(qw(q sort num)){
+  for my $name(qw(q sort num page fq)){
     session("last_${app}_${name}" => $params->{$name}) if exists $params->{$name};
   }
 }
 sub set_last_search_params {
   my $app = shift;
   my $params = params();
-  for my $name(qw(q sort num)){
+  for my $name(qw(q sort num page fq)){
     $params->{$name} = session("last_${app}_${name}") unless exists $params->{$name};
   }
 }

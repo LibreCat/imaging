@@ -26,7 +26,6 @@ Hash::Merge::set_behavior('RIGHT_PRECEDENT');
 hook before_template_render => sub {
   my $tokens = $_[0];
   $tokens->{status_change_conf} = status_change_conf();
-  $tokens->{get_prev_next} = \&get_prev_next;
 };
 get('/scans',sub {
   my $params = params;
@@ -51,10 +50,14 @@ get('/scans',sub {
     push @errors,"ongeldige zoekvraag";
   };
 
-  #registreer identifiers voor prev/next
+  #registreer identifiers voor prev/next (i.e. 1ste pagina)
   my @ids;
   push @ids,$_->{_id} for @{ $result->hits() || [] };
   session(search_scan_ids => \@ids);
+  session(search_scan_start => 0);
+  session(search_scan_total => $result->total());
+
+  print STDERR to_dumper($result);
 
   template('scans',{
     result => $result,
@@ -715,20 +718,6 @@ sub ensure_path {
 sub can_edit_metadata {
   state $edit_when = config->{app}->{scans}->{edit}->{'when'} // [];
   array_includes($edit_when,$_[0]);
-}
-sub get_prev_next {
-  my $id = $_[0];
-  my $pn ={};
-  return $pn unless is_string($id);
-  my $search_scan_ids = session('search_scan_ids') || [];
-  for(my $i = 0;$i < scalar(@$search_scan_ids);$i++){
-    if($search_scan_ids->[$i] eq $id){
-      $pn->{prev} = $i > 0 ? $search_scan_ids->[$i - 1] : undef;
-      $pn->{next} = $i < scalar(@$search_scan_ids) - 1 ? $search_scan_ids->[$i+1] : undef;
-      last;
-    }
-  }
-  $pn;
 }
 
 true;
