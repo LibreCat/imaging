@@ -87,9 +87,13 @@
       [% matches.2 _ "-" _ matches.1 _ "-" _ matches.0 _ " " _ matches.3 _ ":" _ matches.4 _ ":" _ matches.5 %]
     </td>
     <td>
+        <!-- scan is mogelijks verwijderd!
         <a href="[% request.uri_base %]/scans/[% log.scan_id %]">
+        -->
             [% log.scan_id %]
+        <!--
         </a>
+        -->
     </td>
     <td>
         <a href="[% request.uri_base %]/logs?q=[% "user_login:\"" _ log.user_login  _ "\"" | uri  %]">

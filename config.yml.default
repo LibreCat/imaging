@@ -37,20 +37,6 @@ plugins:
   subject: "Dashboard Scanning workflow"
   to: "Fran.Vlaeminck@UGent.be"
   cc: "Ariane.VandeVyver@UGent.be"
-# Database:
-#  driver: mysql
-#  database: imaging
-#  host: localhost
-#  port: 3306
-#  username: imaging
-#  password: imaging
-#  dbi_params:
-#   RaiseError: 1
-#   AutoCommit: 1
-#   mysql_auto_reconnect: 1
-#  on_connect_do:
-#   - "CREATE TABLE IF NOT EXISTS users (id int(11) NOT NULL AUTO_INCREMENT,name varchar(255) DEFAULT NULL,login varchar(255) NOT NULL,password mediumtext NOT NULL,roles mediumtext,has_dir bool default 0,PRIMARY KEY (id),UNIQUE(name),UNIQUE(login)) ENGINE=INNODB DEFAULT CHARSET=utf8"
-#   - "INSERT IGNORE INTO users (name, login, password, roles) VALUES ('Administrator','admin',MD5('admin'),'admin, user')"
  Auth::RBAC:
   credentials:
    class: Catmandu
@@ -97,7 +83,6 @@ plugins:
         operations: ["status","rename","comment","metadata","purge"]
      archivaris: {}
      catalograaf: {}
-cache: {}
 home:
  roles: 
   # sprintf( config->{home}->{roles}->{$first_role} , $user->{login} )
@@ -108,10 +93,28 @@ home:
  default: "/scans"
 app:
  qa_control:
+  sorts: &sorts
+    -
+      - "datetime_last_modified"
+      - "laatst gewijzigd"
+    -
+      - "datetime_started"
+      - "startdatum"
+    -
+      - "_id"
+      - "naam"
+    - 
+      - "user_login"
+      - "gebruiker"
+    - 
+      - "status"
+      - "status"
+
   default_sort: "datetime_last_modified asc"
  logs:
   default_sort: "datetime desc"
  scans:
+  sorts: *sorts
   default_sort: "datetime_last_modified desc"
   facet_fields: ["project_name","status"]
   edit:
@@ -130,7 +133,7 @@ app:
       required: 1
     - key: "DC-Identifier"
       edit: 1
-      required: 1
+      #required: 1
     - key: "DC-Description"
       edit: 1
       tag: "textarea"
@@ -141,7 +144,7 @@ app:
       required: 1
     - key: "DC-Creator"
       edit: 1
-      required: 1
+      #required: 1
     - key: "DC-AccessRights"
       edit: 1
       tag: "select"
@@ -156,30 +159,39 @@ mounts:
  directories:
   path: "/mnt/data01"
   owner:
+   registered: imaging
    processed: imaging
    archive: fedora
   group:
+   registered: imaging
    processed: imaging
    archive: fedora
   rights:
+   registered: "775"
    processed: "775" 
    archive: "775"
   subdirectories:
    ready: "01_ready"
-   processed: "02_processed"   
+   registered: "02_registered"
+   processed: "03_processed"   
   network_directories:
+
    #vergeet de slash niet na file:// die in windows localhost aangeeft!
    ready:
     #windows: "file:///X:"
     windows: "file://nasan1n.ugent.be/ready"
+
+   registered:
+    #windows: "file:///Y:"
+    windows: "file://nasan1n.ugent.be/registered"
+
    processed:
     #windows: "file:///Y:"
     windows: "file://nasan1n.ugent.be/processed"
   ready: 
    #warn 90 days after first arrival
    warn_after: 
-    #days: 90
-    seconds: 2
+    days: 90
    #delete 30 days after the warning
    delete_after:
     days: 30
@@ -195,7 +207,8 @@ status:
   done: ["archived_ok","published_ok"]
   in_ready: ["incoming","incoming_back","incoming_error","incoming_ok"]
   #opgelet: zolang reprocess_* staat het nog in processed, nadien terug in 01_ready
-  in_processed: ["registered","derivatives_created","reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager","problematic"]
+  in_registered: ["registered"]
+  in_processed: ["reprocess_metadata","reprocess_derivatives","qa_control_ok","archived","archived_ok","archived_error","published","reprocess_scans","reprocess_scans_qa_manager","problematic"]
  change:
   qa_manager: &statuschangeqamanager
    incoming:

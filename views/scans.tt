@@ -24,6 +24,7 @@
           <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
           [%- END %]
       </select>
+      <input type="hidden" name="page" id="page" value="[% result.page %]">
     </div>
 </form>
 
@@ -150,4 +151,16 @@
   </tr>
   [%- END %]
 </table>
+<script type="text/javascript">
+  //indien 'num' wijzigt, dan moet 'page' terug op 1
+  $(document).ready(function(e){
+    $('#num').change(function(e){
+
+      var form = $(this).closest('form');
+      var page = $('#page');
+      page.val('1');
+
+    });
+  });
+</script>
 [%- END %]

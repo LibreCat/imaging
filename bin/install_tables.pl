@@ -19,7 +19,7 @@ my $dbh = DBI->connect(
 
 my $dir = dirname(dirname(abs_path(__FILE__)))."/install";
 
-for my $dbi_source(<"$dir/*.tab">){
+for my $dbi_source(<$dir/*.tab>){
 
   my $sql = read_file($dbi_source);
   say $sql;

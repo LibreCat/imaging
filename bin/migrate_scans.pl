@@ -6,6 +6,7 @@ use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
 use Try::Tiny;
 use File::Temp qw(tempfile);
+use File::Copy qw(move);
 use Imaging qw(:all);
 
 #write all identifiers to a temporary file
@@ -49,7 +50,7 @@ while(my $scan_id = <$fh>){
 
       my $new_path = $scan->{path};
       $new_path =~ s/02_registered/03_processed/;
-      mv($scan->{path},$new_path);
+      move($scan->{path},$new_path);
       $scan->{path} = $new_path;
 
     }

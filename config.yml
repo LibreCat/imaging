@@ -83,16 +83,6 @@ plugins:
         operations: ["status","rename","comment","metadata","purge"]
      archivaris: {}
      catalograaf: {}
-cache:
- session:
-  package: "Cache::FastMmap"
-  options:
-   share_file: "/tmp/imaging.session.data"
-   empty_on_exit: 0
-   #init_file: 1
-   expire_time: '20m'
-   cache_size: '20m'
-   page_size: '512k'
 home:
  roles: 
   # sprintf( config->{home}->{roles}->{$first_role} , $user->{login} )
