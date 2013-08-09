@@ -137,7 +137,7 @@
       -
       [% END %]
     </td>
-    <td style="max-width:20px;overflow:hidden;clear:left;text-align:right;text-overflow:ellipsis;-ms-text-overflow:ellipsis;white-space:nowrap">
+    <td style="width:20px;overflow:hidden;clear:left;text-align:right;text-overflow:ellipsis;-ms-text-overflow:ellipsis;white-space:nowrap">
     [% scan.comments.last.text || "-" %]
     </td>
   </tr>

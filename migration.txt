@@ -10,7 +10,7 @@
     aanpassen netwerkconfiguratie voor nfs in windows
 
 
-2.  perl bin/migrate_scans.pl (DEEL 1)
+2.  perl bin/migrate_scans.pl
 
     2.1 Schrijf alle identifiers van de tabel 'scans' naar bestand
     2.2 Itereer over identifiers. Voor elke scan:

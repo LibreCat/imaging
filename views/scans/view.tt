@@ -15,6 +15,8 @@
 [% PROCESS inc/errors_messages.tt %]
 [%- IF scan %]
 
+[% PROCESS inc/prev_next.tt %]
+
 <h1>[% scan.item("_id") %]</h1>
 
 <div class="row">
@@ -647,7 +649,6 @@
     
   [% END %]
 
-  /*
   jwerty.key('arrow-left',function(evt){
     evt.preventDefault();
     var href = $("#link_prev").attr('href');
@@ -661,7 +662,6 @@
     if(href == undefined)return;
     window.location.href = href;
   });
-  */
 
 </script>
 [%- END %]
