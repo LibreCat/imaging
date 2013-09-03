@@ -42,15 +42,21 @@ while(my $scan_id = <$fh>){
   if($scan->{path} =~ /02_processed/){
 
     my $old_path = $scan->{path};
-    #02_processed bestaat niet meer, wel 02_registered
-    $scan->{path} =~ s/02_processed/02_registered/;
+    #02_processed bestaat niet meer, wel 02_imaging/registered
+    $scan->{path} =~ s/02_processed/02_imaging\/registered/;
     
     #<> 'registered'? Verplaatsen naar 03_processed
     if($scan->{status} ne "registered"){
 
       my $new_path = $scan->{path};
       $new_path =~ s/02_registered/03_processed/;
-      move($scan->{path},$new_path);
+      if(-d $scan->{path}){
+        unless( move($scan->{path},$new_path) ){
+          say STDERR "error while trying to move ".$scan->{path}." to $new_path, aborting..";
+          say STDERR $!;
+          exit(1);
+        }
+      }
       $scan->{path} = $new_path;
 
     }

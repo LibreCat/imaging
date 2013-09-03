@@ -1,16 +1,30 @@
-1.  maak backup van databank 'imaging'
+1.  maak backup van databank 'imaging' onder imaging_back (belangrijk voor bin/migrate_diff.pl)
+    maak backup van indexen (eenmaal stuk van migratie gebeurd, kan je 'logs' niet meer in 'scans' krijgen..):
+
+      catmandu export Solr --url "http://localhost:8983/solr/core0" -v to JSON > core0.json
+      catmandu export Solr --url "http://localhost:8983/solr/core1" -v to JSON > core1.json
+      catmandu export Solr --url "http://localhost:8983/solr/core2" -v to JSON > core2.json
+
+    maak backup van applicatie:
+      cp -R /opt/Imaging /opt/Imaging-back
+
 2.  aanmaak nieuwe mappen
 
-    mv /mnt/data01/02_processed /mnt/data01/02_registered
-    mkdir /mnt/data01/03_processed
-    mv /mnt/data01/03_grep /mnt/data01/04_grep (niet noodzakelijk)
+    mkdir /mnt/data01/02_imaging
+    mv /mnt/data01/02_processed /mnt/data01/02_imaging/registered
+    mkdir /mnt/data01/02_imaging/processed
+    chown -R imaging:imaging /mnt/data01/02_imaging
+    chmod -R 775 /mnt/data01/02_imaging
+    chmod gu+s /mnt/data01/02_imaging/* (niet toepassen op bestanden!)
+    chmod gu+s /mnt/data01/02_imaging/registered/* (niet toepassen op bestanden!)
+    chmod gu+s /mnt/data01/02_imaging/processed/* (niet toepassen op bestanden!)
 
-    rechten op 02_registered en 03_processed: imaging:imaging drwxrwsr-x
+    rechten op 02_imaging/*: imaging:imaging drwsrwsr-x
 
-    aanpassen netwerkconfiguratie voor nfs in windows
+    aanpassen netwerkconfiguratie voor nfs in windows (eventueel symlink 02_processed => 02_imaging)
 
 
-2.  perl bin/migrate_scans.pl
+2.  perl bin/migrate_scans.pl (zorg voor voldoende rechten!!)
 
     2.1 Schrijf alle identifiers van de tabel 'scans' naar bestand
     2.2 Itereer over identifiers. Voor elke scan:
@@ -19,10 +33,11 @@
       2.2.2 paden waarin '02_processed' voorkomen
 
         indien 'status' == 'registered': 
-          wijziging waarde van 'path' 02_processed -> 02_registered
+          wijziging waarde van 'path' 02_processed -> 02_imaging/registered
+          verplaatsing niet meer nodig (zie boven)
 
         status != 'registered'
-          wijziging waarde van 'path' 02_processed -> 03_processed
+          wijziging waarde van 'path' 02_processed -> 02_imaging/processed
           verplaats scan naar nieuwe locatie in 03_processed
 
 3.  perl bin/install_tables.pl

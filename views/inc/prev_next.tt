@@ -1,6 +1,8 @@
 <div class="pull-right">
   [% pn = get_prev_next(scan.item("_id")) %]
+  [% IF pn.keys.size %]
   <a href="[% request.uri_for('/scans') %]">terug naar zoeken</a>&nbsp;|&nbsp;
+  [% END %]
   [% IF pn.prev %]
     <a href="[% request.uri_for('/scans/' _ pn.prev) %]" id="link_prev">&lt;vorige</a>
   [% END %]

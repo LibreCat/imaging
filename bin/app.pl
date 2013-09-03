@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use Dancer;
 use Plack::Builder;
-use Plack::Session::Store::Cache;
 
 #laad configuratie van catmandu één keer!
 use Catmandu qw(:load);
@@ -22,11 +21,5 @@ my $app = sub {
 	Dancer->dance($request);
 };
 builder {
-#  enable 'Session',
-#    store => Plack::Session::Store::Cache->new(
-#    cache => require_package(config->{cache}->{session}->{package})->new(
-#      %{ config->{cache}->{session}->{options} }
-#    )
-#  );
   $app;
 };

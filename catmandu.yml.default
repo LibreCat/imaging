@@ -12,6 +12,7 @@ store:
    bags:
     projects: &sformat
      serialization_format: "messagepack"
+     buffer_size: 500
     scans: *sformat
     users: *sformat
     logs: *sformat

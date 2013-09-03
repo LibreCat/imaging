@@ -172,8 +172,8 @@ mounts:
    archive: "775"
   subdirectories:
    ready: "01_ready"
-   registered: "02_registered"
-   processed: "03_processed"   
+   registered: "02_imaging/registered"
+   processed: "02_imaging/processed"   
   network_directories:
 
    #vergeet de slash niet na file:// die in windows localhost aangeeft!
@@ -332,9 +332,9 @@ profiles:
  NARA:
   description: "inc/profiles/description/NARA.tt"
   packages:
-   - class: "Imaging::Test::Dir::scan"
-     args: {}
-     on_error: "stop"
+#   - class: "Imaging::Test::Dir::scan"
+#     args: {}
+#     on_error: "stop"
    - class: "Imaging::Test::Dir::checkPermissions"
      args: {}
      on_error: "continue"

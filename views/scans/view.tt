@@ -662,6 +662,12 @@
     if(href == undefined)return;
     window.location.href = href;
   });
+  jwerty.key('esc',function(evt){
+    evt.preventDefault();
+    var url = "[% request.uri_for('/scans') %]";
+    window.location.href = url;
+  });
+
 
 </script>
 [%- END %]

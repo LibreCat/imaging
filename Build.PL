@@ -13,10 +13,8 @@ my $requires = {
   'Catmandu::Store::Solr' => 0,
   'DBD::mysql' => 0,
   'File::Slurp' => 0,
-	'Dancer::Session::PSGI' => 0,
-	'Dancer::Session::Cookie' => 0,
 	'Dancer::Session::DBI' => 0,
-	'DBD::SQLite' => 0,
+	'DBD::mysql' => 0,
 	'List::MoreUtils' => 0,
 	'Moo' => 0,
 	'Moose' => 0,
@@ -49,12 +47,10 @@ my $requires = {
   'Catmandu::FedoraCommons' => 0,
   'Template::Plugin::File' => 0,
   'Catmandu::MediaMosa' => 0,
-  'Plack::Session::Store::DBI' => 0,
   'XML::Simple' => 0
 };
 my $recommends = {
-	'Starman' => 0,
-	'DBD::mysql' => 0
+	'Starman' => 0
 };
 my $build = Module::Build->new(
 	module_name => 'Imaging',

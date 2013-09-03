@@ -559,7 +559,7 @@ post '/scans/:_id/:status' => sub {
           $scan->{new_user} = session('user')->{login};
 
         }
-        #registered: terug verplaatsen van 03_processed naar 02_registered
+        #registered: terug verplaatsen van processed naar registered
         elsif($status_to eq "registered"){
           my $new_path = mount()."/".$mount_conf->{subdirectories}->{registered}."/".$scan->{_id};
           if(-d $scan->{path} && $scan->{path} ne $new_path){
