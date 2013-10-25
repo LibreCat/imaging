@@ -19,8 +19,7 @@ scans->each(sub{
 });
 close $fh;
 
-#mv 02_processed 02_registered
-#mkdir 03_processed
+#mv 02_processed 02_imaging/registered of 02_imaging/processed
 
 #itereer over scans, verplaats status_history naar tabel 'logs', en wijzig 'path' =>  TODO: effectieve create van 02_registered en 03_processed + test of paden nog werken
 open $fh,"<:utf8",$filename or die($!);
@@ -45,11 +44,11 @@ while(my $scan_id = <$fh>){
     #02_processed bestaat niet meer, wel 02_imaging/registered
     $scan->{path} =~ s/02_processed/02_imaging\/registered/;
     
-    #<> 'registered'? Verplaatsen naar 03_processed
+    #<> 'registered'? Verplaatsen naar 02_imaging/processed
     if($scan->{status} ne "registered"){
 
       my $new_path = $scan->{path};
-      $new_path =~ s/02_registered/03_processed/;
+      $new_path =~ s/registered/processed/;
       if(-d $scan->{path}){
         unless( move($scan->{path},$new_path) ){
           say STDERR "error while trying to move ".$scan->{path}." to $new_path, aborting..";

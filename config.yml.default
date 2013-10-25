@@ -324,7 +324,7 @@ human_readable:
  published_error: "publicatie fout"
  purge: "verwijder"
  purged: "verwijderd"
-directory_to_query: ["Imaging::Dir::Query::BAG","Imaging::Dir::Query::RUG01","Imaging::Dir::Query::Default"]
+
 profile_detector:
  #opgelet: laatste in de lijst geldt als default, en wordt dus niet getest!
  list: [["BAG","Imaging::Profile::BAG"],["TAR","Imaging::Profile::TAR"],["NARA","Imaging::Profile::NARA"]]
@@ -403,21 +403,8 @@ profiles:
      args: 
       store: meercat
      on_error: "continue"
-mediamosa:
- drush_command:
-  mmnara: "drush -r /usr/share/mediamosa mmnara %s"
-  import_directory: "drush -r /usr/share/mediamosa mm-import-directory %s"
-  'bt-bag': "drush -r /usr/share/mediamosa bt-bag %s %s"
- rest_api:
-  user: "bt"
-  password: "bt"
-  base_url: "http://localhost/mediamosa"
 archive_site:
  mount_incoming_bag: "/mnt/data01/03_grep/process-in/BAG"
  base_url: "https://grep.ugent.be"
- rest_api:
-  path: "/app/api"
 publication_site:
  base_url: "http://adore.ugent.be"
-fedora:
- args: ["http://localhost:4000/fedora","",""]

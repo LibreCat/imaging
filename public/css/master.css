@@ -18,3 +18,8 @@ background-color: #f2dede;
 .table tbody tr.info td {
   background-color: #d9edf7;
 }
+
+label.control-label-styled {
+  padding-right: 10px;
+  font-weight:bold;
+}

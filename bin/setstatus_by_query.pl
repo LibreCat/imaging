@@ -7,7 +7,7 @@ use Catmandu::Sane;
 use Getopt::Long;
 
 sub usage {
-  return "usage: $0 --status <status> --query <query>\n";
+  "usage: $0 --status <status> --query <query>\n";
 }
 
 my($query,$status);

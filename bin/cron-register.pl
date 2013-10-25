@@ -3,12 +3,16 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Catmandu qw(:load);
 use Dancer qw(:script);
-use Imaging::Util qw(:files :data);
+use Catmandu::Sane;
+use Catmandu::Util qw(require_package :is :array);
+
+use Imaging::Util qw(:files :data :lock);
 use Imaging::Dir::Info;
 use Imaging::Bag::Info;
 use Imaging::Profile::BAG;
-use Catmandu::Sane;
-use Catmandu::Util qw(require_package :is :array);
+use Imaging::Meercat qw(:all);
+use Imaging qw(:all);
+
 use File::Basename qw();
 use File::Copy qw(copy move);
 use Cwd qw(abs_path);
@@ -16,198 +20,31 @@ use File::Spec;
 use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 use Time::HiRes;
-use all qw(Imaging::Dir::Query::*);
 use English '-no_match_vars';
 use Archive::BagIt;
-use File::Pid;
 use IO::CaptureOutput qw(capture_exec);
 use Data::UUID;
-use Imaging::Meercat qw(:all);
-use Imaging qw(:all);
-use File::Temp qw(tempfile);
 
 my $pidfile;
-my $pid;
-BEGIN {
-   
+INIT {
   #voer niet uit wanneer andere instantie van imaging-register.pl draait!
   $pidfile = "/tmp/imaging-register.pid";
-  $pid = File::Pid->new({
-    file => $pidfile
-  });
-  if(-f $pid->file && $pid->running){
-    die("Cannot run while registration is running\n");
-  }
-
-  #plaats lock
-  say "this process id: $$";
-  -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
-  $pid->pid($$);
-  $pid->write or die("could not place lock!");
-
+  acquire_lock($pidfile);
 }
 END {
   #verwijder lock
-  $pid->remove if $pid;
+  release_lock($pidfile) if $pidfile && -f $pidfile;
 }
-
-
 
 #variabelen
 sub mount_conf {
   config->{mounts}->{directories} ||= {};
 }
-sub directory_translator_packages {
-  state $c = do {
-    my $config = config;
-    my $list = [];
-    if(is_array_ref($config->{directory_to_query})){
-      $list = $config->{directory_to_query};
-    }
-    $list;
-  };
-}
-sub directory_translator {
-  state $translators = {};
-  my $package = shift;
-  $translators->{$package} ||= $package->new;
-}
-sub directory_to_queries {
-  my $path = shift;
-  my $packages = directory_translator_packages();    
-  my @queries = ();
-  foreach my $p(@$packages){
-    my $trans = directory_translator($p);
-    if($trans->check($path)){
-      @queries = $trans->queries($path);
-      last;
-    }
-  }
-  if(scalar @queries == 0){
-    push @queries,File::Basename::basename($path);
-  }
-  @queries;
-}
-
-sub fix_baginfo {
-  my $scan = $_[0];
-
-  my $baginfo = {};
-  my $path_baginfo = $scan->{path}."/bag-info.txt";
-
-  #poging 1: lees bag-info.txt
-  if(-f $path_baginfo){
-    $baginfo = Imaging::Bag::Info->new(source => $path_baginfo)->hash;
-  }
-  #poging 1 mislukt (bestand leeg of niet bestaande), maar wel opgehaalde metadata?
-  if(keys %$baginfo == 0 && scalar(@{ $scan->{metadata} })){
-    $baginfo = $scan->{metadata}->[0]->{baginfo};
-  }
-
-  #inspecteer of 'Archive-Id' erin zit
-  if(
-    is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0
-  ){
-
-    $scan->{archive_id} = $baginfo->{'Archive-Id'}->[0];
-
-  }else{
-
-    $scan->{archive_id} = "archive.ugent.be:".Data::UUID->new->create_str;
-    $baginfo->{'Archive-Id'} = [ $scan->{archive_id} ];
-    say "new archive_id:".$scan->{archive_id};
-
-  }
-
-  #stel alles nu in metadata in
-  if(scalar(@{ $scan->{metadata} })){
-    $_->{baginfo} = $baginfo for @{$scan->{metadata}};
-  }
-
-  write_to_baginfo($path_baginfo,$baginfo);
-
-
-}
 
 my $this_file = File::Basename::basename(__FILE__);
 say "$this_file started at ".local_time;
 
-
-#stap 1: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
-#wijziging/update moet gebeuren door qa_manager
-#
-#   1ste metadata-record wordt neergeschreven in bag-info.txt: mediamosa pikt deze metadata op
-
-my @ids_ok_for_metadata = ();
-{
-  my $query = "-status:\"incoming\" AND -status:\"incoming_error\" AND -status:\"done\"";
-
-  say "retrieving metadata for good scans ($query)";
-
-  index_scan->searcher( 
-
-    query => $query,
-    reify => scans(),
-    limit => 1000
-
-  )->each(sub{
-    
-    my $scan = shift;
-
-    if(
-      !(is_array_ref($scan->{metadata}) && scalar(@{ $scan->{metadata} }) > 0 ) &&
-      !(-f $scan->{path}."/__FIXME.txt")
-    ){
-      push @ids_ok_for_metadata,$scan->{_id};
-    }
-
-  });
-
-}
-
-foreach my $id(@ids_ok_for_metadata){
-  my $scan = scans()->get($id);
-  my $path = $scan->{path};
-  my $dir_info = Imaging::Dir::Info->new(dir => $scan->{path});
-
-  #parse hash indien bag-info.txt bestaat, en indien niet, maak nieuwe aan
-  my $baginfo_path = $scan->{path}."/bag-info.txt";
-  my $baginfo;
-  if(-f $baginfo_path){
-    $baginfo = Imaging::Bag::Info->new(source => $baginfo_path)->hash;
-  }
-
-  #haal metadata op
-  my @queries = directory_to_queries($path);
-
-  foreach my $query(@queries){
-    my $res = meercat()->search(query => $query,fq => 'source:rug01');
-    $scan->{metadata} = [];
-    if($res->total > 0){
-
-      for my $hit(@{ $res->hits }){              
-
-        push @{ $scan->{metadata} },{
-          fSYS => $hit->{fSYS},#000000001
-          source => $hit->{source},#rug01
-          fXML => $hit->{fXML},
-          baginfo => defined($baginfo) ? $baginfo : marc_to_baginfo_dc(xml => $hit->{fXML})
-        };
-
-      }
-      last;
-    }
-
-  }
-  my $num = scalar(@{$scan->{metadata}});
-  say "\tscan ".$scan->{_id}." has $num metadata-records";
-
-  update_scan($scan);
-}
-#release memory
-@ids_ok_for_metadata = ();
-
-#stap 2: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_registered (en maak hierbij manifest)
+#stap 1: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_registered (en maak hierbij manifest)
 my @incoming_ok = ();
 
 index_scan->searcher(
@@ -223,8 +60,6 @@ index_scan->searcher(
   }
 
 });
-
-
 
 say "registering incoming_ok";
 
@@ -380,7 +215,10 @@ if(!-w $dir_registered){
 
     #schrijf bag-info.txt uit indien het nog niet bestaat, en schrijf archive_id uit
     # door nieuwe bag-info.txt hier neer te schrijven, staat ie niet in __MANIFEST-MD5.txt!
-    fix_baginfo($scan);
+    my($archive_id,$is_new) = sync_baginfo($scan);
+    if($is_new){
+      say "\t\tnew archive_id: $archive_id";
+    }
 
     #chmod(775,$new_path) is enkel van toepassing op bestanden en mappen direct onder new_path..
     {
@@ -401,7 +239,7 @@ if(!-w $dir_registered){
     #afgeleiden maken mbv Mediamosa
     if($scan->{profile_id} eq "NARA"){
 
-      my $command = sprintf(config->{mediamosa}->{drush_command}->{mmnara},$scan->{path});
+      my $command = drush_command("mmnara",$scan->{path});
       say "\t$command";
       my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
       say "stderr:";
@@ -430,7 +268,7 @@ if(!-w $dir_registered){
 #release memory
 @incoming_ok = ();
 
-#opladen naar GREP
+#stap 2: opladen naar GREP
 my @qa_control_ok = ();
 
 index_scan->searcher(
@@ -450,7 +288,10 @@ for my $scan_id(@qa_control_ok){
   my $scan = scans->get($scan_id);
 
   #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
-  fix_baginfo($scan);
+  my($archive_id,$is_new) = sync_baginfo($scan);
+  if($is_new){
+    say "\t\tnew archive_id: $archive_id";
+  }
 
   #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
   my $grep_path = config->{'archive_site'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
@@ -460,11 +301,7 @@ for my $scan_id(@qa_control_ok){
   #geen bag? Maak er dan een bag van
   if(!$is_bag){
 
-    $command = sprintf(
-      config->{mediamosa}->{drush_command}->{'bt-bag'},
-      $scan->{path},                   
-      $grep_path
-    );
+    $command = drush_command('bt-bag',$scan->{path},$grep_path);
       
   }else{
 
@@ -479,7 +316,8 @@ for my $scan_id(@qa_control_ok){
   say "stdout:";
   say $stdout;
 
-  next if !$success;
+  #damit: drush always returns 0, even in case of a failure!
+  next if !$success || is_string($stderr);
 
   my $uid = data_at(config,"mounts.directories.owner.archive") || "fedora";
   my $gid = data_at(config,"mounts.directories.group.archive") || "fedora";
@@ -492,6 +330,9 @@ for my $scan_id(@qa_control_ok){
   say $stderr;
   say "stdout:";
   say $stdout;    
+
+  next unless $success;
+
   say "scan archiving";
 
   my $log;
@@ -505,121 +346,5 @@ for my $scan_id(@qa_control_ok){
 }
 #release memory
 @qa_control_ok = ();
-
-#stap 4: haal lijst uit aleph met alle te scannen objecten en sla die op in 'list' => kan wijzigen, dus STEEDS UPDATEN
-say "updating list scans for projects";
-my @project_ids = ();
-projects()->each(sub{ 
-  push @project_ids,$_[0]->{_id}; 
-});
-
-foreach my $project_id(@project_ids){
-
-  my $project = projects()->get($project_id);
-
-  my $query = $project->{query};
-  next if !$query;
-
-  my @list = ();
-
-  my $meercat = meercat();
-
-  #no searcher for meercat: 'fq' is not implemented by Catmandu::Searchable
-  my($offset,$limit,$total) = (0,1000,0);
-
-  my $fetch_successfull = 1;
-  try{
-    do{
-
-      my $res = $meercat->search(query => $query,fq => 'source:rug01',start => $offset,limit => $limit);
-      $total = $res->total;
-
-      foreach my $hit(@{ $res->hits }){
-        my $ref = from_xml($hit->{fXML},ForceArray => 1);
-
-        #zoek items in Z30 3, en nummering in Z30 h
-        my @items = ();
-
-        foreach my $marc_datafield(@{ $ref->{'marc:datafield'} }){
-          if($marc_datafield->{tag} eq "Z30"){
-            my $item = {
-              source => $hit->{source},
-              fSYS => $hit->{fSYS}
-            };
-            foreach my $marc_subfield(@{$marc_datafield->{'marc:subfield'}}){
-              if($marc_subfield->{code} eq "3"){
-                $item->{"location"} = $marc_subfield->{content};
-              }
-              if($marc_subfield->{code} eq "h" && $marc_subfield->{content} =~ /^V\.\s+(\d+)$/o){
-                $item->{"number"} = $1;
-              }
-            }
-            say "\t".join(',',values %$item);
-            push @items,$item;
-          }
-        }
-        push @list,@items;
-      }
-
-      $offset += $limit;
-
-    }while($offset < $total);
-
-  }catch{
-    $fetch_successfull = 0;
-    say STDERR $_;
-  };
-  if($fetch_successfull){
-    say "storing new object list to database";
-    $project->{list} = \@list;
-    $project->{datetime_last_modified} = Time::HiRes::time;
-    projects()->add($project);
-    project2index($project);
-  }
-};
-{
-  my($success,$error) = index_project->commit;   
-  die(join('',@$error)) if !$success;
-}
-#release memory
-@project_ids = ();
-
-
-#stap 4: ken scans toe aan projects
-say "assigning scans to projects";
-my($fh,$filename) = tempfile(UNLINK => 1);
-die("could not create temporary file\n") unless $fh;
-binmode($fh,":utf8");
-say "writing all ids to temporary file $filename";
-
-scans->each(sub{ 
-  say $fh $_[0]->{_id} if !-f $_[0]->{path}."/__FIXME.txt";
-});
-
-close $fh;
-
-open $fh,"<:utf8",$filename or die($!);
-
-while(my $scan_id = <$fh>){
-  chomp $scan_id;
-  my $scan = scans->get($scan_id);
-  my $result = index_project->search(query => "list:\"".$scan->{_id}."\"");
-  if($result->total > 0){        
-    my @p_ids = map { $_->{_id} } @{ $result->hits };
-    $scan->{project_id} = \@p_ids;
-    say "assigning project $_ to scan ".$scan->{_id} foreach(@p_ids);
-  }else{
-    $scan->{project_id} = [];
-  }    
-  scans->add($scan);
-  scan2index($scan);
-}
-
-close $fh;
-
-{
-  my($success,$error) = index_scan->commit;   
-  die(join('',@$error)) if !$success;
-}
 
 say "$this_file ended at ".local_time;

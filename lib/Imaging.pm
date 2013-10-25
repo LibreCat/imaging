@@ -12,8 +12,23 @@ use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
 use Exporter qw(import);
-our @EXPORT_OK=qw(projects scans users index_scan index_log index_project meercat formatted_date local_time project2index scan2index log2index marcxml_flatten update_scan update_log set_status dir_info list_files logs get_log scan2doc log2docs);
-our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
+
+my @store = qw(projects scans users logs meercat index_scan index_log index_project project2index scan2index log2index logs get_log scan2doc log2docs update_scan update_log set_status);
+my @time = qw(formatted_date local_time);
+my @marc = qw(marcxml_flatten);
+my @file = qw(dir_info list_files);
+my @mediamosa = qw(mediamosa drush_command);
+my @fedora = qw(fedora);
+our @EXPORT_OK = (@store,@time,@marc,@file,@mediamosa,@fedora);
+our %EXPORT_TAGS = (
+  all => [@EXPORT_OK],
+  store => \@store,
+  time => \@time,
+  marc => \@marc,
+  file => \@file,
+  mediamosa => \@mediamosa,
+  fedora => \@fedora
+);
 
 sub projects { 
   state $projects = store()->bag("projects");
@@ -265,6 +280,27 @@ sub new_log {
     status_history => [],
     datetime_last_modified => Time::HiRes::time
   };
-};
+}
+
+sub mediamosa {
+  state $mediamosa = do {
+    require Catmandu::MediaMosa;
+    Catmandu::MediaMosa->new(
+      %{ Catmandu->config->{mediamosa}->{options} }
+    );
+  };
+}
+sub fedora {
+  state $fedora = do {
+    require Catmandu::FedoraCommons;
+    my $fedora_args = Catmandu->config->{fedora}->{options} // [];
+    Catmandu::FedoraCommons->new(@$fedora_args);
+  };
+}
+sub drush_command {
+  state $c = is_hash_ref(Catmandu->config->{drush}) ? Catmandu->config->{drush} : {};
+  my($type,@args)=@_;
+  exists($c->{$type}) ? sprintf($c->{$type},@args) : undef;
+}
 
 1;

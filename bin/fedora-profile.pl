@@ -1,26 +1,24 @@
 #!/usr/bin/env perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Catmandu::Sane;
-use Catmandu::Util qw(:is);
-use Try::Tiny;
-use Catmandu::FedoraCommons;
+use Imaging qw(:fedora);
 use Getopt::Long;
 use DateTime::Format::Strptime;
 
-my($username,$password,$file);
-my $url = "http://localhost:4000/fedora";
+my($file);
 
 GetOptions(
   "file=s" => \$file
 );
 
-my $fedora = Catmandu::FedoraCommons->new($url,"","");
 my $date_formatter = DateTime::Format::Strptime->new(pattern => '%FT%T.%NZ');
 
 open my $fh,"<:utf8",$file or die($!);
 while(<$fh>){
   chomp;
   say $_;
-  my $result = $fedora->getObjectProfile(pid => $_);
+  my $result = fedora()->getObjectProfile(pid => $_);
   die($result->error) unless $result->is_ok;
   my $obj = $result->parse_content;
   

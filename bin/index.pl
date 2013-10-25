@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use Catmandu qw(:load);
 use Catmandu::Sane;
-use Imaging qw(:all);
+use Imaging qw(:store);
 
 say "indexing scans:";
 scans->each(sub{

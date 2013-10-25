@@ -25,6 +25,11 @@
           [%- END %]
       </select>
       <input type="hidden" name="page" id="page" value="[% result.page %]">
+      [% IF result.hits && result.hits.size > 0 %]
+        <button class="btn">
+          <a href="[% request.uri_base %]/export/scans?q=[% params.q | html %]&amp;sort=[% params.item('sort') | html %]">exporteer</a>
+        </button>
+      [% END %]
     </div>
 </form>
 
@@ -78,6 +83,7 @@
   </ul>
 </div>
 [%- END %]
+
 
 [%- IF result.hits && result.hits.size > 0 %]
 <table class="table table-striped table-condensed">

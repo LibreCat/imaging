@@ -5,7 +5,7 @@ use Catmandu qw(:load);
 use Catmandu::Sane;
 use File::Path qw(rmtree);
 use File::Basename;
-use Imaging qw(:all);
+use Imaging qw(:store);
 
 #delete scans with status 'done'
 index_scan->searcher(

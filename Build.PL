@@ -47,7 +47,8 @@ my $requires = {
   'Catmandu::FedoraCommons' => 0,
   'Template::Plugin::File' => 0,
   'Catmandu::MediaMosa' => 0,
-  'XML::Simple' => 0
+  'XML::Simple' => 0,
+  'Barcode::ZBar' => 0
 };
 my $recommends = {
 	'Starman' => 0

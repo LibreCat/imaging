@@ -4,12 +4,17 @@ use Catmandu::Util qw(:is);
 use File::Basename;
 use File::MimeInfo;
 use File::Find;
+use File::Pid;
 use Exporter qw(import);
 
-our @EXPORT_OK = qw(data_at file_info mtime mtime_latest_file can_delete_file);
+my @export_files = qw(file_info mtime_latest_file mtime can_delete_file write_to_baginfo);
+my @export_data = qw(data_at);
+my @export_lock = qw(acquire_lock release_lock check_lock);
+our @EXPORT_OK = (@export_files,@export_data,@export_lock);
 our %EXPORT_TAGS = (
-  files => [qw(file_info mtime_latest_file mtime can_delete_file)],
-  data => [qw(data_at)]
+  files => \@export_files,
+  data => \@export_data,
+  "lock" => \@export_lock
 );
 
 sub _data_at {
@@ -106,6 +111,33 @@ sub can_delete_file {
     }
   }
   return 1;
+}
+sub check_lock {
+  my $pidfile = shift;
+  my $pid = File::Pid->new({ file => $pidfile });
+  if(-f $pid->file && $pid->running){
+    die("Could not acquire lock at $pidfile. Process ".$pid->pid." is still running");
+  }
+  $pid;
+}
+sub acquire_lock {
+  my $pidfile = shift;
+  my $pid = check_lock($pidfile);
+  #plaats lock
+  -f $pidfile && ($pid->remove or die("Could not remove lockfile $pidfile"));
+  $pid->pid($$);
+  $pid->write or die("Could not write lock at $pidfile\n");
+}
+sub release_lock {
+  File::Pid->new({ file => $_[0] })->remove;
+}
+sub write_to_baginfo {
+  my($path,$baginfo)=@_;
+  open my $fh,">:encoding(UTF-8)",$path or die($!);
+  for my $key(sort keys %$baginfo){
+    print $fh sprintf("%s: %s\r\n",$key,$_) for(@{ $baginfo->{$key} });
+  }
+  close $fh;
 }
 
 1;

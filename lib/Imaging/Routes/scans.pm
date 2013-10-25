@@ -26,7 +26,6 @@ Hash::Merge::set_behavior('RIGHT_PRECEDENT');
 hook before_template_render => sub {
   my $tokens = $_[0];
   $tokens->{status_change_conf} = status_change_conf();
-  $tokens->{get_prev_next} = \&get_prev_next;
 };
 get('/scans',sub {
   my $params = params;
@@ -50,12 +49,6 @@ get('/scans',sub {
   }catch{
     push @errors,"ongeldige zoekvraag";
   };
-
-  #registreer identifiers voor prev/next (i.e. 1ste pagina)
-  my @ids;
-  push @ids,$_->{_id} for @{ $result->hits() || [] };
-  session(search_scan_ids => \@ids);
-  session(search_scan_start => $opts{start});
 
   template('scans',{
     result => $result,
@@ -706,83 +699,6 @@ sub ensure_path {
 sub can_edit_metadata {
   state $edit_when = config->{app}->{scans}->{edit}->{'when'} // [];
   array_includes($edit_when,$_[0]);
-}
-
-sub get_prev_next {
-  my $scan_id = shift;
-
-  my $ids = session('search_scan_ids') || [];
-  my $start = session('search_scan_start');
-
-  return {} unless(is_natural($start) && scalar(@$ids));
-
-  my $params = {};
-  my $c = {
-    last_scans_q => 'q',
-    last_scans_num => 'num',
-    last_scans_sort => 'sort',
-    last_scans_fq => 'fq',
-    last_scans_page => 'page'    
-  };
-  
-  for(keys %$c){
-    $params->{ $c->{$_} } = session($_);
-  }  
-
-
-  my $res = {};
-
-  #Imaging/Routes/Control/First.pm houdt laatste zoekparameters bij, en herstelt deze in de url-parameters
-  my %search_params = params_to_search($params);
-  #haal enkel _id op
-  $search_params{fl} = "_id";
-
-  #sliding window moet 'start' aanpassen..
-  $search_params{start} = $start;
-  
-  #poging 1: zoek prev en next in huidige lijst
-  for(my $i = 0;$i < scalar(@$ids);$i++){
-    if($ids->[$i] eq $scan_id){
-      $res->{prev} = $i > 0 ? $ids->[$i - 1]:undef;
-      $res->{next} = $i < (scalar(@$ids) - 1) ? $ids->[$i+1] : undef;
-      last;
-    }
-  }
-
-  #prev niet gevonden: we zitten aan de linkerrand, dus search_scan_ids moet verschoven worden naar links
-  if(!$res->{prev}){
-    if($search_params{start} > 0){
-
-      $search_params{start}--;
-      my $result = index_scan()->search(%search_params);
-      $ids = [];
-      push @$ids,$_->{_id} for @{ $result->hits() || []};
-      session(search_scan_ids => $ids);
-      session(search_scan_start => $search_params{start});
-      $res->{prev} = $ids->[0];
-
-    }
-  }
-  #next niet gevonden: we zitten aan de rechterrand, dus search_scan_ids moet verschoven worden naar rechts
-  elsif(!$res->{next}){    
-
-    $search_params{start}++;
-    my $result = index_scan()->search(%search_params);
-    if($result->total > 0){
-
-      $ids = [];
-      push @$ids,$_->{_id} for @{ $result->hits() || []};
-      session(search_scan_ids => $ids);
-      $res->{next} = $ids->[-1];
-      session(search_scan_start => $search_params{start});
-
-    }
-  }
-
-  #probleem: indien je rechtstreeks (i.e. zonder op een link te klikken) naar een scan gaat,
-  #dan gaat deze logica niet op. De prev of next ligt dan wss noch in de lijst, noch in de rand.
-
-  $res;
 }
 
 true;

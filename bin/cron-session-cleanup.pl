@@ -6,26 +6,17 @@ use Catmandu::Util qw(:is);
 use Catmandu::Sane;
 use DBI;
 use Imaging qw(local_time);
-use File::Pid;
+use Imaging::Util qw(:lock);
 
-my($pid,$pidfile);
-BEGIN {
+my($pidfile);
+INIT {
 	#voer niet uit wanneer andere instantie draait!
 	$pidfile = "/tmp/imaging-session-cleanup.pid";
-	$pid = File::Pid->new({
-		file => $pidfile
-	});
-	if(-f $pid->file && $pid->running){
-		die("Cannot run while other instance is running\n");
-	}
-	#plaats lock
-  -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
-  $pid->pid($$);
-	$pid->write or die("unable to place lock!");
+  acquire_lock($pidfile);
 }
 END {
   #verwijder lock
-  $pid->remove if $pid;
+  release_lock($pidfile) if $pidfile && -f $pidfile;
 }
 
 my $session_options = config->{session_options};

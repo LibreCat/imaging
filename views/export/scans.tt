@@ -1,0 +1,39 @@
+<h1>Creëer lijsten</h1>
+
+<h2>scans</h2>
+
+<form class="form-horizontal" action="/export/scans">
+  <div class="control-group">
+    <label for="q" class="control-label">Query</label>
+    <div class="controls">
+      <input type="text" name="q" id="q" value="[% params.q | html %]" size="50"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="sort" class="control-label">Sorteer</label>
+    <div class="controls">
+      [% SET params.item("sort") = settings.app.scans.default_sort IF params.item("sort") == "" %]
+      <select name="sort" id="sort">
+        <option value=""></option>
+        [%- FOREACH item IN settings.app.scans.sorts %]
+
+        <option value="[% item.0 %] asc" [% IF params.item("sort") == ( item.0 _ " asc" ) %]selected="selected"[% END %]>[% item.1 %] oplopend</option>
+        <option value="[% item.0 %] desc" [% IF params.item("sort") == ( item.0 _ " desc" ) %]selected="selected"[% END %]>[% item.1 %] aflopend</option>
+
+        [%- END %]
+      </select>     
+    </div>
+  </div>
+  <div class="control-group">
+    <label for="filename" class="control-label">Bestandsnaam</label>
+    <div class="controls">
+      <input type="text" name="filename" id="filename" value="[% ( params.filename || 'imaging_export.txt' ) | html %]" size="50"/>
+    </div>
+  </div>
+  <div class="control-group">
+    <div class="controls">
+      <button class="btn" type="submit">Maak lijst</button>
+    </div>
+  </div>
+
+</form>

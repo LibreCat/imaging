@@ -15,8 +15,6 @@
 [% PROCESS inc/errors_messages.tt %]
 [%- IF scan %]
 
-[% PROCESS inc/prev_next.tt %]
-
 <h1>[% scan.item("_id") %]</h1>
 
 <div class="row">
@@ -102,7 +100,7 @@
     [% state = [ scan.status ] %]
   [% IF scan.publication_id && state.grep("^(?:published|published_ok)$") %]
     <dd>
-      <a href="[% settings.item("grim").base_url _ "/view/" _ scan.publication_id %]">grim</a>
+      <a href="[% settings.item("publication_site").base_url _ "/view/" _ scan.publication_id %]">grim</a>
     </dd>
   [% ELSE %]
     <dd>-</dd>

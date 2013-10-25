@@ -2,6 +2,7 @@ package Imaging::Dir::Query::BAG;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 use Imaging::Bag::Info;
+use File::Basename;
 use Try::Tiny;
 use Moo;
 
@@ -20,8 +21,9 @@ sub queries {
     my $baginfo = $parser->hash;
     #haal (goede) queries op
     if(is_array_ref($baginfo->{'Archive-Id'}) && scalar(@{ $baginfo->{'Archive-Id'} }) > 0){
-
-      @queries = "\"".$baginfo->{'Archive-Id'}->[0]."\"";
+  
+      #archive_id is mogelijks nieuw gemaakt door Imaging, en bestaat nog niet in Meercat
+      @queries = "\"".$baginfo->{'Archive-Id'}->[0]."\" OR ".basename($path);
 
     }else{
 

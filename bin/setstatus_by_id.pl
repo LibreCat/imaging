@@ -3,11 +3,11 @@ use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Catmandu qw(:load);
 use Catmandu::Sane;
-use Imaging qw(:all);
+use Imaging qw(:store);
 use Getopt::Long;
 
 sub usage {
-  say "usage: $0 --status <status> [--file <file>]";
+  "usage: $0 --status <status> [--file <file>]\n";
 }
 
 my($file,$status);

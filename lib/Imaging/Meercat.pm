@@ -6,7 +6,7 @@ use POSIX qw(floor strftime);
 use XML::LibXML;
 use XML::LibXML::XPathContext;
 use Exporter qw(import);
-our @EXPORT_OK=qw(size_pretty write_to_baginfo marc_to_baginfo_dc);
+our @EXPORT_OK=qw(size_pretty marc_to_baginfo_dc);
 our %EXPORT_TAGS = (all=>[@EXPORT_OK]);
 
 
@@ -70,14 +70,6 @@ sub size_pretty {
   }else{
     return "0 KB";
   }
-}
-sub write_to_baginfo {
-  my($path,$baginfo)=@_;
-  open my $fh,">:encoding(UTF-8)",$path or die($!);
-  for my $key(sort keys %$baginfo){
-    print $fh sprintf("%s: %s\r\n",$key,$_) for(@{ $baginfo->{$key} });
-  }
-  close $fh;
 }
 sub marc_to_baginfo_dc {
   my(%opts) = @_;

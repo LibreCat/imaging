@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use Catmandu::Sane;
 use Catmandu qw(:load);
-use Imaging qw(:all);
+use Imaging qw(:store);
 use Getopt::Long;
 
 my($id);

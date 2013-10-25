@@ -5,7 +5,7 @@ use Dancer qw(:script);
 use Catmandu qw(:load);
 use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
-use Imaging::Util qw(:data :files);
+use Imaging::Util qw(:data :files :lock);
 use Imaging::Profiles;
 use Imaging::Dir::Info;
 use List::MoreUtils;
@@ -16,28 +16,20 @@ use File::Spec;
 use Try::Tiny;
 use Time::HiRes;
 use Time::Interval;
-use File::Pid;
 our($a,$b);
 
-my($pid,$pidfile);
-BEGIN {
+my($pidfile);
+INIT {
 	#voer niet uit wanneer andere instantie draait!
 	$pidfile = "/tmp/imaging-check.pid";
-	$pid = File::Pid->new({
-		file => $pidfile
-	});
-	if(-f $pid->file && $pid->running){
-		die("Cannot run while other instance is running\n");
-	}
-	#plaats lock
-	say "this process id: $$";
-  -f $pidfile && ($pid->remove or die("could not remove lockfile $pidfile!"));
-  $pid->pid($$);
-	$pid->write or die("unable to place lock!");
+  acquire_lock($pidfile);
+  #voer niet uit wanneer imaging-register.pl draait!
+  my $pidfile_register = "/tmp/imaging-register.pid";
+  check_lock($pidfile_register);
 }
 END {
-    #verwijder lock
-    $pid->remove if $pid;
+  #verwijder lock
+  release_lock($pidfile) if $pidfile && -f $pidfile;
 }
 use Imaging qw(:all);
 
@@ -75,17 +67,6 @@ sub file_seconds_old {
 }
 sub file_is_busy {
   file_seconds_old(shift) <= upload_idle_time();
-}
-
-
-#voer niet uit wanneer imaging-register.pl draait!
-
-my $pidfile_register = "/tmp/imaging-register.pid";
-my $pid_register = File::Pid->new({
-  file => $pidfile_register
-});
-if(-f $pid_register->file && $pid_register->running){
-  die("Cannot run while registration is running\n");
 }
 
 my $mount_conf = mount_conf;
