@@ -11,15 +11,18 @@ use Digest::MD5 qw(md5_hex);
 use Imaging::Dir::Info;
 use Imaging::Util qw(:files);
 use XML::Simple;
+use File::Path qw(mkpath);
+use Try::Tiny;
 use Exporter qw(import);
 
 my @store = qw(projects scans users logs meercat index_scan index_log index_project project2index scan2index log2index logs get_log scan2doc log2docs update_scan update_log set_status);
+my @mount = qw(mount_conf mount subdirectories sanity_check);
 my @time = qw(formatted_date local_time);
 my @marc = qw(marcxml_flatten);
 my @file = qw(dir_info list_files);
 my @mediamosa = qw(mediamosa drush_command);
 my @fedora = qw(fedora);
-our @EXPORT_OK = (@store,@time,@marc,@file,@mediamosa,@fedora);
+our @EXPORT_OK = (@store,@mount,@time,@marc,@file,@mediamosa,@fedora);
 our %EXPORT_TAGS = (
   all => [@EXPORT_OK],
   store => \@store,
@@ -27,7 +30,8 @@ our %EXPORT_TAGS = (
   marc => \@marc,
   file => \@file,
   mediamosa => \@mediamosa,
-  fedora => \@fedora
+  fedora => \@fedora,
+  mount => \@mount
 );
 
 sub projects { 
@@ -301,6 +305,60 @@ sub drush_command {
   state $c = is_hash_ref(Catmandu->config->{drush}) ? Catmandu->config->{drush} : {};
   my($type,@args)=@_;
   exists($c->{$type}) ? sprintf($c->{$type},@args) : undef;
+}
+sub mount_conf {
+  state $mount_conf = do {
+    my $config = Catmandu->config;
+    my $mc;
+    if(
+      is_hash_ref($config->{mounts}) && is_hash_ref($config->{mounts}->{directories}) &&
+      is_string($config->{mounts}->{directories}->{path})
+    ){
+      my $topdir = $config->{mounts}->{directories}->{path};
+      my $subdirectories = is_hash_ref($config->{mounts}->{directories}->{subdirectories}) ? $config->{mounts}->{directories}->{subdirectories} : {};
+      foreach(qw(ready registered processed)){
+        $subdirectories->{$_} = is_string($subdirectories->{$_}) ? $subdirectories->{$_} : $_;
+      }
+      $mc = {
+        path => $topdir,
+        subdirectories => $subdirectories
+      }
+    }else{
+      $mc = {
+        path => "/tmp",
+        subdirectories => {
+          "ready" => "ready",
+          "registered" => "registered",
+          "processed" => "processed"
+        }
+      };
+    }
+    $mc;
+  };
+}
+sub mount {
+  state $mount = mount_conf->{path};
+}
+sub subdirectories {
+  state $subdirectories = mount_conf->{subdirectories};
+}
+sub sanity_check {
+  my @errors = ();
+  try{
+    my $mount = mount();
+    my $subdirectories = subdirectories();
+    -d $mount || mkpath($mount);
+    foreach(keys %$subdirectories){
+      my $sub = "$mount/".$subdirectories->{$_};
+      mkpath($sub) if !-d $sub;
+      if(!-w $sub){
+        push @errors,"systeem heeft geen schrijfrechten op map $_ ";
+      }
+    }
+  }catch{
+    push @errors,$_;
+  };
+  scalar(@errors)==0,\@errors;
 }
 
 1;

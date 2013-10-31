@@ -1,0 +1,14 @@
+#!/bin/bash
+if [[ -z $IMAGING_HOME ]];then
+  IMAGING_HOME="/opt/Imaging"
+fi
+if [[ -z $IMAGING_LOG_DIR ]];then
+  IMAGING_LOG_DIR="/var/log/Imaging"
+fi
+
+$IMAGING_HOME/bin/delete_scans_done.pl >> $IMAGING_LOG_DIR/cron-delete-scans-done.log 2>> $IMAGING_LOG_DIR/cron-delete-scans-done.error
+#bag-info.txt aangemaakt met "Archive-Id" (toegevoegd aan bag-info.txt indien bag)
+$IMAGING_HOME/bin/cron-register.pl >> $IMAGING_LOG_DIR/cron-register.log 2>> $IMAGING_LOG_DIR/cron-register.error
+#bag-info.txt wordt aangevuld met rest van metadata
+$IMAGING_HOME/bin/cron-update-metadata.pl >> $IMAGING_LOG_DIR/cron-update-metadata.log 2>> $IMAGING_LOG_DIR/cron-update-metadata.error
+$IMAGING_HOME/bin/cron-archive.pl >> $IMAGING_LOG_DIR/cron-archive.log 2>> $IMAGING_LOG_DIR/cron-archive.error

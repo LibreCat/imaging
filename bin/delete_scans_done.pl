@@ -1,6 +1,4 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
 use Catmandu qw(:load);
 use Catmandu::Sane;
 use File::Path qw(rmtree);

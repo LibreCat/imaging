@@ -1,8 +1,8 @@
 package Imaging::Routes::archived;
 use Dancer ':syntax';
-use Catmandu::FedoraCommons;
 use Catmandu::Sane;
 use Catmandu::Util qw(:is :array);
+use Imaging qw(:fedora);
 use Try::Tiny;
 use Dancer::Plugin::Imaging::Routes::Common;
 
@@ -56,8 +56,5 @@ get '/archive' => sub {
   return json($response);
 
 };
-sub fedora {
-  state $fedora = Catmandu::FedoraCommons->new(@{ config->{fedora}->{args} // [] });
-}
 
 true;

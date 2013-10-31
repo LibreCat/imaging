@@ -1,0 +1,9 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+MAILTO=root
+HOME=/
+
+LOGDIR="/var/log/Imaging";
+DATE=`date +%Y-%m-%d`;
+
+00 00 * * * imaging /opt/Imaging/bin/list_files.sh &>> $LOGDIR/ls_ld.${DATE}.txt

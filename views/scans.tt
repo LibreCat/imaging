@@ -123,7 +123,7 @@
         </a>
     </td>
     <td>
-        [% IF scan.project_id.size > 1 %]
+        [% IF scan.project_id && scan.project_id.size > 1 %]
             (meerdere)
         [% ELSE %]
             <a href="[% request.uri_base %]/scans?q=[% "project_id:\"" _ scan.project_id.0 _ "\"" | uri %]">
@@ -132,7 +132,7 @@
         [% END %]
     </td>
     <td>
-        [% IF scan.project_id.size > 1 %]
+        [% IF scan.project_id && scan.project_id.size > 1 %]
             (meerdere)
         [% ELSE %]
             [% scan.project_name_subproject.0 || "-" %]

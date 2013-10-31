@@ -1,8 +1,5 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
 use Catmandu qw(:load);
-use Dancer qw(:script);
 use Catmandu::Sane;
 use Catmandu::Util qw(require_package :is :array);
 
@@ -11,19 +8,17 @@ use Imaging::Dir::Info;
 use Imaging::Bag::Info;
 use Imaging::Profile::BAG;
 use Imaging::Meercat qw(:all);
+use Imaging::Scan qw(:all);
 use Imaging qw(:all);
 
-use File::Basename qw();
+use File::Basename;
 use File::Copy qw(copy move);
-use Cwd qw(abs_path);
 use File::Spec;
-use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 use Time::HiRes;
 use English '-no_match_vars';
 use Archive::BagIt;
 use IO::CaptureOutput qw(capture_exec);
-use Data::UUID;
 
 my $pidfile;
 INIT {
@@ -36,12 +31,7 @@ END {
   release_lock($pidfile) if $pidfile && -f $pidfile;
 }
 
-#variabelen
-sub mount_conf {
-  config->{mounts}->{directories} ||= {};
-}
-
-my $this_file = File::Basename::basename(__FILE__);
+my $this_file = basename(__FILE__);
 say "$this_file started at ".local_time;
 
 #stap 1: registreer scans die 'incoming_ok' zijn, en verplaats ze naar 02_registered (en maak hierbij manifest)
@@ -128,9 +118,9 @@ if(!-w $dir_registered){
     my $this_uid = getpwuid($UID);
     my $this_gid = getgrgid($EGID);
 
-    my $uid = data_at(config,"mounts.directories.owner.registered") || $this_uid;
-    my $gid = data_at(config,"mounts.directories.group.registered") || $this_gid;
-    my $rights = data_at(config,"mounts.directories.rights.registered") || "775";
+    my $uid = data_at(Catmandu->config,"mounts.directories.owner.registered") || $this_uid;
+    my $gid = data_at(Catmandu->config,"mounts.directories.group.registered") || $this_gid;
+    my $rights = data_at(Catmandu->config,"mounts.directories.rights.registered") || "775";
 
     
     my($uname) = getpwnam($uid);
@@ -154,7 +144,7 @@ if(!-w $dir_registered){
     }
 
     my $old_path = $scan->{path};
-    my $new_path = "$dir_registered/".File::Basename::basename($old_path);   
+    my $new_path = "$dir_registered/".basename($old_path);   
 
 
     #maak manifest aan nog vóór de move uit te voeren! (move is altijd gevaarlijk..)            
@@ -265,86 +255,5 @@ if(!-w $dir_registered){
 
   }
 }
-#release memory
-@incoming_ok = ();
-
-#stap 2: opladen naar GREP
-my @qa_control_ok = ();
-
-index_scan->searcher(
-
-  query => "status:\"qa_control_ok\"",
-  limit => 1000
-
-)->each(sub{
-
-  push @qa_control_ok,$_[0]->{_id};
-
-});
-
-
-for my $scan_id(@qa_control_ok){
-
-  my $scan = scans->get($scan_id);
-
-  #archive_id ? => baseer je enkel op bag-info.txt (en NOOIT op naamgeving map, ook al heet die "archive-ugent-be-lkfjs" )
-  my($archive_id,$is_new) = sync_baginfo($scan);
-  if($is_new){
-    say "\t\tnew archive_id: $archive_id";
-  }
-
-  #naamgeving map hoeft niet conform te zijn met archive-id (enkel bag-info.txt)
-  my $grep_path = config->{'archive_site'}->{mount_incoming_bag}."/".File::Basename::basename($scan->{path});
-  my $is_bag = Imaging::Profile::BAG->new()->test($scan->{path});
-  my $command;
-
-  #geen bag? Maak er dan een bag van
-  if(!$is_bag){
-
-    $command = drush_command('bt-bag',$scan->{path},$grep_path);
-      
-  }else{
-
-    $command = "cp -R $scan->{path} $grep_path && rm -f $grep_path/__MANIFEST-MD5.txt";
-
-  }
-
-  say "command: $command";
-  my($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-  say "stderr:";
-  say $stderr;
-  say "stdout:";
-  say $stdout;
-
-  #damit: drush always returns 0, even in case of a failure!
-  next if !$success || is_string($stderr);
-
-  my $uid = data_at(config,"mounts.directories.owner.archive") || "fedora";
-  my $gid = data_at(config,"mounts.directories.group.archive") || "fedora";
-  my $rights = data_at(config,"mounts.directories.rights.archive") || "775";
-
-  $command = "sudo chown -R $uid:$gid $grep_path && sudo chmod -R $rights $grep_path";
-  ($stdout,$stderr,$success,$exit_code) = capture_exec($command);
-  say $command;
-  say "stderr:";
-  say $stderr;
-  say "stdout:";
-  say $stdout;    
-
-  next unless $success;
-
-  say "scan archiving";
-
-  my $log;
-  ($scan,$log) = set_status($scan,status => "archiving");
-
-  update_scan($scan);
-  update_log($log,-1);
-
-  say "scan record updated";
-
-}
-#release memory
-@qa_control_ok = ();
 
 say "$this_file ended at ".local_time;

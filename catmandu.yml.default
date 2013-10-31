@@ -45,3 +45,131 @@ directory_to_query:
   - "Imaging::Dir::Query::Barcode"
   - "Imaging::Dir::Query::RUG01"
   - "Imaging::Dir::Query::Default"
+
+profile_detector:
+ #opgelet: laatste in de lijst geldt als default, en wordt dus niet getest!
+ list: [["BAG","Imaging::Profile::BAG"],["TAR","Imaging::Profile::TAR"],["NARA","Imaging::Profile::NARA"]]
+profiles:
+ NARA:
+  description: "inc/profiles/description/NARA.tt"
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkEmpty"
+     args:
+      inverse: 1
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkDirStructure"
+     args:
+      conf:
+       glob: "*.tif *.jpg *.fff *.pdf"
+       all: 1
+       message: "map mag enkel deze bestanden bevatten: *.tif *.jpg *.fff *.pdf. (Submappen zijn niet toegelaten)"
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkTIFF"
+     args:
+      valid_patterns:
+       - '\.(?:tif)$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkJPEG"
+     args:
+      valid_patterns:
+       - '\.jpg$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::NARA::checkFilename"
+     args:
+      types: ["MA","AC","ST"]
+      valid_patterns:
+       - '\.(?:tif|fff|pdf|jpg)$'
+       #- '^(?!manifest-md5\.txt$)'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::NARA::checkAleph"
+     args:
+      store: meercat
+     on_error: "continue"
+ BAG:
+  description: "inc/profiles/description/BAG.tt"
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkBag"
+     args: {}
+     on_error: "stop"
+ TAR:
+  description: "inc/profiles/description/TAR.tt"
+  packages:
+   - class: "Imaging::Test::Dir::scan"
+     args: {}
+     on_error: "stop"
+   - class: "Imaging::Test::Dir::checkPermissions"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::checkEmpty"
+     args:
+      valid_patterns:
+       - '^RUG\d{2}-\d{9}$'
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::TAR::checkNARA"
+     args: {}
+     on_error: "continue"
+   - class: "Imaging::Test::Dir::TAR::checkAleph"
+     args: 
+      store: meercat
+     on_error: "continue"
+
+mounts:
+ directories:
+  path: "/mnt/data01"
+  owner:
+   registered: imaging
+   processed: imaging
+   archive: fedora
+  group:
+   registered: imaging
+   processed: imaging
+   archive: fedora
+  rights:
+   registered: "775"
+   processed: "775" 
+   archive: "775"
+  subdirectories:
+   ready: "01_ready"
+   registered: "02_imaging/registered"
+   processed: "02_imaging/processed"   
+  network_directories:
+
+   #vergeet de slash niet na file:// die in windows localhost aangeeft!
+   ready:
+    #windows: "file:///X:"
+    windows: "file://nasan1n.ugent.be/ready"
+
+   registered:
+    #windows: "file:///Y:"
+    windows: "file://nasan1n.ugent.be/registered"
+
+   processed:
+    #windows: "file:///Y:"
+    windows: "file://nasan1n.ugent.be/processed"
+  ready: 
+   #warn 90 days after first arrival
+   warn_after: 
+    days: 90
+   #delete 30 days after the warning
+   delete_after:
+    days: 30
+   #how long till directory is processed?
+   upload_idle_time:
+    seconds: 10
+archive_site:
+ mount_incoming_bag: "/mnt/data01/03_grep/process-in/BAG"
+ base_url: "https://grep.ugent.be"
+publication_site:
+ base_url: "http://adore.ugent.be"

@@ -4,11 +4,9 @@ use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
-use Catmandu qw(store);
 use Catmandu::Util qw(:is);
-use Try::Tiny;
 
-any('/status',sub {
+get('/status',sub {
 
   my $params = params;
   my @users;

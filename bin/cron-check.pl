@@ -1,15 +1,12 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
-use Dancer qw(:script);
+use Catmandu::Sane;
 use Catmandu qw(:load);
 use Catmandu::Util qw(require_package :is :array);
-use Catmandu::Sane;
 use Imaging::Util qw(:data :files :lock);
 use Imaging::Profiles;
 use Imaging::Dir::Info;
 use List::MoreUtils;
-use File::Basename qw();
+use File::Basename;
 use File::Path;
 use Cwd qw(abs_path);
 use File::Spec;
@@ -34,19 +31,16 @@ END {
 use Imaging qw(:all);
 
 sub profiles_conf {
-  config->{profiles} ||= {};
+  Catmandu->config->{profiles} ||= {};
 }
 sub profile_detector {
   state $r = Imaging::Profiles->new(
-    list => config->{profile_detector}->{list} || []
+    list => Catmandu->config->{profile_detector}->{list} || []
   );
-}
-sub mount_conf {
-  config->{mounts}->{directories};
 }
 sub upload_idle_time {
   state $upload_idle_time = do {
-    my $config = config;
+    my $config = Catmandu->config;
     my $time = data_at($config,"mounts.directories.ready.upload_idle_time");
     my $return;
     if($time){
@@ -72,8 +66,8 @@ sub file_is_busy {
 my $mount_conf = mount_conf;
 my $scans = scans;
 
-my $this_file = File::Basename::basename(__FILE__);
-say "$this_file started at ".local_time;
+my $this_file = basename(__FILE__);
+say "$this_file started at ".local_time."\n";
 
 #stap 1: zoek scans
 # 1. lijst mappen
@@ -82,7 +76,7 @@ say "$this_file started at ".local_time;
 #   3.1. staat __FIXME.txt in de map? Doe dan niets
 #   3.2. check hoe oud de nieuwste file in de map is. Indien nog niet zo lang geleden, wacht dan
 
-say "looking for scans in ".$mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."\n";
+say "looking if users have scans in ".$mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready};
 
 my @scans_ready = ();
 
@@ -90,15 +84,15 @@ users->each(sub{
 
     my $user = $_[0];
 
-    say $user->{_id};
+    say " ".$user->{_id};
 
     my $ready = $mount_conf->{path}."/".$mount_conf->{subdirectories}->{ready}."/".$user->{login};
 
     if(! -d $ready ){
-      say "directory $ready does not exist";
+      say "  directory $ready does not exist";
       return;
     }elsif(!getpwnam($user->{login})){
-      say "user $user->{login} does not exist";
+      say "  user $user->{login} does not exist";
       return;
     }
     try{
@@ -108,21 +102,21 @@ users->each(sub{
         chomp($dir);    
         
         if(!(-d -r $dir)){
-          say "directory $dir is not readable, so ignoring..";
+          say "  directory $dir is not readable, so ignoring..";
           next;
         }
         #wacht tot __FIXME.txt verwijderd is
         elsif(-f "$dir/__FIXME.txt"){
-          say "directory '$dir' has to be fixed, so ignoring..";
+          say "  directory '$dir' has to be fixed, so ignoring..";
           next;
         }
         #wacht totdat er lange tijd niets met de map is gebeurt!!
         elsif(file_is_busy($dir)){
-          say "directory '$dir' probably busy";
+          say "  directory '$dir' probably busy";
           next;
         }
 
-        my $basename = File::Basename::basename($dir);
+        my $basename = basename($dir);
         my $scan = $scans->get($basename);
 
         #map komt nog niet voor in databank
@@ -130,7 +124,7 @@ users->each(sub{
 
           my $mtime = mtime_latest_file($dir);
 
-          say "adding new record $basename";
+          say "  adding new record $basename";
           my $log;
           $scan = {
             _id => $basename,
@@ -175,18 +169,19 @@ users->each(sub{
 
 });
 
+say "looking for updates for old scans..";
 #stap 2: zijn er scans die opnieuw in het systeem geplaatst moeten worden?
 #regel: indien $scan->{path} niet meer bestaat, dan wordt dit toegepast!
 for my $scan_dir(@scans_ready){
   
-  my $scan_id = File::Basename::basename($scan_dir);
+  my $scan_id = basename($scan_dir);
   my $scan = $scans->get($scan_id);
 
   #opgelet: reeds gecontroleerde scans met status ~ incoming vallen niet onder deze regeling!
   next if -d $scan->{path};
   
   #edit path
-  say "resetting path from ".$scan->{path}." to $scan_dir";
+  say " resetting path from ".$scan->{path}." to $scan_dir";
   $scan->{path} = $scan_dir;
   $scan->{warnings} = [];
 
@@ -204,10 +199,11 @@ sub get_package {
   my($class,$args)=@_;
   require_package($class)->new(%$args);
 }
+say "checking which incoming scans to test..";
 my @scan_ids_test = ();
 foreach my $scan_dir(@scans_ready){
 
-  my $scan_id = File::Basename::basename($scan_dir);
+  my $scan_id = basename($scan_dir);
   my $scan = $scans->get($scan_id);
 
   #check nieuwe directories (opgelet: ook record zonder profile_id onder)
@@ -242,7 +238,11 @@ foreach my $scan_dir(@scans_ready){
   }
 
 };
-
+if(scalar(@scan_ids_test)){
+  say "starting test";
+}else{
+  say "no scans to test found";
+}
 foreach my $scan_id(@scan_ids_test){
 
   my $scan = $scans->get($scan_id);
@@ -252,7 +252,7 @@ foreach my $scan_id(@scan_ids_test){
   #report that this scan is busy
   $scans->add($scan);  
 
-  say "checking $scan_id at $scan->{path}";
+  say " checking $scan_id at $scan->{path}";
 
   #get profile
   my $profile_id = profile_detector->get_profile($scan->{path});
@@ -267,7 +267,7 @@ foreach my $scan_id(@scan_ids_test){
     $dir_error = $_;    
   };
   if($dir_error){
-    say "error while trying to list files in ".$scan->{path}.": $dir_error";
+    say "  error while trying to list files in ".$scan->{path}.": $dir_error";
     next;
   }
 
@@ -282,7 +282,7 @@ foreach my $scan_id(@scan_ids_test){
     !($profile = profiles_conf->{$profile_id})
   ){
     
-    say STDERR "strange, profile_id '$profile_id' is defined, but no profile configuration could be found";
+    say "  strange, profile_id '$profile_id' is defined, but no profile configuration could be found";
     next;
 
   }else{
@@ -323,4 +323,4 @@ foreach my $scan_id(@scan_ids_test){
 
 }
 
-say "$this_file ended at ".local_time;
+say "\n$this_file ended at ".local_time;

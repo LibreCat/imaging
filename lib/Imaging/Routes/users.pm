@@ -4,8 +4,7 @@ use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
-use Catmandu qw(store);
-use Catmandu::Util  qw(:is);
+use Catmandu::Util qw(:is);
 use Digest::MD5 qw(md5_hex);
 use Try::Tiny;
 

@@ -41,8 +41,8 @@
 
     <div class="tab-pane active" id="tab-files">
       [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
-      [% directory = settings.mounts.directories.path _ "/" _ settings.mounts.directories.subdirectories.ready _ "/" %]
-      [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ path.replace(directory,"") %]
+      [% directory = catmandu_conf.mounts.directories.path _ "/" _ catmandu_conf.mounts.directories.subdirectories.ready _ "/" %]
+      [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.ready.windows _ "/" _ path.replace(directory,"") %]
       <p>
         <a class="btn btn-mini" href="[% scan_system_directory %]">open map</a>
       </p>

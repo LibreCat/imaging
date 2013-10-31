@@ -1,8 +1,8 @@
 package Imaging::Routes::Control::Last;
 use Dancer ':syntax';
 use Catmandu::Sane;
-use Imaging qw(users);
-use Dancer::Plugin::Imaging::Routes::Common;
+use Catmandu;
+use Imaging qw(users :mount);
 use Dancer::Plugin::Auth::RBAC;
 
 prefix undef;
@@ -13,6 +13,7 @@ hook before_template_render => sub {
   $tokens->{authd} = authd();
   $tokens->{mount_conf} = mount_conf();
   $tokens->{mount} = mount();
+  $tokens->{catmandu_conf} = Catmandu->config();
 };
 
 any('/not_found',sub{

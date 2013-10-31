@@ -3,7 +3,6 @@ use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging qw(index_scan);
 use Catmandu::Sane;
-use Catmandu;
 
 get('/lost',sub{
   #welke mappen zijn 'incoming*', maar staan blijkbaar niet meer op hun plaats?

@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
 use Catmandu::Sane;
+use Catmandu qw(:load);
 use Imaging qw(:fedora);
 use Data::Dumper;
 

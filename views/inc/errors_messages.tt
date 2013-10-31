@@ -1,11 +1,12 @@
-<div class="row">
+<div class="row" id="errors">
   [%- FOREACH error IN errors %]
   <div class="alert alert-error span8">
     <a class="close" data-dismiss="alert" href="#">×</a>
     <strong>[% error.replace("_"," ") | html %]</strong>
   </div>
   [%- END %]
-  <ul class="messages">
+</div>
+<div class="row" id="messages">  
   [%- FOREACH message IN messages %]
   <div class="alert alert-info span8">
     <a class="close" data-dismiss="alert" href="#">×</a>

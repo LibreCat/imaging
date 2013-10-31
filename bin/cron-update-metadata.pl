@@ -9,7 +9,7 @@ use Imaging::Util qw(:files :data :lock);
 use Imaging::Dir::Info;
 use Imaging::Bag::Info;
 
-use File::Basename qw();
+use File::Basename;
 use all qw(Imaging::Dir::Query::*);
 
 my $pidfile;
@@ -55,12 +55,12 @@ sub directory_to_queries {
     }
   }
   if(scalar @queries == 0){
-    push @queries,File::Basename::basename($path);
+    push @queries,basename($path);
   }
   @queries;
 }
 
-my $this_file = File::Basename::basename(__FILE__);
+my $this_file = basename(__FILE__);
 say "$this_file started at ".local_time;
 
 #stap 1: haal metadata op (alles met incoming_ok of hoger, ook die zonder project) => enkel indien goed bevonden, maar metadata wordt slechts EEN KEER opgehaald
@@ -103,7 +103,7 @@ foreach my $id(@ids_ok_for_metadata){
 
   #parse hash indien bag-info.txt bestaat, en indien niet, maak nieuwe aan
   my $baginfo_path = $scan->{path}."/bag-info.txt";
-  my $baginfo;
+  my $baginfo = {};
   if(-f $baginfo_path){
     $baginfo = Imaging::Bag::Info->new(source => $baginfo_path)->hash;
   }
@@ -118,13 +118,16 @@ foreach my $id(@ids_ok_for_metadata){
 
       for my $hit(@{ $res->hits }){              
 
+        my $dc = marc_to_baginfo_dc(xml => $hit->{fXML});
+        (%$baginfo) = (%$dc,%$baginfo);
+
         push @{ $scan->{metadata} },{
           fSYS => $hit->{fSYS},#000000001
           source => $hit->{source},#rug01
           fXML => $hit->{fXML},
-          baginfo => defined($baginfo) ? $baginfo : marc_to_baginfo_dc(xml => $hit->{fXML})
+          baginfo => $baginfo
         };
-
+        write_to_baginfo($baginfo_path,$baginfo);
       }
       last;
     }

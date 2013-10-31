@@ -1,0 +1,6 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+MAILTO=imaging
+HOME=/home/imaging
+
+00 00 * * * imaging /home/njfranck/report-02-processed/bin/test_pdf.sh

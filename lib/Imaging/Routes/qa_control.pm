@@ -4,7 +4,6 @@ use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging qw(:all);
 use Dancer::Plugin::Auth::RBAC;
 use Catmandu::Sane;
-use Catmandu qw(store);
 use Catmandu::Util qw(:is);
 use Try::Tiny;
 use List::MoreUtils qw(first_index);

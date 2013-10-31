@@ -6,7 +6,7 @@
 <dl class="dl-horizontal">
   [%- FOREACH user_login IN stats.ready.keys.sort %]
   <dt>
-    [% settings.mounts.directories.subdirectories.ready _ "/" _ user_login %]	
+    [% catmandu_conf.mounts.directories.subdirectories.ready _ "/" _ user_login %]	
   </dt>
   <dd>
     [%- IF stats.ready.${user_login} > 0 %]

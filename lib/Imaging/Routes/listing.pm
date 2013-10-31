@@ -3,7 +3,7 @@ use Dancer ':syntax';
 use Dancer::Plugin::Imaging::Routes::Common;
 use Imaging qw(:all);
 use Catmandu::Sane;
-use Catmandu qw(store);
+use Catmandu;
 use Catmandu::Util qw(:is);
 use Try::Tiny;
 use File::Find;

@@ -48,7 +48,8 @@ my $requires = {
   'Template::Plugin::File' => 0,
   'Catmandu::MediaMosa' => 0,
   'XML::Simple' => 0,
-  'Barcode::ZBar' => 0
+  'Barcode::ZBar' => 0,
+  'Plack::Middleware::MethodOverride' => 0
 };
 my $recommends = {
 	'Starman' => 0

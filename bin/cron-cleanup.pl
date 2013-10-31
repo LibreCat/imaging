@@ -1,17 +1,15 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
-use Dancer qw(:script);
 use Catmandu qw(:load);
 use Catmandu::Util qw(require_package :is :array);
 use Catmandu::Sane;
 use Imaging::Util qw(:data :files :lock);
-use File::Basename qw();
+use File::Basename;
 use File::Path;
 use File::Spec;
 use Try::Tiny;
 use Time::HiRes;
 use Time::Interval;
+use Imaging qw(:all);
 
 my($pidfile);
 INIT {
@@ -26,14 +24,10 @@ END {
   #verwijder lock
   release_lock($pidfile) if $pidfile && -f $pidfile;
 }
-use Imaging qw(:all);
 
-sub mount_conf {
-  config->{mounts}->{directories};
-}
 sub upload_idle_time {
   state $upload_idle_time = do {
-    my $config = config;
+    my $config = Catmandu->config;
     my $time = data_at($config,"mounts.directories.ready.upload_idle_time");
     my $return;
     if($time){
@@ -53,7 +47,7 @@ sub upload_idle_time {
 #-1 means never
 sub warn_after {
   state $warn_after = do {
-    my $config = config;
+    my $config = Catmandu->config;
     my $warn_after = data_at($config,"mounts.directories.ready.warn_after");
     my $return;
     if($warn_after){
@@ -83,7 +77,7 @@ sub do_warn {
 #-1 means never
 sub delete_after {
   state $delete_after = do {
-    my $config = config;
+    my $config = Catmandu->config;
     my $delete_after = data_at($config,"mounts.directories.ready.delete_after");
     my $return;
     if($delete_after){
@@ -130,7 +124,7 @@ sub file_is_busy {
 my $mount_conf = mount_conf;
 my $scans = scans;
 
-my $this_file = File::Basename::basename(__FILE__);
+my $this_file = basename(__FILE__);
 say "$this_file started at ".local_time;
 
 #stap 1: zoek scans
@@ -191,7 +185,7 @@ my @delete = ();
 my @warn = ();
 say "inspecting directories for warning or removal";
 foreach my $scan_dir(@scans_ready){
-  my $basename = File::Basename::basename($scan_dir);
+  my $basename = basename($scan_dir);
   
   my $scan = scans()->get($basename);
   if(!$scan){

@@ -1,8 +1,5 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
 use Catmandu qw(:load);
-use Dancer qw(:script);
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
 
@@ -10,7 +7,7 @@ use Imaging::Util qw(:files :data :lock);
 use Imaging::Dir::Info;
 use Imaging::Scan qw(:all);
 
-use File::Basename qw();
+use File::Basename;
 use File::Copy qw(copy move);
 use File::Path qw(mkpath rmtree);
 use Try::Tiny;
@@ -92,7 +89,7 @@ sub mm_total_finished {
 
 }
 
-my $this_file = File::Basename::basename(__FILE__);
+my $this_file = basename(__FILE__);
 say "$this_file started at ".local_time;
 
 my $scans = scans();

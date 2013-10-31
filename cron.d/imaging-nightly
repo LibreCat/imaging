@@ -1,0 +1,9 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+MAILTO=imaging
+HOME=/
+
+IMAGING_HOME=/opt/Imaging
+IMAGING_LOG=/var/log/Imaging
+
+10 19 * * * imaging /opt/Imaging/bin/imaging-nightly

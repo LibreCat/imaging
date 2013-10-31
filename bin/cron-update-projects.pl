@@ -1,11 +1,8 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
 use Catmandu::Sane;
 use Catmandu qw(:load);
-use Dancer qw(:script);
 use Catmandu::Util qw(:is :array);
-use File::Basename qw();
+use File::Basename;
 use File::Spec;
 use Try::Tiny;
 use Time::HiRes;
@@ -13,6 +10,7 @@ use Imaging::Meercat qw(:all);
 use Imaging qw(:all);
 use Imaging::Util qw(:lock);
 use File::Temp qw(tempfile);
+use XML::Simple;
 
 my $pidfile;
 INIT {
@@ -30,7 +28,7 @@ END {
 }
 
 #variabelen
-my $this_file = File::Basename::basename(__FILE__);
+my $this_file = basename(__FILE__);
 say "$this_file started at ".local_time;
 
 
@@ -63,7 +61,7 @@ foreach my $project_id(@project_ids){
       $total = $res->total;
 
       foreach my $hit(@{ $res->hits }){
-        my $ref = from_xml($hit->{fXML},ForceArray => 1);
+        my $ref = XMLin($hit->{fXML},ForceArray => 1);
 
         #zoek items in Z30 3, en nummering in Z30 h
         my @items = ();

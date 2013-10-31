@@ -1,6 +1,4 @@
 #!/usr/bin/env perl
-use FindBin;
-use lib "$FindBin::Bin/../lib";
 use Catmandu qw(:load);
 use Imaging qw(:all);
 use Catmandu::Sane;

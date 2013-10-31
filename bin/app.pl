@@ -21,5 +21,6 @@ my $app = sub {
 	Dancer->dance($request);
 };
 builder {
+  enable 'MethodOverride';
   $app;
 };

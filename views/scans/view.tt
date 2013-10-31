@@ -6,8 +6,8 @@
 
 [% TO_FIX = 1 %]
 [%- TRY %]
-    [% FIXME = scan.path _ "/__FIXME.txt" %]
-    [%- USE File(FIXME) %]
+  [% FIXME = scan.path _ "/__FIXME.txt" %]
+  [%- USE File(FIXME) %]
 [% CATCH %]
     [% TO_FIX = 0 %]
 [% END %]
@@ -51,7 +51,9 @@
 <dl class="dl-horizontal">
   <dt>status</dt>
   <dd>
-    <a href="[% request.uri_base %]/scans?q=[% "status:\"" _ scan.status _ "\"" | url %]&amp;fq=[% params.fq | uri %]">[% settings.human_readable.${scan.status} || scan.status %]</a>
+    <a href="[% request.uri_base %]/scans?q=[% "status:\"" _ scan.status _ "\"" | url %]&amp;fq=[% params.fq | uri %]">
+      [% settings.human_readable.${scan.status} || scan.status %]
+    </a>
   </dd>
   <dt>profiel</dt>
   <dd>[% scan.profile_id %]</dd>
@@ -87,20 +89,20 @@
     [%- END %]
   </dd>
   <dt>archivering</dt>
-  [% state = [ scan.status ] %]
-  [% IF scan.archive_id %]
+  [% a_url = archive_url(scan) %]
+  [% IF a_url %]
     <dd>
-      <a href="[% settings.item("archive_site").base_url _ "/app/search?func=view&amp;_id=" _ scan.archive_id %]">grep</a>
+      <a href="[% a_url %]">grep</a>
     </dd>
   [% ELSE %]
     <dd>-</dd>
   [% END %]
 
   <dt>publicatie</dt>
-    [% state = [ scan.status ] %]
-  [% IF scan.publication_id && state.grep("^(?:published|published_ok)$") %]
+  [% p_url = publication_url(scan) %]
+  [% IF p_url %]
     <dd>
-      <a href="[% settings.item("publication_site").base_url _ "/view/" _ scan.publication_id %]">grim</a>
+      <a href="[% p_url %]">grim</a>
     </dd>
   [% ELSE %]
     <dd>-</dd>
@@ -120,7 +122,7 @@
       [%- END %]
       </a>
     </li>
-    [%- IF auth.can('scans','status') -%]
+    [%- IF can_change_status(scan) -%]
     <li><a href="#tab-change-status" data-toggle="tab">Wijzig status</a></li>
     [% END %]
     <li><a href="#tab-status-history" data-toggle="tab">Status geschiedenis <span class="badge badge-info">[% log.status_history.size || 0 %]</a></li>
@@ -139,18 +141,18 @@
       [% IF states_in_ready.grep(scan.status).size > 0 -%]
 
         [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
-        [% directory = settings.mounts.directories.path _ "/" _ settings.mounts.directories.subdirectories.ready _ "/" %]
-        [% scan_system_directory = settings.mounts.directories.network_directories.ready.windows _ "/" _ scan.path.replace(directory,"") %]
+        [% directory = catmandu_conf.mounts.directories.path _ "/" _ catmandu_conf.mounts.directories.subdirectories.ready _ "/" %]
+        [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.ready.windows _ "/" _ scan.path.replace(directory,"") %]
 
       [% ELSIF states_in_registered.grep(scan.status).size > 0 %]
 
         [%# file:///V:/registered/BHSL-PAP-0064  %]
-        [% scan_system_directory = settings.mounts.directories.network_directories.registered.windows _ "/"  _ scan.item("_id") %]
+        [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.registered.windows _ "/"  _ scan.item("_id") %]
 
       [% ELSIF states_in_processed.grep(scan.status).size > 0 %]
 
         [%# file:///V:/processed/BHSL-PAP-0064  %]
-        [% scan_system_directory = settings.mounts.directories.network_directories.processed.windows _ "/"  _ scan.item("_id") %]
+        [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.processed.windows _ "/"  _ scan.item("_id") %]
 
       [% ELSE %]
 
@@ -202,12 +204,15 @@
     </div>
 
     <div class="tab-pane" id="tab-metadata">
-      [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
-      <form method="post" class="form-inline pull-right" action="#tab-metadata">
-          <input type="hidden" name="action" value="add_metadata"/>
-          <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata identifier"/><button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button></div>
-      </form>
+
+      [%- IF can_change_metadata(scan) %]
+        <form method="post" class="form-inline pull-right form-add-metadata" action="[% request.uri_for('/scans/' _ scan.item('_id') _ '/metadata') %]">
+          <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata identifier"/>
+            <button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button>
+          </div>
+        </form>
       [%- END %]
+
       [%- FOREACH metadata IN scan.metadata %]
       [%- IF loop.index %]
       <hr/>
@@ -218,22 +223,21 @@
 
         <span class="label metadata_archive" data-id="[% metadata_id %]" style="margin-left:20px">controleren in archief..</span>
 
-        [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX %]
+        [%- IF can_change_metadata(scan) %]
 
-        <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]#tab-metadata" style="display:inline">
+          <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]/metadata" style="display:inline" class="form-add-metadata">
             <button type="submit" onclick="return confirm('Hierdoor wordt de metadata overschreven. Bent u zeker?');" class="tip" title="Herstel originele metadata">
                 <i class="icon-repeat"></i>
             </button>            
-            <input type="hidden" name="action" value="add_metadata" />
             <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
-        </form>
-        <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]#tab-metadata" style="display:inline">
+          </form>
+          <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]/metadata#tab-metadata" style="display:inline" class="form-delete-metadata">
             <button type="submit" title="Verwijder metadata" onclick="return confirm('De metadata wordt onherroepelijk verwijderd. Ben je zeker?')" class="tip">
                 <i class="icon-trash"></i>
             </button>
-            <input type="hidden" name="action" value="delete_metadata" />
             <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
-        </form>
+          </form>
+
         [%- END %]
       </p>
       <div class="tabbable">
@@ -272,7 +276,7 @@
           </div>
           <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
                     
-          [%- IF auth.can('scans','metadata') && !scan.busy && !TO_FIX && settings.app.scans.edit.when.grep(scan.status).size > 0 %]
+          [%- IF can_change_metadata(scan) %]
             <form action="[% request.uri_base %]/scans/[% scan.item('_id')%]/baginfo" method="POST" class="form-horizontal edit-baginfo">
               <div class="btn-group pull-right">
                 <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
@@ -337,7 +341,7 @@
       [%- END %]
     </div>
 
-    [%- IF auth.can('scans','status') -%]
+    [%- IF can_change_status(scan) -%]
     <div class="tab-pane" id="tab-change-status">
       [% PROCESS inc/status.tt %]
     </div>
@@ -388,21 +392,13 @@
 
   </div>
 
-  <!--purge all-->
-  <!--
-  [%- IF auth.can('scans','purge') -%]
-  <div class="alert alert-danger" style="text-align:right">
-    <button id="purge">verwijder</button>
-  </div>
-  [%- END -%]
-  -->
 </div>
 <script type="text/javascript" charset="utf-8">
   var baseUrl = "[% request.uri_base %]";
 
   /* goto tab */
   // Javascript to enable link to tab
-  if (window.location.hash && window.location.hash != "") {
+  if(window.location.hash && window.location.hash != ""){
     $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
   } 
 
@@ -434,7 +430,7 @@
 
   var baginfoConfig = [% settings.app.scans.edit.baginfo.json || "{}" %];
 
-  [%- IF auth.can('scans','metadata') -%]
+  [%- IF can_change_metadata(scan) -%]
 
     $('.baginfo-add').click(function(evt) {
       evt.preventDefault();
@@ -489,6 +485,63 @@
 
     });
 
+    function clear_errors(){
+      $("#errors").empty();
+    }
+    function add_error(error){
+      var errors = $("#errors");
+      var html = "<div class=\"alert alert-error span8\"><a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a><strong>";
+      html += error;
+      html += "</strong></div>";
+      console.log(html);
+      errors.append(html);
+    }
+    function add_errors(errors){
+      clear_errors();
+      for(var i = 0;i < errors.length;i++){
+        add_error(errors[i]);
+      } 
+    }
+
+    $('form.form-add-metadata').submit(function(evt){
+      evt.preventDefault();
+      var f = $(this);
+      var data = {};
+      var s = $(f).serializeArray();
+      for(var i = 0;i < s.length;i++){
+        data[s[i]["name"]] = s[i]["value"];
+      }
+      $.post(f.attr('action'),data,function(res){
+        if(res.status == "ok"){
+          window.location.reload();
+        }else{
+          add_errors(res.errors);
+        }
+      },"json");
+    });
+    $('form.form-delete-metadata').submit(function(evt){
+      evt.preventDefault();
+      var f = $(this);
+      var data = {};
+      var s = $(f).serializeArray();
+      for(var i = 0;i < s.length;i++){
+        data[s[i]["name"]] = s[i]["value"];
+      }
+      $.ajax({
+        type: "DELETE",
+        dataType: "json",
+        url: f.attr("action"),
+        data: data,
+        success:function(res){
+          if(res.status == "ok"){
+            window.location.reload();
+          }else{
+            add_errors(res.errors);
+          }
+        }
+      });
+    });
+
   [% END %]
 
   //submit-on-enter
@@ -499,7 +552,7 @@
     }
   });
 
-  [%- IF auth.can('scans','metadata') -%]
+  [%- IF can_change_metadata(scan) -%]
 
     $('form.edit-baginfo').submit(function(evt) {
       evt.preventDefault();
@@ -638,34 +691,14 @@
     See http://suan.github.io/jquery-keycombinator/
         http://keithcirkel.co.uk/jwerty/
   */
-  [% IF auth.can('scans','metadata') %]
-
-    jwerty.key('ctrl+s',function(ev){
-      ev.preventDefault();
-      $('form.edit-baginfo').submit();    
-    });
-    
-  [% END %]
-
-  jwerty.key('arrow-left',function(evt){
-    evt.preventDefault();
-    var href = $("#link_prev").attr('href');
-    if(href == undefined)return;
-    window.location.href = href;
-  });
-
-  jwerty.key('arrow-right',function(evt){
-    evt.preventDefault();
-    var href = $("#link_next").attr('href');
-    if(href == undefined)return;
-    window.location.href = href;
+  jwerty.key('ctrl+s',function(ev){
+    ev.preventDefault();
+    $('form.edit-baginfo').submit();    
   });
   jwerty.key('esc',function(evt){
     evt.preventDefault();
     var url = "[% request.uri_for('/scans') %]";
     window.location.href = url;
   });
-
-
 </script>
 [%- END %]

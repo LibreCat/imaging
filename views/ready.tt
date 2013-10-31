@@ -5,7 +5,7 @@
 [%- states_in_ready = settings.status.collection.in_ready -%]
 
 <p>
-<a class="btn btn-mini" href="[% settings.mounts.directories.network_directories.ready.windows _ "/" _ user.login %]">open map</a>
+<a class="btn btn-mini" href="[% catmandu_conf.mounts.directories.network_directories.ready.windows _ "/" _ user.login %]">open map</a>
 </p>
 
 [%- IF directories && directories.size > 0 %]
