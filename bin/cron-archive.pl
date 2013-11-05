@@ -95,8 +95,8 @@ for my $scan_id(@qa_control_ok){
   my $log;
   ($scan,$log) = set_status($scan,status => "archiving");
 
-  update_scan($scan);
   update_log($log,-1);
+  update_scan($scan);
 
   say "scan record updated";
 

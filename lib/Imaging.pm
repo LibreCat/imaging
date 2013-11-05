@@ -212,8 +212,14 @@ sub scan2doc {
     }
   }
 
+  my @comments;
+  for my $c(@{ $scan->{comments} || [] }){
+    push @comments,$c->{text};
+  }
+  $doc->{comments} = \@comments;
+
   #opkuisen
-  my @deletes = qw(metadata comments busy warnings new_path new_user publication_id);
+  my @deletes = qw(metadata busy warnings new_path new_user publication_id);
   delete $doc->{$_} for(@deletes);
 
   $doc;

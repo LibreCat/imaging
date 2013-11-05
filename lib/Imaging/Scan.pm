@@ -132,8 +132,8 @@ sub return_scan {
   #gedaan ermee
   delete $scan->{$_} for(qw(busy new_path new_user asset_id));
 
-  update_scan($scan);
   update_log($log,-1);
+  update_scan($scan);
 
   my @errors;
   #done? rechten aanpassen aan dat van 01_ready submap

@@ -53,9 +53,9 @@ profiles:
  NARA:
   description: "inc/profiles/description/NARA.tt"
   packages:
-   - class: "Imaging::Test::Dir::scan"
-     args: {}
-     on_error: "stop"
+#   - class: "Imaging::Test::Dir::scan"
+#     args: {}
+#     on_error: "stop"
    - class: "Imaging::Test::Dir::checkPermissions"
      args: {}
      on_error: "continue"

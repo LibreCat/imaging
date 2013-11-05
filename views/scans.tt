@@ -1,4 +1,6 @@
 [%- USE date -%]
+[% USE Dumper %]
+[% USE String %]
 <h1>Scanopdrachten</h1>
 
 <form method="GET" class="form-inline autosubmit">
@@ -55,6 +57,7 @@
     <th>klaar</th>
     <th>laatst gewijzigd</th>
     <th>melding</th>
+    <th>mededeling</th>
   </tr>
   [%- FOREACH scan IN result.hits %]
     [% file_error = 0 %]
@@ -103,6 +106,16 @@
         [% IF !( scan.metadata_id && scan.metadata_id.size == 1 ) %]
             <span class="label label-warning" title="scan bevat [% scan.metadata_id.size || 0 %] metadata records">metadata!</span>
         [% END %]
+    </td>
+    <td>
+      [% comments = scan.comments.last %]
+      [% IF comments %]
+        <span title="[% comments %]">
+          [% String.new(comments).truncate(30,"..") || "-" %]
+        </span>
+      [% ELSE %]
+        -
+      [% END %]
     </td>
   </tr>
   [%- END %]

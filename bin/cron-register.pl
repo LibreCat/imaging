@@ -101,8 +101,8 @@ if(!-w $dir_registered){
         ($scan,$log) = set_status($scan,status => "incoming_error");
         $scan->{check_log} = \@errors;
 
-        update_scan($scan);
         update_log($log,-1);
+        update_scan($scan);
 
         #see you later!
         #not recoverable: aborting
@@ -250,8 +250,8 @@ if(!-w $dir_registered){
       }
     }
 
-    update_scan($scan);
     update_log($log,-1);
+    update_scan($scan);
 
   }
 }

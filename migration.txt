@@ -48,3 +48,4 @@
 4.  aanpassen config.yml en environments/*.yml (hoofdconfiguratie zit nu in config.yml ipv in de environment)
 5.  aanpassen cron.d (cron-* scripts gewijzigd)
 6. configuratie van mediamosa rest en fedora rest nu in catmandu.yml
+7. voeg "comments" aan core0 toe, en maak het multiValued

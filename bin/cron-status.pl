@@ -267,8 +267,8 @@ my $index_scan = index_scan();
     my $log;
     ($scan,$log) = set_status($scan,status => "archived");
 
-    update_scan($scan);
     update_log($log,-1);
+    update_scan($scan);
 
   }
 }

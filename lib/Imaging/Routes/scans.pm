@@ -692,8 +692,12 @@ sub change_status {
           comments => $comments
         );
         #neem op in comments
-        my $text = "wijzing status $status_from naar $status_to";
-        $text .= ":$comments" if $comments;
+        my $text = "";
+        unless(is_string($comments)){
+          $text = "wijzing status $status_from naar $status_to";
+        }else{
+          $text = $comments;
+        }
         push @{ $scan->{comments} ||= [] },{
           datetime => local_time(),
           text => $text,
@@ -765,10 +769,10 @@ sub change_status {
           }
         }
 
-        scans->add($scan);
-        scan2index($scan);
         logs()->add($log);
         log2index($log,-1);
+        scans->add($scan);
+        scan2index($scan);
 
         if($opts{commit}){
           change_status_commit();
