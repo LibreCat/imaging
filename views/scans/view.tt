@@ -4,256 +4,269 @@
 [%- USE JSON -%]
 [%- USE MARCTools -%]
 
-[% TO_FIX = 1 %]
-[%- TRY %]
-  [% FIXME = scan.path _ "/__FIXME.txt" %]
-  [%- USE File(FIXME) %]
-[% CATCH %]
-    [% TO_FIX = 0 %]
-[% END %]
-
 [% PROCESS inc/errors_messages.tt %]
+
 [%- IF scan %]
 
-<h1>[% scan.item("_id") %]</h1>
+  <h1>[% scan.item("_id") %]</h1>
 
-<div class="row">
-  [%- FOREACH warning IN scan.warnings %]
-  <div class="alert alert-error span8">
-    <strong>[% warning.text | html %]</strong>
-  </div>
-  [%- END %]
-</div>
-
-
-[% IF scan.status == "registered" && scan.busy && scan.asset_id %]
-  <div class="alert">
-      <strong>opgelet!</strong>Mediamosa maakt momenteel afgeleiden. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
-  </div>
-  <div class="progress progress-info" id="job_progress" data-id="[% scan.asset_id %]">
-    <div class="bar" style="width:0%"></div>
-  </div>
-  
-[%- ELSIF scan.busy %]
-    <div class="alert">
-        <strong>opgelet!</strong> Dit record is nog niet geregistreerd door het systeem. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
+  <div class="row">
+    [%- FOREACH warning IN scan.warnings %]
+    <div class="alert alert-error span8">
+      <strong>[% warning.text | html %]</strong>
     </div>
-[%- END %]
-
-
-[% IF TO_FIX %]
-    <div class="alert">
-        <strong>opgelet!</strong> Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map.
-    </div>
-[% END %]
-
-
-<dl class="dl-horizontal">
-  <dt>status</dt>
-  <dd>
-    <a href="[% request.uri_base %]/scans?q=[% "status:\"" _ scan.status _ "\"" | url %]&amp;fq=[% params.fq | uri %]">
-      [% settings.human_readable.${scan.status} || scan.status %]
-    </a>
-  </dd>
-  <dt>profiel</dt>
-  <dd>[% scan.profile_id %]</dd>
-  [% IF projects && projects.size > 0 %]
-    [% FOREACH project IN projects %]
-      [% IF loop.index == 0 %]
-      <dt>projecten</dt>
-      [% ELSE %]
-      <dt></dt>
-      [% END %]
-      <dd>
-        [%- IF project %]
-        [%- q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" -%]
-        <a href="[% request.uri_base %]/scans?q=[% q | uri %]&amp;fq=[% params.fq | uri %]">[% project.name %] - [% project.name_subproject %]</a>
-        [%- ELSE %]
-        -
-        [%- END %]
-      </dd>
-    [% END %]
-  [% ELSE %]
-
-    <dt>projecten</dt>
-    <dd>-</dd>
-
-  [% END %]
-  <dt>gebruiker</dt>
-  <dd>
-    [%- IF user %]
-    [%- q = "user_id:\"" _ user.login _ "\"" -%]
-    <a href="[% request.uri_base %]/scans?q=[% q | uri %]">[% user.login %]</a>
-    [%- ELSE %]
-    -
     [%- END %]
-  </dd>
-  <dt>archivering</dt>
-  [% a_url = archive_url(scan) %]
-  [% IF a_url %]
-    <dd>
-      <a href="[% a_url %]">grep</a>
-    </dd>
-  [% ELSE %]
-    <dd>-</dd>
-  [% END %]
+  </div>
 
-  <dt>publicatie</dt>
-  [% p_url = publication_url(scan) %]
-  [% IF p_url %]
-    <dd>
-      <a href="[% p_url %]">grim</a>
-    </dd>
-  [% ELSE %]
-    <dd>-</dd>
-  [% END %]
-</dl>
+  [% IF scan.status == "registered" && scan_is_busy(scan) && scan.asset_id %]
 
-<div class="tabbable">
-  <ul class="nav nav-tabs" id="tab_scan">
-    <li class="active"><a href="#tab-files" data-toggle="tab">Bestanden <span class="badge badge-info">[% files.size || 0 %]</span></a></li>
-    <li>
-      <a href="#tab-metadata" data-toggle="tab">
-      Metadata
-      [%- IF scan.metadata.size > 1 %]
-        <span class="badge badge-warning">multiple</span>
-      [%- ELSIF scan.metadata.size == 0 %]
-        <span class="badge badge-warning">missing</span>
-      [%- END %]
-      </a>
-    </li>
-    [%- IF can_change_status(scan) -%]
-    <li><a href="#tab-change-status" data-toggle="tab">Wijzig status</a></li>
-    [% END %]
-    <li><a href="#tab-status-history" data-toggle="tab">Status geschiedenis <span class="badge badge-info">[% log.status_history.size || 0 %]</a></li>
-    <li><a href="#tab-checklog" data-toggle="tab">Check log <span class="badge badge-info">[% scan.check_log.size || 0 %]</span></a></li>
-    <li><a href="#tab-comments" data-toggle="tab">Comments <span class="badge badge-info">[% scan.comments.size || 0 %]</span></a></li>
-  </ul>
-  <div class="tab-content">
+    <div class="alert">
+        <strong>opgelet!</strong>Mediamosa maakt momenteel afgeleiden. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
+    </div>
+    <div class="progress progress-info" id="job_progress" data-id="[% scan.asset_id %]">
+      <div class="bar" style="width:0%"></div>
+    </div>
+    
+  [%- ELSIF scan_is_busy(scan) %]
 
-    <div class="tab-pane active" id="tab-files">
-      [%- states_in_registered = settings.status.collection.in_registered -%]
-      [%- states_in_processed = settings.status.collection.in_processed -%]
-      [%- states_in_ready = settings.status.collection.in_ready-%]
-
-      [%- do_open = 1 -%]
-
-      [% IF states_in_ready.grep(scan.status).size > 0 -%]
-
-        [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
-        [% directory = catmandu_conf.mounts.directories.path _ "/" _ catmandu_conf.mounts.directories.subdirectories.ready _ "/" %]
-        [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.ready.windows _ "/" _ scan.path.replace(directory,"") %]
-
-      [% ELSIF states_in_registered.grep(scan.status).size > 0 %]
-
-        [%# file:///V:/registered/BHSL-PAP-0064  %]
-        [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.registered.windows _ "/"  _ scan.item("_id") %]
-
-      [% ELSIF states_in_processed.grep(scan.status).size > 0 %]
-
-        [%# file:///V:/processed/BHSL-PAP-0064  %]
-        [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.processed.windows _ "/"  _ scan.item("_id") %]
-
-      [% ELSE %]
-
-          [% do_open = 0 %]
-
-      [% END %]
-
-      [% FOREACH file IN files %]        
-        [% SET statistics.${ file.content_type } = ( statistics.item(file.content_type) || 0) + 1 %]
-      [% END %]
-
-      <div style="position:relative;margin-bottom:15px;">
-      [% IF do_open %]
-        <a class="btn btn-mini" href="[% scan_system_directory %]">open map</a>
-      [% END %]
-      [% IF statistics.keys.size %]
-        &nbsp;&nbsp;&nbsp;&nbsp;
-        <div style="float:right;">
-        [% FOREACH key IN statistics.keys %]
-          [% "<b>" _ key _ "</b>:" _ statistics.item(key) %]&nbsp;
-        [% END %]
-        </div>
-      [% END %]
+      <div class="alert">
+          <strong>opgelet!</strong> Dit record is nog niet geregistreerd door het systeem. Bewerkingen zoals wijzigen van metadata kunnen niet worden uitgevoerd.
       </div>
 
-      <table class="table table-striped">
-        <tr>
-          <th>naam</th>
-          <th>grootte</th>
-          <th>laatst gewijzigd</th>
-          <th>type</th>
-        </tr>
-        [%- FOREACH file IN files %]
-        <tr [% 'class="error"' IF file.size <= 0 %]>
-        [% IF !file.error %]
-          <td>
-            [% file_name = file.path.replace(scan.path _ "/","") %]
-            [%- file_name | html -%]
-          </td>
-          <td><span class="tip" title="[% file.size %] bytes">[% file.size.size_pretty %]</span></td>
-          <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
-          <td>[% file.content_type %]</td>
-        [%- ELSE %]
-          <td colspan="4">[% file.path | html %] <span class="label label-important">error</span></td>
-        [%- END %]
-        </tr>
-        [%- END %]
-      </table>
-    </div>
+  [%- END %]
 
-    <div class="tab-pane" id="tab-metadata">
+  [% IF scan_has_fix(scan) %]
 
-      [%- IF can_change_metadata(scan) %]
-        <form method="post" class="form-inline pull-right form-add-metadata" action="[% request.uri_for('/scans/' _ scan.item('_id') _ '/metadata') %]">
-          <div class="input-append"><input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata identifier"/>
-            <button class="btn tip" type="submit" title="Haal metadata op"><i class="icon-plus"></i></button>
-          </div>
-        </form>
+      <div class="alert">
+          <strong>opgelet!</strong> Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map.
+      </div>
+
+  [% END %]
+
+  <dl class="dl-horizontal">
+    <dt>status</dt>
+    <dd>
+      <a href="[% request.uri_base %]/scans?q=[% "status:\"" _ scan.status _ "\"" | url %]&amp;fq=[% params.fq | uri %]">
+        [% settings.human_readable.${scan.status} || scan.status %]
+      </a>
+    </dd>
+    <dt>profiel</dt>
+    <dd>[% scan.profile_id %]</dd>
+    [% IF projects && projects.size > 0 %]
+
+      [% FOREACH project IN projects %]
+        [% IF loop.index == 0 %]
+        <dt>projecten</dt>
+        [% ELSE %]
+        <dt></dt>
+        [% END %]
+        <dd>
+          [%- IF project %]
+          [%- q = "project_name:\"" _ project.name _ "\" AND project_name_subproject:\"" _ project.name_subproject _ "\"" -%]
+          <a href="[% request.uri_base %]/scans?q=[% q | uri %]&amp;fq=[% params.fq | uri %]">[% project.name %] - [% project.name_subproject %]</a>
+          [%- ELSE %]
+          -
+          [%- END %]
+        </dd>
+      [% END %]
+
+    [% ELSE %]
+
+      <dt>projecten</dt>
+      <dd>-</dd>
+
+    [% END %]
+    <dt>gebruiker</dt>
+    <dd>
+      [%- IF user %]
+        [%- q = "user_id:\"" _ user.login _ "\"" -%]
+        <a href="[% request.uri_base %]/scans?q=[% q | uri %]">[% user.login %]</a>
+      [%- ELSE %]
+      -
       [%- END %]
+    </dd>
+    <dt>archivering</dt>
+    [% a_url = archive_url(scan) %]
+    [% IF a_url %]
+      <dd>
+        <a href="[% a_url %]">grep</a>
+      </dd>
+    [% ELSE %]
+      <dd>-</dd>
+    [% END %]
 
-      [%- FOREACH metadata IN scan.metadata %]
-      [%- IF loop.index %]
-      <hr/>
-      [%- END%]
-      <p>
-        [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]        
-        <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
+    <dt>publicatie</dt>
+    [% p_url = publication_url(scan) %]
+    [% IF p_url %]
+      <dd>
+        <a href="[% p_url %]">grim</a>
+      </dd>
+    [% ELSE %]
+      <dd>-</dd>
+    [% END %]
+  </dl>
 
-        <span class="label metadata_archive" data-id="[% metadata_id %]" style="margin-left:20px">controleren in archief..</span>
+  <div class="tabbable">
+    <ul class="nav nav-tabs" id="tab_scan">
+      <li class="active">
+        <a href="#tab-files" data-toggle="tab">Bestanden <span class="badge badge-info">[% files.size || 0 %]</span></a>
+      </li>
+      <li>
+        <a href="#tab-metadata" data-toggle="tab">
+        Metadata
+        [%- IF scan.metadata.size > 1 %]
+          <span class="badge badge-warning">multiple</span>
+        [%- ELSIF scan.metadata.size == 0 %]
+          <span class="badge badge-warning">missing</span>
+        [%- END %]
+        </a>
+      </li>
+      [%- IF can_change_status(scan) -%]
+
+        <li>
+          <a href="#tab-change-status" data-toggle="tab">Wijzig status</a>
+        </li>
+
+      [% END %]
+      <li>
+        <a href="#tab-status-history" data-toggle="tab">Status geschiedenis <span class="badge badge-info">[% log.status_history.size || 0 %]</a>
+      </li>
+      <li>
+        <a href="#tab-checklog" data-toggle="tab">Check log <span class="badge badge-info">[% scan.check_log.size || 0 %]</span></a>
+      </li>
+      <li>
+        <a href="#tab-comments" data-toggle="tab">Comments <span class="badge badge-info">[% scan.comments.size || 0 %]</span></a>
+      </li>
+    </ul>
+    <div class="tab-content">
+
+      <div class="tab-pane active" id="tab-files">
+        [%- states_in_registered = settings.status.collection.in_registered -%]
+        [%- states_in_processed = settings.status.collection.in_processed -%]
+        [%- states_in_ready = settings.status.collection.in_ready-%]
+
+        [%- do_open = 1 -%]
+
+        [% IF states_in_ready.grep(scan.status).size > 0 -%]
+
+          [%# file:///U:/ready/geert/BHSL-PAP-0064 %]
+          [% directory = catmandu_conf.mounts.directories.path _ "/" _ catmandu_conf.mounts.directories.subdirectories.ready _ "/" %]
+          [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.ready.windows _ "/" _ scan.path.replace(directory,"") %]
+
+        [% ELSIF states_in_registered.grep(scan.status).size > 0 %]
+
+          [%# file:///V:/registered/BHSL-PAP-0064  %]
+          [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.registered.windows _ "/"  _ scan.item("_id") %]
+
+        [% ELSIF states_in_processed.grep(scan.status).size > 0 %]
+
+          [%# file:///V:/processed/BHSL-PAP-0064  %]
+          [% scan_system_directory = catmandu_conf.mounts.directories.network_directories.processed.windows _ "/"  _ scan.item("_id") %]
+
+        [% ELSE %]
+
+            [% do_open = 0 %]
+
+        [% END %]
+
+        [% FOREACH file IN files %]        
+          [% SET statistics.${ file.content_type } = ( statistics.item(file.content_type) || 0) + 1 %]
+        [% END %]
+
+        <div style="position:relative;margin-bottom:15px;">
+        [% IF do_open %]
+          <a class="btn btn-mini" href="[% scan_system_directory %]">open map</a>
+        [% END %]
+        [% IF statistics.keys.size %]
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          <div style="float:right;">
+          [% FOREACH key IN statistics.keys %]
+            [% "<b>" _ key _ "</b>:" _ statistics.item(key) %]&nbsp;
+          [% END %]
+          </div>
+        [% END %]
+        </div>
+
+        <table class="table table-striped">
+          <tr>
+            <th>naam</th>
+            <th>grootte</th>
+            <th>laatst gewijzigd</th>
+            <th>type</th>
+          </tr>
+          [%- FOREACH file IN files %]
+
+            <tr [% 'class="error"' IF file.size <= 0 %]>
+            [% IF !file.error %]
+              <td>
+                [% file_name = file.path.replace(scan.path _ "/","") %]
+                [%- file_name | html -%]
+              </td>
+              <td><span class="tip" title="[% file.size %] bytes">[% file.size.size_pretty %]</span></td>
+              <td>[% date.format(file.mtime,'%d-%m-%Y %H:%M:%S') %]</td>
+              <td>[% file.content_type %]</td>
+            [%- ELSE %]
+              <td colspan="4">[% file.path | html %] <span class="label label-important">error</span></td>
+            [%- END %]
+            </tr>
+
+          [%- END %]
+        </table>
+      </div>
+
+      <div class="tab-pane" id="tab-metadata">
 
         [%- IF can_change_metadata(scan) %]
-
-          <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]/metadata" style="display:inline" class="form-add-metadata">
-            <button type="submit" onclick="return confirm('Hierdoor wordt de metadata overschreven. Bent u zeker?');" class="tip" title="Herstel originele metadata">
-                <i class="icon-repeat"></i>
-            </button>            
-            <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
+          <form method="post" class="form-inline pull-right form-add-metadata" action="[% request.uri_for('/scans/' _ scan.item('_id') _ '/metadata') %]">
+            <div class="input-append">
+              <input type="text" name="metadata_id" id="metadata_id" class="span3" placeholder="metadata identifier"/>
+              <button class="btn tip" type="submit" title="Haal metadata op">
+                <i class="icon-plus"></i>
+              </button>
+            </div>
           </form>
-          <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]/metadata#tab-metadata" style="display:inline" class="form-delete-metadata">
-            <button type="submit" title="Verwijder metadata" onclick="return confirm('De metadata wordt onherroepelijk verwijderd. Ben je zeker?')" class="tip">
-                <i class="icon-trash"></i>
-            </button>
-            <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
-          </form>
-
         [%- END %]
-      </p>
-      <div class="tabbable">
-        <ul class="nav nav-tabs">
-            <li class="active"><a href="#tab-baginfo-[% loop.index %]" data-toggle="tab">bag info</a></li>
-            <li><a href="#tab-marc-[% loop.index %]" data-toggle="tab">marc</a></li>
-        </ul>
-        <div class="tab-content">
-          <div class="tab-pane" id="tab-marc-[% loop.index %]">
-            [% SET marc_aleph_seq = metadata.fXML.xml_to_aleph_sequential() %]
-            <table class="table">
-            [%- FOREACH line IN marc_aleph_seq %]
-                [% SET tag = line.1 %]
-                [% SET subfields = line.5 %]
-                
-                <tr>
+
+        [%- FOREACH metadata IN scan.metadata %]
+          [%- IF loop.index %]
+            <hr/>
+          [%- END%]
+          <p>
+            [%- metadata_id = metadata.source _ ":" _ metadata.fSYS -%]        
+            <a href="http://search.ugent.be/meercat/x/view/[% metadata.source %]/[% metadata.fSYS %]">[% metadata_id %]</a>
+            <span class="label metadata_archive" data-id="[% metadata_id %]" style="margin-left:20px">controleren in archief..</span>
+
+            [%- IF can_change_metadata(scan) %]
+
+              <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]/metadata" style="display:inline" class="form-add-metadata">
+                <button type="submit" onclick="return confirm('Hierdoor wordt de metadata overschreven. Bent u zeker?');" class="tip" title="Herstel originele metadata">
+                  <i class="icon-repeat"></i>
+                </button>            
+                <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
+              </form>
+              <form method="post" action="[% request.uri_base %]/scans/[% scan.item('_id') %]/metadata#tab-metadata" style="display:inline" class="form-delete-metadata">
+                <button type="submit" title="Verwijder metadata" onclick="return confirm('De metadata wordt onherroepelijk verwijderd. Ben je zeker?')" class="tip">
+                  <i class="icon-trash"></i>
+                </button>
+                <input type="hidden" name="metadata_id" value="[% metadata_id %]" />
+              </form>
+
+            [%- END %]
+          </p>
+          <div class="tabbable">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#tab-baginfo-[% loop.index %]" data-toggle="tab">bag info</a></li>
+                <li><a href="#tab-marc-[% loop.index %]" data-toggle="tab">marc</a></li>
+            </ul>
+            <div class="tab-content">
+              <div class="tab-pane" id="tab-marc-[% loop.index %]">
+                [% SET marc_aleph_seq = metadata.fXML.xml_to_aleph_sequential() %]
+                <table class="table">
+                [%- FOREACH line IN marc_aleph_seq %]
+                  [% SET tag = line.1 %]
+                  [% SET subfields = line.5 %]
+                  
+                  <tr>
                     <th>[% tag %]</th>
                     <td>
                     [% IF subfields.size % 2 == 0 %]
@@ -270,435 +283,293 @@
                         [% subfields.join(" ") | html %]
                     [% END %]
                     </td>
-                </tr>
-            [%- END %]
-            </table>
-          </div>
-          <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
-                    
-          [%- IF can_change_metadata(scan) %]
-            <form action="[% request.uri_base %]/scans/[% scan.item('_id')%]/baginfo" method="POST" class="form-horizontal edit-baginfo">
-              <div class="btn-group pull-right">
-                <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
-
-                <ul class="dropdown-menu">
-                [%- FOREACH element IN settings.app.scans.edit.baginfo %]
-                    [% NEXT IF !element.edit %]
-                    <li><a href="#" class="baginfo-add">[% element.key %]</a></li>
+                  </tr>
                 [%- END %]
-                </ul>
+                </table>
               </div>
-
-              [%- FOREACH element IN settings.app.scans.edit.baginfo %]
-                [%- NEXT IF !(metadata.baginfo.${element.key} && metadata.baginfo.${element.key}.size > 0) -%]
-                [%- FOREACH value IN metadata.baginfo.${element.key} %]
-                <div class="control-group baginfo">
-                  <label class="control-label"><b>[% element.key %]</b></label>
-                  <div class="controls">                    
-                  [% IF element.edit %]
-                    [% tag = element.item("tag") %]
-                    [% IF tag == "select" %]
-                      [% SET values = element.item("values") || [ value ] %]
-                      <select name="[% element.key %]" class="baginfostyle">
-                      [%- FOREACH conf_value IN values %]
-                        <option value="[% conf_value %]"[% IF value == conf_value %] selected="selected"[% END %]>
-                          [% conf_value %]
-                        </option>
-                      [%- END %]
-                      </select>
-                    [%- ELSIF tag == "textarea" %]
-                      <textarea name="[% element.key %]" class="baginfostyle">[% value %]</textarea>
-                    [% ELSE %]
-                      <input type="text" name="[% element.key %]" value="[% value %]" class="baginfostyle" />
+              <div class="tab-pane active" id="tab-baginfo-[% loop.index %]">
+                      
+              [%- IF can_change_metadata(scan) %]
+                <form action="[% request.uri_base %]/scans/[% scan.item('_id')%]/baginfo" method="POST" class="form-horizontal edit-baginfo">
+                  <div class="btn-group pull-right">
+                    <button class="btn dropdown-toggle" data-toggle="dropdown">Voeg veld toe <span class="caret"></span></button>
+                    <ul class="dropdown-menu">
+                    [%- FOREACH element IN settings.app.scans.edit.baginfo %]
+                      [% NEXT IF !element.edit %]
+                      <li><a href="#" class="baginfo-add">[% element.key %]</a></li>
                     [%- END %]
-                    <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button>
-                  [% ELSE %]
-                    [% value | html %]
-                  [% END %]
+                    </ul>
                   </div>
-                </div>
-                [%- END %]
+
+                  [%- FOREACH element IN settings.app.scans.edit.baginfo %]
+                    [%- NEXT IF !(metadata.baginfo.${element.key} && metadata.baginfo.${element.key}.size > 0) -%]
+                    [%- FOREACH value IN metadata.baginfo.${element.key} %]
+                    <div class="control-group baginfo">
+                      <label class="control-label"><b>[% element.key %]</b></label>
+                      <div class="controls">                    
+                      [% IF element.edit %]
+                        [% tag = element.item("tag") %]
+                        [% IF tag == "select" %]
+                          [% SET values = element.item("values") || [ value ] %]
+                          <select name="[% element.key %]" class="baginfostyle">
+                          [%- FOREACH conf_value IN values %]
+                            <option value="[% conf_value %]"[% IF value == conf_value %] selected="selected"[% END %]>
+                              [% conf_value %]
+                            </option>
+                          [%- END %]
+                          </select>
+                        [%- ELSIF tag == "textarea" %]
+                          <textarea name="[% element.key %]" class="baginfostyle">[% value %]</textarea>
+                        [% ELSE %]
+                          <input type="text" name="[% element.key %]" value="[% value %]" class="baginfostyle" />
+                        [%- END %]
+                        <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button>
+                      [% ELSE %]
+                        [% value | html %]
+                      [% END %]
+                      </div>
+                    </div>
+                    [%- END %]
+                  [%- END %]
+                  <div class="form-actions">
+                    <input type="hidden" name="metadata_id" value="[% metadata_id %]"/>
+                    <button class="btn btn-primary" type="submit" name="submit" data-loading-text="saving..">Bewaar</button>
+                  </div>
+                </form>
+              [%- ELSE %]
+                <dl class="dl-horizontal">
+                  [%- FOREACH key IN metadata.baginfo.keys.sort %]
+                  [%- NEXT UNLESS metadata.baginfo.$key.size -%]
+                  <dt>[% key | html %]</dt>
+                  [%- FOREACH val IN metadata.baginfo.$key %]
+                  <dd>[% val | html %]</dd>
+                  [%- END %]
+                  [%- END %]
+                </dl>
               [%- END %]
-              <div class="form-actions">
-                <input type="hidden" name="metadata_id" value="[% metadata_id %]"/>
-                <button class="btn btn-primary" type="submit" name="submit" data-loading-text="saving..">Bewaar</button>
               </div>
-            </form>
-          [%- ELSE %]
-            <dl class="dl-horizontal">
-              [%- FOREACH key IN metadata.baginfo.keys.sort %]
-              [%- NEXT UNLESS metadata.baginfo.$key.size -%]
-              <dt>[% key | html %]</dt>
-              [%- FOREACH val IN metadata.baginfo.$key %]
-              <dd>[% val | html %]</dd>
-              [%- END %]
-              [%- END %]
-            </dl>
-          [%- END %]
+            </div>
           </div>
+        [%- END %]
+      </div>
+
+      [%- IF can_change_status(scan) -%]
+        <div class="tab-pane" id="tab-change-status">
+          [% PROCESS inc/status.tt %]
+        </div>
+      [% END %]
+
+      <div class="tab-pane" id="tab-status-history">
+        <table class="table table-striped table-condensed">
+          <tr>
+            <th>gebruiker</th>
+            <th>status</th>
+            <th>tijd</th>
+            <th>commentaar</th>
+          </tr>
+          [%- FOREACH status_entry IN log.item("status_history") %]
+          <tr>
+            <td>[% status_entry.user_login %]</td>
+            <td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
+            <td>[% date.format(POSIX.floor(status_entry.datetime),'%d-%m-%Y %H:%M:%S') %]</td>
+            <td>[% status_entry.comments | html %]</td>
+          </tr>
+          [%- END %]
+        </table>
+      </div>
+
+      <div class="tab-pane" id="tab-checklog">
+        [%- IF scan.check_log.size > 0 %]
+          <pre>
+            <code>[% scan.check_log.join("\n") | html %]</code>
+          </pre>
+        [%- END %]
+      </div>
+
+      <div class="tab-pane" id="tab-comments">
+        [% IF auth.can('scans','comment') && !scan_is_busy(scan) && !scan_has_fix(scan) %]
+          <form action="[% request.uri_base %]/scans/[% scan.item("_id") %]/comments" method="POST" id="add-comment">
+            <textarea class="span6" name="text"></textarea>
+            <div><input class="btn btn-primary" type="submit" name="submit" value="Add"/></div>
+          </form>
+        [% END %]
+          <div id="comments">
+        [% FOREACH comment IN scan.comments.reverse %]
+          <blockquote>
+            [% comment.text | html %]
+            <small>posted by [% comment.user_login %] at [% comment.datetime %]</small>
+          </blockquote>
+        [% END %]
         </div>
       </div>
-      [%- END %]
     </div>
-
-    [%- IF can_change_status(scan) -%]
-    <div class="tab-pane" id="tab-change-status">
-      [% PROCESS inc/status.tt %]
-    </div>
-    [% END %]
-
-    <div class="tab-pane" id="tab-status-history">
-      <table class="table table-striped table-condensed">
-        <tr>
-          <th>gebruiker</th>
-          <th>status</th>
-          <th>tijd</th>
-          <th>commentaar</th>
-        </tr>
-        [%- FOREACH status_entry IN log.item("status_history") %]
-        <tr>
-          <td>[% status_entry.user_login %]</td>
-          <td>[% settings.human_readable.${status_entry.status} || status_entry.status %]</td>
-          <td>[% date.format(POSIX.floor(status_entry.datetime),'%d-%m-%Y %H:%M:%S') %]</td>
-          <td>[% status_entry.comments | html %]</td>
-        </tr>
-        [%- END %]
-      </table>
-    </div>
-
-    <div class="tab-pane" id="tab-checklog">
-      [%- IF scan.check_log.size > 0 %]
-      <pre><code>[% scan.check_log.join("\n") | html %]</code></pre>
-      [%- END %]
-    </div>
-
-    <div class="tab-pane" id="tab-comments">
-      [% IF auth.can('scans','comment') && !scan.busy && !TO_FIX %]
-      <form action="[% request.uri_base %]/scans/[% scan.item("_id") %]/comments" method="POST" id="add-comment">
-        <textarea class="span6" name="text"></textarea>
-        <div><input class="btn btn-primary" type="submit" name="submit" value="Add"/></div>
-      </form>
-      [% END %]
-      <div id="comments">
-      [% FOREACH comment IN scan.comments.reverse %]
-        <blockquote>
-          [% comment.text | html %]
-          <small>posted by [% comment.user_login %] at [% comment.datetime %]</small>
-        </blockquote>
-      [% END %]
-      </div>
-    </div>
-
-
   </div>
-
-</div>
-<script type="text/javascript" charset="utf-8">
-  var baseUrl = "[% request.uri_base %]";
-
-  /* goto tab */
-  // Javascript to enable link to tab
-  if(window.location.hash && window.location.hash != ""){
-    $('.nav-tabs a[href='+window.location.hash+']').tab('show') ;
-  } 
-
-  // Change hash for page-reload
-  $('.nav-tabs a').on('shown', function (e) {
-      window.location.hash = e.target.hash;
-  });
-
+  <script type="text/javascript" src="[% request.uri_base _ '/js/scan.js' %]"></script>
   [%- IF auth.can('scans','comment') -%]
+    <script type="text/javascript" src="[% request.uri_base _ '/js/scan_comment.js' %]"></script>
+  [%- END -%]
+  <script type="text/javascript" charset="utf-8">
 
-    $('#add-comment').submit(function(evt) {
-      evt.preventDefault();
-      var f = $(this),
-          textInput = f.find(':input[name="text"]'),
-          text = textInput.val();
-      textInput.val("");
-      $.post(f.attr('action'), {text: text}, function(res) {
-        if (!res.status === 'ok') return;
-        var comment = $('<blockquote>'+res.data.text+'<small>posted by '+
-          res.data.user_login + ' at '+res.data.datetime+
-          '</small></blockquote>');
-        comment.hide();
-        $("#comments").prepend(comment);
-        comment.slideDown();
-      }, 'json');
-    });
+    var baginfo_config = [% settings.app.scans.edit.baginfo.json || "{}" %];
 
-  [% END %]
+    [%- IF can_change_metadata(scan) -%]
 
-  var baginfoConfig = [% settings.app.scans.edit.baginfo.json || "{}" %];
+      $('.baginfo-add').click(function(evt) {
+        evt.preventDefault();
+        var key = $(this).text();
+        for (var i = 0;i < baginfo_config.length;i++){
 
-  [%- IF can_change_metadata(scan) -%]
+          if (baginfo_config[i].key == key) {
 
-    $('.baginfo-add').click(function(evt) {
-      evt.preventDefault();
-      var key = $(this).text();
-      for (var i = 0;i < baginfoConfig.length;i++){
+            var data = ['<div class="control-group baginfo"><label class="control-label"><b>', key,
+              '</b></label><div class="controls">'];
+            if(baginfo_config[i].values && baginfo_config[i].values.length > 0){
 
-        if (baginfoConfig[i].key == key) {
+              data.push('<select name="', key, '" class="baginfostyle">');
+              for (var j = 0;j < baginfo_config[i].values.length;j++) {
+                  data.push('<option value="'+baginfo_config[i].values[j]+'">'+baginfo_config[i].values[j]+'</option>');
+              }
+              data.push('</select>');
 
-          var data = ['<div class="control-group baginfo"><label class="control-label"><b>', key,
-            '</b></label><div class="controls">'];
-          if(baginfoConfig[i].values && baginfoConfig[i].values.length > 0){
+            }else if(baginfo_config[i].tag && baginfo_config[i].tag == "textarea"){
 
-            data.push('<select name="', key, '" class="baginfostyle">');
-            for (var j = 0;j < baginfoConfig[i].values.length;j++) {
-                data.push('<option value="'+baginfoConfig[i].values[j]+'">'+baginfoConfig[i].values[j]+'</option>');
+              data.push('<textarea name="',key,'" class="baginfostyle" ></textarea>');
+
+            }else{
+
+              data.push('<input type="text" name="', key, '" value="" class="baginfostyle"/>');
+
             }
-            data.push('</select>');
-
-          }else if(baginfoConfig[i].tag && baginfoConfig[i].tag == "textarea"){
-
-            data.push('<textarea name="',key,'" class="baginfostyle" ></textarea>');
-
-          }else{
-
-            data.push('<input type="text" name="', key, '" value="" class="baginfostyle"/>');
+            data.push(' <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button></div></div>');
+            var f = $(this).closest('form');
+            f.find('.baginfo:last').after(data.join(''));
+            var btn = f.find(':button[type="submit"]');
+            btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+            break;
 
           }
-          data.push(' <button class="btn baginfo-remove" type="button"><i class="icon-remove"></i></button></div></div>');
-          var f = $(this).closest('form');
-          f.find('.baginfo:last').after(data.join(''));
-          var btn = f.find(':button[type="submit"]');
-          btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
-          break;
-
         }
+      });
+
+      $('.baginfo-remove').live('click', function(evt) {
+
+        evt.preventDefault();
+        var btn = $(this).closest('form').find(':button[type="submit"]');
+        btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+        $(this).closest('.baginfo').remove();
+
+      });
+
+      $('.baginfo :input[name^="DC-"]').live('change', function(evt) {
+
+        var btn = $(this).closest('form').find(':button[type="submit"]');
+        btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
+
+      });
+
+      function clear_errors(){
+        $("#errors").empty();
       }
-    });
-
-    $('.baginfo-remove').live('click', function(evt) {
-
-      evt.preventDefault();
-      var btn = $(this).closest('form').find(':button[type="submit"]');
-      btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
-      $(this).closest('.baginfo').remove();
-
-    });
-
-    $('.baginfo :input[name^="DC-"]').live('change', function(evt) {
-
-      var btn = $(this).closest('form').find(':button[type="submit"]');
-      btn.removeClass('btn-primary btn-danger btn-success').addClass('btn-warning');
-
-    });
-
-    function clear_errors(){
-      $("#errors").empty();
-    }
-    function add_error(error){
-      var errors = $("#errors");
-      var html = "<div class=\"alert alert-error span8\"><a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a><strong>";
-      html += error;
-      html += "</strong></div>";
-      console.log(html);
-      errors.append(html);
-    }
-    function add_errors(errors){
-      clear_errors();
-      for(var i = 0;i < errors.length;i++){
-        add_error(errors[i]);
-      } 
-    }
-
-    $('form.form-add-metadata').submit(function(evt){
-      evt.preventDefault();
-      var f = $(this);
-      var data = {};
-      var s = $(f).serializeArray();
-      for(var i = 0;i < s.length;i++){
-        data[s[i]["name"]] = s[i]["value"];
+      function add_error(error){
+        var errors = $("#errors");
+        var html = "<div class=\"alert alert-error span8\"><a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a><strong>";
+        html += error;
+        html += "</strong></div>";
+        console.log(html);
+        errors.append(html);
       }
-      $.post(f.attr('action'),data,function(res){
-        if(res.status == "ok"){
-          window.location.reload();
-        }else{
-          add_errors(res.errors);
+      function add_errors(errors){
+        clear_errors();
+        for(var i = 0;i < errors.length;i++){
+          add_error(errors[i]);
+        } 
+      }
+
+      $('form.form-add-metadata').submit(function(evt){
+        evt.preventDefault();
+        var f = $(this);
+        var data = {};
+        var s = $(f).serializeArray();
+        for(var i = 0;i < s.length;i++){
+          data[s[i]["name"]] = s[i]["value"];
         }
-      },"json");
-    });
-    $('form.form-delete-metadata').submit(function(evt){
-      evt.preventDefault();
-      var f = $(this);
-      var data = {};
-      var s = $(f).serializeArray();
-      for(var i = 0;i < s.length;i++){
-        data[s[i]["name"]] = s[i]["value"];
-      }
-      $.ajax({
-        type: "DELETE",
-        dataType: "json",
-        url: f.attr("action"),
-        data: data,
-        success:function(res){
+        $.post(f.attr('action'),data,function(res){
           if(res.status == "ok"){
             window.location.reload();
           }else{
             add_errors(res.errors);
           }
-        }
+        },"json");
       });
-    });
-
-  [% END %]
-
-  //submit-on-enter
-  $('input').keydown(function(e){
-    if(e.which == 13){
-      e.preventDefault();
-      $(this).closest("form").submit();
-    }
-  });
-
-  [%- IF can_change_metadata(scan) -%]
-
-    $('form.edit-baginfo').submit(function(evt) {
-      evt.preventDefault();
-      /*
-      var $dialog = $("#dialog");
-      $dialog.hide();
-      */
-      var f = $(this);
-
-      $.post(f.attr('action'), f.serialize(), function(data) {
-        var $dialog = $("#dialog");
-
-        var btn = f.find(':button[type="submit"]');
-        btn.button("loading");
-        if (data.status === 'ok') {
-          btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');          
-          $dialog.removeClass("alert-info").addClass("alert-success");
-          $dialog.html("Metadata werd opgeslagen!");
-          $dialog.fadeIn('fast',function(){
-            $(this).delay(1000).fadeOut("slow");
-          });
-
-        }else{
-          btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
-          var $dialog = $("#dialog");                
-          var html = ["<p>Fout:<a class=\"close\">x</a></p><ul>"];
-          for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
-          html.push("</ul>");
-          $dialog.html(html.join(''));
-          $dialog.removeClass("alert-info").addClass("alert-error");                  
-          $dialog.fadeIn('fast',function(){
-            $(this).find(".close").click(function(){
-              $dialog.hide();
-            });
-          });
-
+      $('form.form-delete-metadata').submit(function(evt){
+        evt.preventDefault();
+        var f = $(this);
+        var data = {};
+        var s = $(f).serializeArray();
+        for(var i = 0;i < s.length;i++){
+          data[s[i]["name"]] = s[i]["value"];
         }
-
-        
-        btn.button("reset");
-
-      },'json');
-    });
-
-  [% END %]
-
-  $(document).ready(function(){
- 
-    //controleer aanwezigheid in grep   
-    $('.metadata_archive').each(function(){
-
-      var $t = $(this);
-      $.ajax({
-        dataType: "json",
-        url: baseUrl+"/archive?query=identifier~"+$t.attr("data-id"),
-        success: function(data){
-          //in grep: 'rood' (want controle is nodig!)
-          //niet in grep: 'groen'
-          var addClass = data.hits.length == 1 ? "label-important":"label-success";
-          $t.removeClass(addClass).addClass(addClass);
-          $t.html("in archief: "+data.hits.length);
-        }
-      });     
-
-    });
-    
-    //controleer of er nog jobs bezig zijn
-    var mm_check_jobs_timeout = 1000*30;
-    var job_progress = $("#job_progress");
-    if(job_progress.size() > 0){
-      var func = function(){
-      
-        var asset_id = job_progress.attr("data-id");
         $.ajax({
+          type: "DELETE",
           dataType: "json",
-          url: baseUrl+"/jobs/"+asset_id,
-          success: function(data){            
-
-            if(data.errors.length > 0){
-
-              //asset is reeds verwijderd door MediaMosa (waarschijnlijk)
-              var str = "The asset with ID '"+asset_id+"' was not found in the database";
-              var re = new RegExp(str);
-              if(re.test(data.errors[0]))return;
-
+          url: f.attr("action"),
+          data: data,
+          success:function(res){
+            if(res.status == "ok"){
+              window.location.reload();
             }else{
-              //geef aan hoeveel jobs nog bezig zijn
-              var done = 0;
-              for(var i = 0;i < data["hits"].length;i++){
-                var job = data["hits"][i];
-                if(job["status"] == "FINISHED"){
-                  done++;
-                }
-              }
-              var progress = Math.floor((done / data["hits"].length) * 100);            
-              job_progress.find(".bar").css("width",progress+"%");
-
-              if(progress >= 100){
-                //niet zomaar pagina opnieuw laden, want cron-status.pl heeft mogelijks "busy" nog niet verwijderd
-                //op die manier vermijdt je dat de pagina zich voortdurend herlaadt..
-                clearInterval(x);
-                //TODO: job_progress vervangen door link die pagina herlaadt?
-              }
-
+              add_errors(res.errors);
             }
           }
         });
-  
-      };
-      //start func now, and then at regular intervals
-      func();
-      var x;
-      x = setInterval(func,mm_check_jobs_timeout);
-    }
+      });
+      $('form.edit-baginfo').submit(function(evt) {
+        evt.preventDefault();
+        /*
+        var $dialog = $("#dialog");
+        $dialog.hide();
+        */
+        var f = $(this);
 
-    //tab switch
-    $(document).keydown(function(e){
-      if(e.which != 9)return;
-      e.preventDefault();
-      var tab_scan = $("#tab_scan");
-      var tabs = tab_scan.find("li");
-      for(var i = 0;i < tabs.length;i++){
-        if($(tabs[i]).hasClass("active")){          
-          var new_i = i == tabs.length - 1 ? 0:i+1;
-          $(tabs[new_i]).find("a").tab('show');
-          break;
-        }
-      }
-    });
-  });
-  
-</script>
-<script type="text/javascript" src="[% request.uri_base %]/js/jwerty.js"></script>
-<script type="text/javascript">
-  /*
-    See http://suan.github.io/jquery-keycombinator/
-        http://keithcirkel.co.uk/jwerty/
-  */
-  jwerty.key('ctrl+s',function(ev){
-    ev.preventDefault();
-    $('form.edit-baginfo').submit();    
-  });
-  jwerty.key('esc',function(evt){
-    evt.preventDefault();
-    var url = "[% request.uri_for('/scans') %]";
-    window.location.href = url;
-  });
-</script>
+        $.post(f.attr('action'), f.serialize(), function(data) {
+          var $dialog = $("#dialog");
+
+          var btn = f.find(':button[type="submit"]');
+          btn.button("loading");
+          if (data.status === 'ok') {
+            btn.removeClass('btn-primary btn-warning btn-danger').addClass('btn-success');          
+            $dialog.removeClass("alert-info").addClass("alert-success");
+            $dialog.html("Metadata werd opgeslagen!");
+            $dialog.fadeIn('fast',function(){
+              $(this).delay(1000).fadeOut("slow");
+            });
+
+          }else{
+            btn.removeClass('btn-primary btn-warning btn-success').addClass('btn-danger');
+            var $dialog = $("#dialog");                
+            var html = ["<p>Fout:<a class=\"close\">x</a></p><ul>"];
+            for(var i = 0;i<data.errors.length;i++)html.push("<li>"+data.errors[i]+"</li>");
+            html.push("</ul>");
+            $dialog.html(html.join(''));
+            $dialog.removeClass("alert-info").addClass("alert-error");                  
+            $dialog.fadeIn('fast',function(){
+              $(this).find(".close").click(function(){
+                $dialog.hide();
+              });
+            });
+
+          }
+
+          
+          btn.button("reset");
+
+        },'json');
+      });
+
+    [% END %]
+    
+  </script>
+  <script type="text/javascript" src="[% request.uri_base %]/js/jwerty.js"></script>
+  <script type="text/javascript" src="[% request.uri_base %]/js/scan_shortcuts.js"></script>
+
 [%- END %]

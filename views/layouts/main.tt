@@ -45,6 +45,9 @@
           }
         });
       });
+
+      //global variables
+      var base_url = "[% request.uri_base %]";
     </script>
     <title>Imaging</title>
   </head>

@@ -1,84 +1,47 @@
 [%- USE date -%]
 [% USE POSIX %]
 [%- USE SizePretty -%]
+[%- USE String -%]
 
 <h1>QA controle</h1>
 
 <form method="GET" class="form-inline autosubmit">
-    <div class="input-append">
-      <input type="text" name="q" id="q" value="[% params.q | html %]" size="50"/><button class="btn" type="submit">Search</button>
-    </div>
-    <div class="btn-group">
-      <button class="btn dropdown-toggle" data-toggle="dropdown">
-        <span class="caret"></span>
-      </button>
-      <ul class="dropdown-menu">
-        [%- facet_status = facet_status.hash -%]
-        <li><a href="[% request.uri_base %]/qa_control">alles ([% total_qa_control %])</a></li>
-        <li><a href="[% request.uri_base %]/qa_control?q=[% "status:registered OR status:derivatives_created" | url %]">scan controle ([% facet_status.item("registered") || 0 %])</a></li>
-        <li><a href="[% request.uri_base %]/qa_control?q=[% "status:archived" | url %]">archived ([% facet_status.item("archived") || 0 %])</a></li>
-        <li><a href="[% request.uri_base %]/qa_control?q=[% "status:published" | url %]">published ([% facet_status.item("published") || 0 %])</a></li>
-      </ul>
-    </div>
-    <div class="pull-right">
-      <label for="sort">sorteer</label>
-      <select name="sort" id="sort">
-          [% SET params.item("sort") = settings.app.qa_control.default_sort IF params.item("sort") == "" %]
-          <option value=""></option>
-          [%- FOREACH item IN settings.app.qa_control.sorts %]
-          <option value="[% item.0 %] asc" [% IF params.item("sort") == ( item.0 _ " asc" ) %]selected="selected"[% END %]>[% item.1 %] oplopend</option>
-          <option value="[% item.0 %] desc" [% IF params.item("sort") == ( item.0 _ " desc" ) %]selected="selected"[% END %]>[% item.1 %] aflopend</option>
-          [%- END %]
-      </select>
-      <label for="num">toon</label>
-      <select name="num" id="num" class="span1">
-          <option value=""></option>
-          [%- FOREACH number IN [5,10,20,50,100] %]
-          <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
-          [%- END %]
-      </select>
-    </div>
+  <div class="input-append">
+    <input type="text" name="q" id="q" value="[% params.q | html %]" size="50"/><button class="btn" type="submit">Search</button>
+  </div>
+  <div class="btn-group">
+    <button class="btn dropdown-toggle" data-toggle="dropdown">
+      <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu">
+      [%- facet_status = facet_status.hash -%]
+      <li><a href="[% request.uri_base %]/qa_control">alles ([% total_qa_control %])</a></li>
+      <li><a href="[% request.uri_base %]/qa_control?q=[% "status:registered OR status:derivatives_created" | url %]">scan controle ([% facet_status.item("registered") || 0 %])</a></li>
+      <li><a href="[% request.uri_base %]/qa_control?q=[% "status:archived" | url %]">archived ([% facet_status.item("archived") || 0 %])</a></li>
+      <li><a href="[% request.uri_base %]/qa_control?q=[% "status:published" | url %]">published ([% facet_status.item("published") || 0 %])</a></li>
+    </ul>
+  </div>
+  <div class="pull-right">
+    <label for="sort">sorteer</label>
+    <select name="sort" id="sort">
+      [% SET params.item("sort") = settings.app.qa_control.default_sort IF params.item("sort") == "" %]
+      <option value=""></option>
+      [%- FOREACH item IN settings.app.qa_control.sorts %]
+      <option value="[% item.0 %] asc" [% IF params.item("sort") == ( item.0 _ " asc" ) %]selected="selected"[% END %]>[% item.1 %] oplopend</option>
+      <option value="[% item.0 %] desc" [% IF params.item("sort") == ( item.0 _ " desc" ) %]selected="selected"[% END %]>[% item.1 %] aflopend</option>
+      [%- END %]
+    </select>
+    <label for="num">toon</label>
+    <select name="num" id="num" class="span1">
+      <option value=""></option>
+      [%- FOREACH number IN [5,10,20,50,100] %]
+      <option value="[% number %]" [% IF params.num == number %]selected="selected"[% END %]>[% number %]</option>
+      [%- END %]
+    </select>
+  </div>
 </form>
 
-[%- IF result.last_page > 1 %]
-<div class="pagination">
-  <ul>
-    [%- IF result.first_page && result.first_page < result.page %]
-    <li><a href="[% request.uri_base %]/qa_control?page=[% result.first_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri %]">eerste</a></li>
-    [%- ELSE %]
-    <li class="disabled"><a href="#">eerste</a></li>
-    [%- END %]
-
-    [%- IF result.previous_page %]
-    <li><a href="[% request.uri_base %]/qa_control?page=[% result.previous_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >vorige</a></li>
-    [%- ELSE %]
-    <li class="disabled"><a href="#">vorige</a></li>
-    [%- END %]
-
-    [%- FOREACH page IN result.pages_in_spread %]
-    [% IF page == result.page %]
-    <li class="active"><a href="#">[% page %]</a></li>
-    [%- ELSIF page.defined %]
-    <li><a href="[% request.uri_base %]/qa_control?page=[% page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">[% page %]</a></li>
-    [% ELSE %]
-    <li class="disabled"><a href="#">..</a></li>
-    [%- END %]
-    [%- END %]
-
-    [%- IF result.next_page %]
-    <li><a href="[% request.uri_base %]/qa_control?page=[% result.next_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]" >volgende</a></li>
-    [%- ELSE %]
-    <li class="disabled"><a href="#">volgende</a></li>
-    [%- END %]
-
-    [%- IF result.last_page && ( result.last_page > result.current_page ) %]
-    <li><a href="[% request.uri_base %]/qa_control?page=[% result.last_page %]&amp;num=[% params.num %]&amp;q=[% params.q | uri %]&amp;sort=[% params.item("sort") | uri  %]">laatste</a></li>
-    [%- ELSE %]
-    <li class="disabled"><a href="#">laatste</a></li>
-    [%- END %]
-  </ul>
-</div>
-[%- END %]
+[% PROCESS inc/paging.tt result=result path=request.uri_for('/qa_control') %]
 
 <table class="table table-striped table-condensed">
   <caption>
@@ -137,9 +100,11 @@
       -
       [% END %]
     </td>
-    <td style="width:20px;overflow:hidden;clear:left;text-align:right;text-overflow:ellipsis;-ms-text-overflow:ellipsis;white-space:nowrap">
-    [% scan.comments.last.text || "-" %]
+    <td>
+    [% String.new(scan.comments.last.text).truncate(30,"..") || "-" %]
     </td>
   </tr>
   [%- END %]
 </table>
+
+[% PROCESS inc/paging.tt result=result path=request.uri_for('/qa_control') %]

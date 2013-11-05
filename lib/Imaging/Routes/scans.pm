@@ -24,6 +24,8 @@ Hash::Merge::set_behavior('RIGHT_PRECEDENT');
 
 hook before_template_render => sub {
   my $tokens = $_[0];
+  $tokens->{scan_is_busy} = \&scan_is_busy;
+  $tokens->{scan_has_fix} = \&scan_has_fix;
   $tokens->{status_change_conf} = status_change_conf();
   $tokens->{can_change_status} = \&can_change_status; 
   $tokens->{can_change_metadata} = \&can_change_metadata;
@@ -557,15 +559,21 @@ sub ensure_path {
     close $fh;
   }
 }
+sub scan_is_busy {
+  $_[0]->{busy};
+}
+sub scan_has_fix {
+  -f $_[0]->{path}."/__FIXME.txt";
+}
 sub errors_blocked {
   my $scan = $_[0]; 
   my @errors;
 
-  if($scan->{busy}){
+  if(scan_is_busy($scan)){
 
     push @errors,"Systeem is bezig met een operatie op deze scan";
 
-  }elsif(-f $scan->{path}."/__FIXME.txt"){
+  }elsif(scan_has_fix($scan)){
 
     push @errors,"Dit record moet gerepareerd worden. Voer de noodzakelijke bewerkingen uit, en verwijder daarna __FIXME.txt uit de map";
 
