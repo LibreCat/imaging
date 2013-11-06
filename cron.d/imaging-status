@@ -3,4 +3,4 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 MAILTO=imaging
 HOME=/
 
-*/4 08-18 * * * imaging /opt/Imaging/bin/cron-status.pl 1>> /var/log/Imaging/cron-status.log 2>> /var/log/Imaging/cron-status.error
+*/4 08-18 * * * imaging /opt/imaging/bin/cron-status.pl 1>> /var/log/imaging/cron-status.log 2>> /var/log/imaging/cron-status.error

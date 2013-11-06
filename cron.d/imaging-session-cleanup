@@ -3,4 +3,4 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 MAILTO=imaging
 HOME=/
 
-00 00 * * * imaging /opt/Imaging/bin/cron-session-cleanup.pl 1>> /var/log/Imaging/cron-session-cleanup.log 2>> /var/log/Imaging/cron-session-cleanup.error
+00 00 * * * imaging /opt/imaging/bin/cron-session-cleanup.pl 1>> /var/log/imaging/cron-session-cleanup.log 2>> /var/log/imaging/cron-session-cleanup.error

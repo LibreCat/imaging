@@ -3,4 +3,4 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 MAILTO=imaging
 HOME=/home/imaging
 
-0 0 * * * imaging /opt/Imaging/bin/backup.pl --dir /mnt/data01/backup --database imaging 1>> /var/log/Imaging/backup.log 2>> /var/log/Imaging/backup.error
+0 0 * * * imaging /opt/imaging/bin/backup.pl --dir /mnt/data01/backup --database imaging 1>> /var/log/imaging/backup.log 2>> /var/log/imaging/backup.error

@@ -3,7 +3,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 MAILTO=imaging
 HOME=/
 
-IMAGING_HOME=/opt/Imaging
-IMAGING_LOG=/var/log/Imaging
+IMAGING_HOME=/opt/imaging
+IMAGING_LOG=/var/log/imaging
 
-10 19 * * * imaging /opt/Imaging/bin/imaging-nightly
+10 19 * * * imaging /opt/imaging/bin/imaging-nightly
