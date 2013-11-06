@@ -1,4 +1,4 @@
-Name: Imaging
+Name: imaging
 Summary: Dashboard application for scanning workflow at Ghent University Library
 License: perl
 Version: 1.0
