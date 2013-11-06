@@ -26,8 +26,8 @@ echo "Nothing to build"
 %{__mkdir} -p %{buildroot}/etc/init.d
 %{__mkdir} -p %{buildroot}/var/log/%{name}
  
-%{__cp} -r \$RPM_BUILD_DIR/%{name}/* %{buildroot}/opt/%{name}/
-%{__cp} \$RPM_BUILD_DIR/%{name}/init.d/%{name}.init %{buildroot}/etc/init.d/%{name}
+%{__cp} -r $RPM_BUILD_DIR/%{name}/* %{buildroot}/opt/%{name}/
+%{__cp} $RPM_BUILD_DIR/%{name}/init.d/%{name}.init %{buildroot}/etc/init.d/%{name}
  
 echo "Complete!"
  
@@ -43,7 +43,6 @@ echo "Complete!"
 %post
 (
 cd /opt/%name &&
-unlink %name &&
 perl Build.PL &&
 yes | ./Build installdeps &&
 %{__mkdir} -p /var/log/%{name}/ &&
