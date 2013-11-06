@@ -24,7 +24,11 @@
     aanpassen netwerkconfiguratie voor nfs in windows (eventueel symlink 02_processed => 02_imaging)
 
 
-2.  perl bin/migrate_scans.pl (zorg voor voldoende rechten!!)
+2.  cp catmandu.yml.default catmandu.yml (mits aanpassingen!) => nieuwe tabel 'logs' heeft anders niet messagepack als serializer!
+    cp config.yml.default config.yml (mits aanpassingen!)
+    cp environments/production.yml.default environments/production.yml ((mits aanpassingen!)
+  
+    perl bin/migrate_scans.pl (zorg voor voldoende rechten!!)
 
     2.1 Schrijf alle identifiers van de tabel 'scans' naar bestand
     2.2 Itereer over identifiers. Voor elke scan:

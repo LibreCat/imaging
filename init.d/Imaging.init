@@ -25,7 +25,7 @@ SERVER_GROUP="imaging"
 DANCER_DIR="/opt/Imaging"
 ACCESS_LOG="/var/log/Imaging/access.log"
 ERROR_LOG="/var/log/Imaging/error.log"
-PLACK_ENV="deployment"
+PLACK_ENV="production"
 plackup="/usr/local/bin/plackup"
 lockfile=/var/lock/subsys/imaging
 
@@ -33,7 +33,7 @@ lockfile=/var/lock/subsys/imaging
 
 starman_args="--pid $PID --workers $SERVER_WORKERS --user $SERVER_USER --group $SERVER_GROUP --error-log $ERROR_LOG --disable-keepalive --max-requests 50"
 plackup_args="-E $PLACK_ENV -p $SERVER_PORT --access-log $ACCESS_LOG -s Starman $starman_args -D"
-DANCER_APP="$DANCER_DIR/bin/app.psgi"
+DANCER_APP="$DANCER_DIR/bin/app.pl"
 website="Imaging"
 
 start() {

@@ -2,6 +2,7 @@
 use Catmandu qw(:load);
 use Catmandu::Sane;
 use Catmandu::Util qw(:is);
+use Carp qw(confess);
 
 use Imaging::Util qw(:files :data :lock);
 use Imaging::Dir::Info;

@@ -73,9 +73,10 @@ while(my $scan_id = <$fh>){
   #index
   my $scan_doc = scan2doc($scan);
   my $log_docs = log2docs($log);
-  index_scan()->add($scan_doc);
   index_log()->add($_) for @$log_docs;
+  index_log()->commit();
+  index_scan()->add($scan_doc);
 }
-index_scan()->commit();
 index_log()->commit();
+index_scan()->commit();
 close $fh;

@@ -6,8 +6,6 @@ use URI::Escape qw(uri_escape);
 
 hook before => sub {
 
-  print STDERR to_dumper(session());
-
   #onthoud laatste zoekparameters
   if(request->path =~ /^\/(scans|logs|projects|qa_control)$/o){     
     my $app = $1;

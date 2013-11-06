@@ -139,9 +139,7 @@ post '/scans/:_id/metadata' => sub {
 
   #einde: herindexeer
   if(scalar(@errors)==0){
-    scans->add($scan);
-    scan2index($scan);
-    index_scan->commit;
+    update_scan($scan);
   }
 
   json({
@@ -188,9 +186,7 @@ del '/scans/:_id/metadata' => sub {
           
   #einde: herindexeer
   if(scalar(@errors)==0){
-    scans->add($scan);
-    scan2index($scan);
-    index_scan->commit;
+    update_scan($scan);
   }
 
   json({
@@ -322,8 +318,8 @@ post('/scans/:_id/comments',,sub{
       id => Data::UUID->new->create_str
     };
     push @{ $scan->{comments} ||= [] },$comment;
-    scans->add($scan);
 
+    update_scan($scan);
   }
 
   $response->{status} = scalar(@errors) == 0 ? "ok":"error";
@@ -394,7 +390,8 @@ post('/scans/:_id/baginfo',sub{
         }
 
         push @messages,"baginfo werd aangepast";
-        scans->add($scan);
+
+        update_scan($scan);
 
       }
     }
@@ -458,7 +455,7 @@ post '/scans/:_id/status' => sub {
     messages => \@messages
   };
 
-  my $res = change_status($scan,%$params,commit => 1);
+  my $res = change_status($scan,%$params);
   push @errors,@{ $res->{errors} };
   push @messages,@{ $res->{messages} };    
 
@@ -769,14 +766,8 @@ sub change_status {
           }
         }
 
-        logs()->add($log);
-        log2index($log,-1);
-        scans->add($scan);
-        scan2index($scan);
-
-        if($opts{commit}){
-          change_status_commit();
-        }
+        update_log($log,-1);
+        update_scan($scan);
 
       }else{
 
@@ -788,10 +779,6 @@ sub change_status {
 
   { errors => \@errors, messages => \@messages };
 
-}
-sub change_status_commit {
-  index_scan->commit;
-  index_log->commit;
 }
 sub archive_url {
   my $scan = $_[0];
